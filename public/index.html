@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TSL6 BLE Recovery</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#16181d;--muted:#5d6470;--line:#d9dde3;--accent:#2563eb;--accent-fg:#fff;--ok:#15803d;--bad:#b91c1c;--warn:#a16207;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--fg:#e8eaee;--muted:#9aa3b0;--line:#2a2f39;--accent:#3b82f6;--ok:#4ade80;--bad:#f87171;--warn:#facc15}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}
+.sub{color:var(--muted);margin:0 0 14px;font-size:13px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 12px}
+h2{font-size:15px;margin:0 0 10px;display:flex;gap:8px;align-items:center}
+.n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:12px}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:9px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+label{font-size:13px;color:var(--muted)}
+input[type=text]{font:14px var(--mono);width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+input[type=file]{font-size:13px;max-width:100%}
+.kv{font:12.5px var(--mono);word-break:break-all;color:var(--muted)}
+.pill{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+progress{width:100%;height:14px}
+#log{font:12px/1.4 var(--mono);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin:0}
+ul{margin:6px 0 0;padding-left:18px}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.92em}
+footer{padding:4px 2px 24px}
+</style>
+</head>
+<body>
+<main>
+<h1>TSL6 BLE Recovery</h1>
+<p class="sub">Writes a runtime image to a TSL6 module stuck in its bootloader (BLE name <code>TSL6-BOOT</code>). The bootloader accepts only the runtime slot, so it cannot overwrite itself.</p>
+<p class="note">Use at your own risk. Not affiliated with the module maker or Tesla. Work only while the car is parked.</p>
+
+<section id="envSec">
+  <h2>Browser</h2>
+  <div id="env" class="kv"></div>
+</section>
+
+<section>
+  <h2><span class="n">1</span>Connect</h2>
+  <div class="row">
+    <button id="btnConnect" class="primary">Connect</button>
+    <button id="btnDisconnect" disabled>Disconnect</button>
+    <label><input type="checkbox" id="showAll"> Show all devices</label>
+  </div>
+  <div class="row"><span id="connState" class="pill">Not connected</span></div>
+  <p class="note">Turn off Bluetooth on other phones first, so the Mini App does not take the connection. Keep the car awake.</p>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Status (read-only)</h2>
+  <div class="row"><button id="btnStatus" disabled>Read status (0xA0)</button></div>
+  <div id="statusOut" class="kv"></div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Firmware image</h2>
+  <div class="row">
+    <button id="btnLoadDump">Load June 2026 dump</button>
+    <input type="file" id="file" accept=".bin,.json,application/octet-stream,application/json">
+  </div>
+  <div id="imgOut" class="kv"></div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Flash</h2>
+  <label for="modId">Module ID (24 hex characters)</label>
+  <input type="text" id="modId" maxlength="24" autocomplete="off" spellcheck="false" placeholder="535C...">
+  <div id="uidOut" class="kv"></div>
+  <div class="row"><label><input type="checkbox" id="confirm"> I understand that this writes flash. Keep the car awake.</label></div>
+  <div class="row"><button id="btnFlash" class="danger" disabled>Flash runtime</button></div>
+  <progress id="prog" max="1" value="0"></progress>
+  <div id="flashOut" class="kv"></div>
+</section>
+
+<section>
+  <h2>Log</h2>
+  <pre id="log"></pre>
+  <div class="row"><button id="btnCopy">Copy log</button><button id="btnClear">Clear</button></div>
+</section>
+
+<section>
+  <h2>Advanced</h2>
+  <div class="row">
+    <label>Bytes per BLE write
+      <select id="chunk"><option>20</option><option>60</option><option>120</option><option>180</option></select>
+    </label>
+    <label>Write type
+      <select id="wtype"><option value="auto">auto</option><option value="resp">with response</option><option value="noresp">without response</option></select>
+    </label>
+  </div>
+</section>
+<footer class="note">
+  Source: <a href="https://github.com/n0k0m3/tsl6-webble">github.com/n0k0m3/tsl6-webble</a>.
+  Firmware image and protocol notes: <a href="https://github.com/LQCross/TSL6-Firmware">LQCross/TSL6-Firmware</a>.
+  Everything runs in your browser. This page sends no data to any server.
+</footer>
+</main>
+
+<script>
+"use strict";
+const SVC = 0xfff0, CHR = 0xfff1;
+const PAGE = 1026, PAYLOAD = 1024, MAX_PAGES = Math.floor(0x17F00 / PAYLOAD) + 1;
+const TARGET_RUNTIME = 1;
+const DUMP_SHA = "b1b2a3aa5e71d88336719bccb5da822faffc05acf50b5b482e570f1981dabbd5";
+const DUMP_URLS = [
+  "runtime.bin",
+  "https://raw.githubusercontent.com/LQCross/TSL6-Firmware/main/latest-tsl6-535C62E239E339E31475FB10/runtime/runtime.bin",
+];
+
+const $ = id => document.getElementById(id);
+const hex = (u8, sep = "") => Array.from(u8, b => b.toString(16).padStart(2, "0")).join(sep);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function log(msg, cls) {
+  const t = new Date().toTimeString().slice(0, 8);
+  const line = document.createElement("span");
+  if (cls) line.className = cls;
+  line.textContent = `${t} ${msg}\n`;
+  $("log").appendChild(line);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+// ---------------------------------------------------------------- framing
+function encode(cmd, payload = new Uint8Array(0)) {
+  const n = payload.length;
+  const f = new Uint8Array(6 + n);
+  f.set([0x55, 0x7f, cmd, n >> 8, n & 0xff]);
+  f.set(payload, 5);
+  let s = 0;
+  for (let i = 2; i < 5 + n; i++) s += f[i];
+  f[5 + n] = s & 0xff;
+  return f;
+}
+
+class Decoder {
+  constructor() { this.buf = []; }
+  feed(data) {
+    for (const b of data) this.buf.push(b);
+    const out = [];
+    for (;;) {
+      let start = -1;
+      for (let i = 0; i + 1 < this.buf.length; i++) if (this.buf[i] === 0x55 && this.buf[i + 1] === 0x7f) { start = i; break; }
+      if (start < 0) { this.buf = this.buf.slice(-1)[0] === 0x55 ? [0x55] : []; return out; }
+      this.buf.splice(0, start);
+      if (this.buf.length < 6) return out;
+      const n = (this.buf[3] << 8) | this.buf[4];
+      if (this.buf.length < 6 + n) return out;
+      const f = this.buf.splice(0, 6 + n);
+      let s = 0;
+      for (let i = 2; i < 5 + n; i++) s += f[i];
+      if ((s & 0xff) !== f[5 + n]) { log(`bad checksum, frame dropped: ${hex(f)}`, "warn"); continue; }
+      out.push({ cmd: f[2], payload: new Uint8Array(f.slice(5, 5 + n)) });
+    }
+  }
+}
+
+// ---------------------------------------------------------------- image
+let pages = null;
+
+function uid14(id) {
+  const s = id.trim();
+  if (!/^[0-9a-fA-F]{24}$/.test(s)) return null;
+  const raw = new Uint8Array(12);
+  for (let i = 0; i < 12; i++) raw[i] = parseInt(s.substr(i * 2, 2), 16);
+  const u = new Uint8Array(14);
+  u.set(raw.slice(4, 12), 0);
+  u.set(raw.slice(0, 6), 8);
+  return u;
+}
+
+function parseImage(buf) {
+  const u8 = new Uint8Array(buf);
+  const first = u8.find(b => b > 0x20);
+  if (first === 0x7b) { // JSON reply of the vendor server
+    const j = JSON.parse(new TextDecoder().decode(u8));
+    if (!j.success) throw new Error(`server JSON reports failure: ${j.msg}`);
+    return j.hex.map(h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16))));
+  }
+  if (u8.length % PAGE) throw new Error(`file size ${u8.length} is not a multiple of ${PAGE}`);
+  const out = [];
+  for (let i = 0; i < u8.length; i += PAGE) out.push(u8.slice(i, i + PAGE));
+  return out;
+}
+
+function checkPages(p) {
+  const problems = [];
+  if (!p.length) return ["image has no pages"];
+  if (p.length > MAX_PAGES) problems.push(`${p.length} pages is more than the slot holds (${MAX_PAGES})`);
+  p.forEach((pg, i) => {
+    if (pg.length !== PAGE) problems.push(`page ${i}: ${pg.length} bytes, expected ${PAGE}`);
+    else if (((pg[0] << 8) | pg[1]) !== i) problems.push(`page ${i}: index field is ${(pg[0] << 8) | pg[1]}`);
+  });
+  const counts = new Uint32Array(256);
+  let total = 0;
+  for (const pg of p) for (let i = 2; i < pg.length; i++) { counts[pg[i]]++; total++; }
+  let top = 0;
+  for (let v = 1; v < 256; v++) if (counts[v] > counts[top]) top = v;
+  if (counts[top] > total * 0.5) problems.push(`${Math.floor(counts[top] * 100 / total)}% of the image is byte 0x${top.toString(16).padStart(2, "0")}: filler, not code`);
+  if ((p[0][2] & 0x7f) !== 0x6f) problems.push(`first instruction is not a jump (${hex(p[0].slice(2, 6))})`);
+  return problems;
+}
+
+function contains(p, text) {
+  const needle = new TextEncoder().encode(text);
+  const all = new Uint8Array(p.length * PAYLOAD);
+  p.forEach((pg, i) => all.set(pg.slice(2), i * PAYLOAD));
+  outer: for (let i = 0; i <= all.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) if (all[i + j] !== needle[j]) continue outer;
+    return true;
+  }
+  return false;
+}
+
+async function acceptImage(buf, source) {
+  const out = $("imgOut");
+  pages = null;
+  try {
+    const p = parseImage(buf);
+    const sha = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", buf)));
+    const problems = checkPages(p);
+    const lines = [
+      `source: ${source}`,
+      `pages: ${p.length}  payload: ${p.length * PAYLOAD} bytes`,
+      `sha256: ${sha}`,
+      sha === DUMP_SHA ? "matches the June 2026 LQCross dump (runtime V1.0.00)" : "not the June 2026 dump",
+      `contains "TSL6": ${contains(p, "TSL6")}   contains "CH32V20x_BLE_LIB": ${contains(p, "CH32V20x_BLE_LIB")}`,
+    ];
+    if (problems.length) {
+      out.innerHTML = "";
+      out.append(lines.join("\n"), document.createElement("br"));
+      const s = document.createElement("span");
+      s.className = "bad";
+      s.textContent = "REJECTED: " + problems.join("; ");
+      out.append(s);
+      log(`image rejected: ${problems.join("; ")}`, "bad");
+    } else {
+      pages = p;
+      out.innerHTML = "";
+      out.append(lines.join("\n"), document.createElement("br"));
+      const s = document.createElement("span");
+      s.className = "ok";
+      s.textContent = "Image OK";
+      out.append(s);
+      log(`image loaded: ${source}, ${p.length} pages, sha256 ${sha.slice(0, 16)}...`, "ok");
+    }
+  } catch (e) {
+    out.textContent = `error: ${e.message}`;
+    log(`image error: ${e.message}`, "bad");
+  }
+  out.style.whiteSpace = "pre-wrap";
+  refresh();
+}
+
+$("btnLoadDump").onclick = async () => {
+  for (const url of DUMP_URLS) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      await acceptImage(await r.arrayBuffer(), url);
+      return;
+    } catch (e) { log(`fetch ${url}: ${e.message}`, "warn"); }
+  }
+  log("could not load the dump from any source", "bad");
+};
+$("file").onchange = async e => {
+  const f = e.target.files[0];
+  if (f) await acceptImage(await f.arrayBuffer(), f.name);
+};
+
+// ---------------------------------------------------------------- BLE
+let device = null, chr = null, txChr = null, decoder = new Decoder(), waiter = null, busy = false;
+
+function onNotify(e) {
+  const v = e.target.value;
+  for (const fr of decoder.feed(new Uint8Array(v.buffer, v.byteOffset, v.byteLength))) {
+    if (waiter && waiter.cmd === fr.cmd) { const w = waiter; waiter = null; w.resolve(fr.payload); }
+    else log(`rx 0x${fr.cmd.toString(16)} ${hex(fr.payload)}`);
+  }
+}
+
+async function writeFrame(frame) {
+  const size = +$("chunk").value;
+  const p = txChr.properties || {};
+  const mode = $("wtype").value;
+  const useResp = mode === "resp" || (mode === "auto" && (p.write || !txChr.properties));
+  for (let i = 0; i < frame.length; i += size) {
+    const part = frame.slice(i, i + size);
+    if (useResp && typeof txChr.writeValueWithResponse === "function") await txChr.writeValueWithResponse(part);
+    else if (!useResp && typeof txChr.writeValueWithoutResponse === "function") await txChr.writeValueWithoutResponse(part);
+    else await txChr.writeValue(part);
+  }
+}
+
+async function request(cmd, payload, timeoutMs, tries) {
+  for (let a = 1; a <= tries; a++) {
+    if (!chr) throw new Error("not connected");
+    const got = new Promise(resolve => { waiter = { cmd, resolve }; });
+    decoder = new Decoder();
+    await writeFrame(encode(cmd, payload));
+    const res = await Promise.race([got, sleep(timeoutMs).then(() => null)]);
+    if (res !== null) return res;
+    waiter = null;
+    log(`0x${cmd.toString(16)}: no reply (try ${a}/${tries})`, "warn");
+  }
+  return null;
+}
+
+function setConn(text, cls) {
+  const el = $("connState");
+  el.textContent = text;
+  el.className = "pill " + (cls || "");
+}
+
+$("btnConnect").onclick = async () => {
+  try {
+    const opts = $("showAll").checked
+      ? { acceptAllDevices: true, optionalServices: [SVC] }
+      : { filters: [{ services: [SVC] }, { namePrefix: "TSL" }, { namePrefix: "FFKJ" }], optionalServices: [SVC] };
+    device = await navigator.bluetooth.requestDevice(opts);
+    device.addEventListener("gattserverdisconnected", () => {
+      chr = null; txChr = null;
+      setConn(`Disconnected: ${device.name || device.id}`, "warn");
+      log("disconnected", "warn");
+      if (waiter) { const w = waiter; waiter = null; w.resolve(null); }
+      refresh();
+    });
+    setConn("Connecting...");
+    log(`selected: ${device.name || "(no name)"} id=${device.id}`);
+    const server = await device.gatt.connect();
+    log("GATT connected");
+    let svc;
+    try { svc = await server.getPrimaryService(SVC); }
+    catch (e) {
+      log(`service FFF0 not found: ${e.message}`, "bad");
+      try { for (const s of await server.getPrimaryServices()) log(`  service ${s.uuid}`); } catch (e2) { log(`  list services: ${e2.message}`); }
+      throw e;
+    }
+    const chars = await svc.getCharacteristics();
+    const short = c => String(c.uuid).toLowerCase().slice(4, 8);
+    const known = chars.some(c => c.properties);
+    for (const c of chars) {
+      const p = c.properties;
+      log(p ? `  char ${short(c)} read=${p.read} write=${p.write} writeNoResp=${p.writeWithoutResponse} notify=${p.notify} indicate=${p.indicate}`
+            : `  char ${short(c)} (browser gives no properties)`);
+    }
+    const pick = (ok, prefer) => chars.find(c => short(c) === prefer && (!known || ok(c))) || (known ? chars.find(ok) : chars[0]);
+    chr = pick(c => c.properties && (c.properties.notify || c.properties.indicate), "fff1");
+    txChr = pick(c => c.properties && (c.properties.write || c.properties.writeWithoutResponse), "fff1");
+    if (!chr || !txChr) throw new Error("no notify or no write characteristic in FFF0");
+    log(`rx=${short(chr)} tx=${short(txChr)}`, "ok");
+    chr.addEventListener("characteristicvaluechanged", onNotify);
+    await chr.startNotifications();
+    log("notifications on", "ok");
+    setConn(`Connected: ${device.name || device.id}`, "ok");
+  } catch (e) {
+    log(`connect failed: ${e.name}: ${e.message}`, "bad");
+    setConn("Not connected");
+    chr = null; txChr = null;
+  }
+  refresh();
+};
+
+$("btnDisconnect").onclick = () => { if (device && device.gatt.connected) device.gatt.disconnect(); };
+
+$("btnStatus").onclick = async () => {
+  busy = true; refresh();
+  try {
+    const r = await request(0xa0, new Uint8Array(0), 2000, 3);
+    const out = $("statusOut");
+    if (r === null) { out.textContent = "No A0 reply."; log("no A0 reply", "warn"); }
+    else {
+      let t = `A0 reply (${r.length} bytes):\n${hex(r, " ")}`;
+      if (r.length >= 16) {
+        const id = hex(r.slice(4, 16)).toUpperCase();
+        t += `\nmodule ID field: ${id}`;
+        if (!$("modId").value) { $("modId").value = id; updUid(); }
+      }
+      out.style.whiteSpace = "pre-wrap";
+      out.textContent = t;
+      log(`A0: ${hex(r)}`);
+    }
+  } catch (e) { log(`status failed: ${e.message}`, "bad"); }
+  busy = false; refresh();
+};
+
+async function flash() {
+  const uid = uid14($("modId").value);
+  const arg = new Uint8Array(15);
+  arg[0] = TARGET_RUNTIME;
+  arg.set(uid, 1);
+  const out = $("flashOut");
+  const prog = $("prog");
+  prog.max = pages.length; prog.value = 0;
+
+  let r = await request(0x55, arg, 2000, 3);
+  if (r === null || (r.length && r[0] !== 0)) throw new Error(`0x55 prepare failed (reply ${r ? hex(r) : "none"}). Wrong module ID, or not in boot mode`);
+  log("0x55 prepare: OK", "ok");
+
+  r = await request(0x53, arg, 3000, 3);
+  if (r === null || (r.length && r[0] === 0xff)) throw new Error(`0x53 start failed (reply ${r ? hex(r) : "none"})`);
+  log("0x53 start: OK, boot flag set to update mode", "ok");
+
+  const t0 = performance.now();
+  for (let i = 0; i < pages.length; i++) {
+    r = await request(0x57, pages[i], 1200, 10);
+    if (r === null) throw new Error(`page ${i} failed 10 times. The module stays in the bootloader. Retry the flash`);
+    prog.value = i + 1;
+    out.textContent = `page ${i + 1}/${pages.length}  (${((performance.now() - t0) / 1000).toFixed(1)} s)`;
+  }
+  log(`all ${pages.length} pages written`, "ok");
+
+  r = await request(0x45, arg, 3000, 3);
+  if (r === null) throw new Error("0x45 finish: no reply. Power-cycle the module and read status");
+  log("0x45 finish: OK. The module now jumps to the new runtime and drops the connection", "ok");
+  out.textContent = "Done. Unplug the module for 10 s, plug it in, connect again, and read status.";
+}
+
+$("btnFlash").onclick = async () => {
+  busy = true; refresh();
+  let lock = null;
+  try { lock = await navigator.wakeLock?.request("screen"); } catch (_) {}
+  try { await flash(); }
+  catch (e) { log(e.message, "bad"); $("flashOut").textContent = e.message; }
+  try { await lock?.release(); } catch (_) {}
+  busy = false; refresh();
+};
+
+// ---------------------------------------------------------------- UI state
+function updUid() {
+  const u = uid14($("modId").value);
+  $("uidOut").textContent = u ? `UID14: ${hex(u, " ")}` : ($("modId").value ? "Need 24 hex characters." : "");
+  refresh();
+}
+$("modId").oninput = updUid;
+$("confirm").onchange = refresh;
+
+function refresh() {
+  const connected = !!(chr && txChr);
+  $("btnConnect").disabled = busy || connected;
+  $("btnDisconnect").disabled = busy || !connected;
+  $("btnStatus").disabled = busy || !connected;
+  $("btnFlash").disabled = busy || !connected || !pages || !uid14($("modId").value) || !$("confirm").checked;
+}
+
+$("btnCopy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("log").textContent); log("log copied"); }
+  catch (e) { log(`copy failed: ${e.message}`, "warn"); }
+};
+$("btnClear").onclick = () => { $("log").textContent = ""; };
+
+(function env() {
+  const ok = !!navigator.bluetooth;
+  const lines = [
+    `secure context: ${window.isSecureContext}`,
+    `Web Bluetooth: ${ok ? "available" : "NOT available"}`,
+  ];
+  if (!ok) lines.push("Use Chrome on Android or desktop. On iPhone, use the Bluefy browser.");
+  $("env").style.whiteSpace = "pre-wrap";
+  $("env").textContent = lines.join("\n");
+  $("env").className = "kv " + (ok && window.isSecureContext ? "ok" : "bad");
+  refresh();
+})();
+</script>
+</body>
+</html>
