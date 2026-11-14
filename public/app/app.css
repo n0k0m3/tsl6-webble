@@ -221,6 +221,10 @@ button.li:disabled { cursor: progress; }
 .hero-title { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .hero-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
 .hero-sub b { color: var(--fg); font-weight: 600; }
+/* Prompt build (Car tab): mode pill and the live patch state from the B0 stream */
+.prompt-pill { height: 20px; font-size: 12px; margin-left: 4px; color: var(--accent-text); background: var(--accent-soft); border-color: transparent; }
+.prompt-diag { color: var(--fg); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.prompt-raw { color: var(--muted); }
 .acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px; }
 .acts.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .acts.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -7,6 +7,13 @@ import {
   ROW_BY_ID, A7_HARD_GATED, A7_RELEASE, A2_RELEASE, decodeLiveState, switchCommand, memoryCommand, tapCommand,
   canStateText, formatC1Reply, decodeA7Reply,
 } from "../../lib/tsl6-status.js";
+import { decodeSettings, isPromptTime, promptDelayMs } from "../../lib/tsl6-settings.js";
+import { B0, startPayload, stopPayload, KEEPALIVE_MS, decodeGauge, promptDiag, PROMPT_PHASE } from "../../lib/tsl6-gauge.js";
+
+// Scroll interval of the prompt build (see the Firmware page), or null for a stock value or no settings.
+function promptTime(p) {
+  try { const t = decodeSettings(p).time; return isPromptTime(t) ? t : null; } catch { return null; }
+}
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
@@ -34,6 +41,31 @@ definePage("status", () => {
   const held = new Set();
   let timer = 0, countdown = 0;
   const refs = {};
+  // Prompt build: while this tab shows and a prompt mode is set, stream B0 and show the patch state
+  // (the B0 altitude bits carry it, see lib/tsl6-gauge.js promptDiag).
+  let entered = false, streamOn = false, keepTimer = 0, diag = null, promptNow = null;
+  const linkReady = () => !!(S.link && S.link.connected && S.link.authed && !S.blank);
+  const keepAlive = () => { if (linkReady() && !document.hidden) send(B0, startPayload(), { read: true, quiet: true }); };
+  function syncStream() {
+    const want = promptNow != null && entered && !document.hidden && linkReady();
+    if (want === streamOn) return;
+    streamOn = want;
+    clearInterval(keepTimer); keepTimer = 0;
+    if (want) { keepAlive(); keepTimer = setInterval(keepAlive, KEEPALIVE_MS); }
+    else { diag = null; if (linkReady()) send(B0, stopPayload(), { read: true, quiet: true }); }
+  }
+  function drawPrompt() {
+    if (!refs.apSub) return;
+    clear(refs.apSub);
+    const s = (promptDelayMs(promptNow) / 1000).toString();
+    refs.apSub.append(L(`On hands-on prompt, about ${s} s after it`, `手扶提示时，约${s}秒后拨动`));
+    if (!diag) return;
+    const line = diag.noData
+      ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
+      : [L(...PROMPT_PHASE[diag.phase]), " · ", L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`),
+        h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`))];
+    refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, line));
+  }
 
   // ---- one hold button (seat A7 or wheel A2): press frame, then exactly one release frame
   function hold(type, value, releaseValue, content, label) {
@@ -64,7 +96,7 @@ definePage("status", () => {
     return b;
   }
   const releaseAll = () => { for (const b of [...held]) b.release(); };
-  const onVis = () => { if (document.hidden) releaseAll(); };
+  const onVis = () => { if (document.hidden) releaseAll(); syncStream(); };
 
   async function onSwitch(r, want) {
     let c;
@@ -195,12 +227,16 @@ definePage("status", () => {
     refs.apSub = h("div", { class: "hero-sub" }, "—");
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
     switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
+    promptNow = promptTime(S.status);
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
+    if (promptNow != null) switches.apAssist.name = L("AP assist (on prompt)", "AP辅助（手扶提示时）");
     el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),
       h("div", { class: "card lead" },
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
           h("button", { class: "li-text hero-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + apName, onclick: () => showHelp(ap.help, L(ap.en, ap.zh)) },
-            h("div", { class: "hero-title" }, h("span", null, apName)), refs.apSub),
+            h("div", { class: "hero-title" }, h("span", null, apName),
+              promptNow != null ? h("span", { class: "pill prompt-pill", "data-id": "prompt-pill" }, L("On prompt", "手扶提示时")) : null),
+            refs.apSub),
           apSw),
         ...ASSIST.map(switchItem).filter(Boolean))));
 
@@ -301,7 +337,11 @@ definePage("status", () => {
       for (const [, s] of lit) refs.tt.append(h("span", { class: "tt " + s.tone }, icon(s.ico, 20), h("span", null, s.name)));
     }
     clearInterval(timer);
-    if (refs.apSub) {
+    const pt = promptTime(p);
+    if (pt !== promptNow) { promptNow = pt; render(); return; } // the hero title and telltale name change
+    syncStream();
+    if (promptNow != null) drawPrompt(); // the stock 2-3 s timer does not run in a prompt mode
+    else if (refs.apSub) {
       countdown = live.timerMs / 1000;
       const draw = () => {
         clear(refs.apSub);
@@ -321,16 +361,24 @@ definePage("status", () => {
     el,
     refresh: render, // show(true) calls it: a link change on a sub-page must not leave stale switches here
     enter() {
+      entered = true;
       offs.push(onBus("status", p => { const was = !!el.querySelector('[data-row="vehicleType"]'); if (!was || S.blank) render(); else update(p); }));
       offs.push(onBus("conn", st => { if (!st.connected) releaseAll(); render(); }));
       offs.push(onBus("frame", fr => {
         if (fr.cmd === 0xa7) { const r = decodeA7Reply(fr.payload); if (r) toast(L(r.en, r.zh), r.ok ? "ok" : "bad"); }
+        if (fr.cmd === B0 && streamOn) {
+          const x = decodeGauge(fr.payload);
+          if (x && x.full && (!diag || diag.raw !== x.altitudeRaw)) { diag = promptDiag(x.altitudeRaw); drawPrompt(); }
+        }
       }));
       document.addEventListener("visibilitychange", onVis);
       window.addEventListener("blur", releaseAll);
       if (S.link && S.link.connected && S.link.authed) S.link.readStatus().catch(() => {});
+      syncStream();
     },
     leave() {
+      entered = false;
+      syncStream();
       releaseAll();
       clearInterval(timer);
       offs.splice(0).forEach(f => f());
