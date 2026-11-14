@@ -342,7 +342,7 @@ definePage("rgb", () => {
           type: "button", role: "tab", class: t.id === st.tab ? "on" : null, "aria-selected": String(t.id === st.tab),
           onclick: () => selectTab(t.id),
         }, L(t.label, t.zh)))),
-        h("button", { type: "button", class: "rgb-ib", "aria-label": L("Add a rule", "添加"), disabled: !canEdit || st.rules.length >= SLOT_COUNT, onclick: addRule }, icon("plus", 28))),
+        h("button", { type: "button", class: "rgb-ib add", "aria-label": L("Add a rule", "添加"), disabled: !canEdit || st.rules.length >= SLOT_COUNT, onclick: addRule }, icon("plus", 22))),
       h("div", { class: "rgb-sub" },
         helpButton("help_RGB", { en: "Ambient light", zh: "氛围灯" }),
         h("p", { class: "sub-note" }, L(tabInfo.note, tabInfo.noteZh)),

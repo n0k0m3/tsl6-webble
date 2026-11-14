@@ -221,7 +221,7 @@ definePage("blebtn", () => {
         h("button", { class: "ibtn link", type: "button", onclick: openHost, "aria-label": L("BLE pairing", "蓝牙配对"), title: L("BLE pairing", "蓝牙配对") }, icon("link", 22)),
         hasFun ? [
           iconBtn("trash", delAll, { label: L("Delete all", "删除全部"), disabled: !ready || busy || !buttons.length }),
-          iconBtn("plus", add, { label: L("Add", "添加"), disabled: !ready || busy || !!pairing }),
+          h("button", { class: "btn small primary", type: "button", disabled: !ready || busy || !!pairing, onclick: add }, icon("plus", 18), h("span", null, L("Add", "添加"))),
         ] : null)));
 
     const st = linkState();
