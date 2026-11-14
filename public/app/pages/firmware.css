@@ -1,0 +1,22 @@
+/* Firmware page (the flasher in the app). Same look as flash.html. */
+[data-page="firmware"] .btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+[data-page="firmware"] .fw-note { margin: 0; }
+[data-page="firmware"] .card a { color: var(--accent-text); }
+[data-page="firmware"] a.li { text-decoration: none; color: inherit; }
+[data-page="firmware"] a.li:hover { background: var(--btn-hover); }
+[data-page="firmware"] .row.check-row { justify-content: flex-start; }
+[data-page="firmware"] .subhead + .form { padding-top: 8px; }
+/* Fixed red, as .dlg-btn.danger: the dark-theme --bad is too light for white text. */
+.btn.danger-fill { background: #c02626; border-color: #c02626; color: #fff; }
+.btn.danger-fill:hover { background: #c02626; filter: brightness(1.08); }
+[data-page="firmware"] .out { margin: 0; font: 13px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; word-break: break-all; }
+[data-page="firmware"] .out:empty { display: none; }
+[data-page="firmware"] .out .ok { color: var(--ok); font-weight: 600; }
+[data-page="firmware"] .out .bad { color: var(--bad); font-weight: 600; }
+[data-page="firmware"] .out.ok { color: var(--ok); }
+[data-page="firmware"] .out.bad { color: var(--bad); }
+[data-page="firmware"] .out.warn { color: var(--warn); }
+/* app.css turns off text selection on body. The hash, UID14 and module ID must stay copyable. */
+[data-page="firmware"] .out, [data-page="firmware"] .out *, [data-page="firmware"] .fw-sel { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+[data-page="firmware"] progress { width: 100%; height: 10px; accent-color: var(--accent-ui); }
+[data-page="firmware"] input[type=file] { max-width: 100%; font-size: 15px; }

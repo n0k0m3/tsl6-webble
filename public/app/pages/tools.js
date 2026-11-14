@@ -32,7 +32,7 @@ const GROUPS = [
   ] },
   { en: "Module", zh: "模块", items: [
     ["password", "key-round", "", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
-    ["firmware", "hard-drive-download", "", "Firmware", "固件", "Opens the flasher", "打开刷写页面", () => { location.href = "flash.html#flash"; }],
+    ["firmware", "hard-drive-download", "", "Firmware", "固件", "Flash a runtime image", "刷写运行固件", () => go("firmware")],
     ["reset", "rotate-ccw", "red", "Restore defaults", "恢复默认", "Resets every module setting", "重置模块所有设置", restoreDefaults],
   ] },
   { en: "Advanced", zh: "高级", items: [
