@@ -1,6 +1,6 @@
 // Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
-import { h, L, btn, toast, confirmBox, showHelp, clear, icon, chooseOption, toggle, plainLabel, groupHelpButton } from "../ui.js";
+import { h, L, btn, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches } from "../../lib/tsl6-settings.js";
 
@@ -35,6 +35,12 @@ definePage("settings", () => {
     autocomplete: "off", enterkeyhint: "search" });
   searchInput.addEventListener("input", () => { query = searchInput.value.trim().toLowerCase(); render(); });
   const searchBox = h("div", { class: "set-search" }, icon("search", 18), searchInput);
+  // The top row stays in the page across renders: a detached input ends IME (pinyin) composition and can close the iPhone keyboard.
+  const legendSlot = h("span", { class: "slot" });
+  const findBox = h("div", { class: "set-find" }, searchBox, legendSlot);
+  const masterSlot = h("div", { class: "slot" });
+  const topRow = h("div", { class: "set-top span" }, findBox, masterSlot);
+  let picking = false;   // one option sheet at a time (the first open waits for help.json)
   // Case-insensitive; matches the English and the Chinese name, so either language finds a row.
   const hit = (...names) => names.some(n => n && String(n).toLowerCase().includes(query));
   const matches = id => !query || hit(label(id).en, label(id).zh);
@@ -52,7 +58,7 @@ definePage("settings", () => {
   // Rows show the value without "(default)"; the sheet still marks the default option.
   const valueText = (id, vals) => {
     const o = options(id, vals).find(([v]) => v === vals[id]);
-    return o ? o[1].replace(/\s*\((default)\)|\s*[（(]默认[)）]/g, "") : `? (${vals[id]})`;
+    return o ? plainLabel(o[1]) : `? (${vals[id]})`;
   };
   // True when the value differs from the factory default (the English option list marks the default).
   const changed = (id, vals) => {
@@ -85,7 +91,10 @@ definePage("settings", () => {
   }
 
   async function pick(id, vals, help) {
-    const v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help });
+    if (picking) return;
+    picking = true;
+    let v;
+    try { v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help }); } finally { picking = false; }
     if (v == null || v === vals[id]) return;
     setTimeout(() => save(id, Number(v)), 0); // run the save after the sheet is gone
   }
@@ -140,12 +149,21 @@ definePage("settings", () => {
   }
 
   function render() {
-    const hadFocus = document.activeElement === searchInput;
-    clear(el);
+    for (const c of [...el.children]) if (c !== topRow) c.remove();
     const link = S.link, p = S.status;
     el.className = "page" + (link && link.connected && p && !S.blank ? " cols" : " narrow");
     if (!link || !link.connected || !p || S.blank) {
+      topRow.remove();
       const on = link && link.connected;
+      // Authed but no status yet: the module has not answered, so do not ask for the password again.
+      if (on && link.authed && !p) {
+        el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
+          h("span", { class: "chip blue" }, icon("refresh-cw", 24)),
+          h("h2", null, L("Waiting for the module", "等待模块应答")),
+          h("p", null, L("The module has not sent its settings yet.", "模块尚未发送设置。")),
+          h("button", { class: "btn primary", type: "button", onclick: () => link.readStatus().catch(() => {}) }, L("Read again", "重新读取")))));
+        return;
+      }
       el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip" + (on ? " amber" : " blue") }, icon(on ? "key-round" : "bluetooth", 24)),
         h("h2", null, on ? L("Enter the BLE password", "请输入蓝牙密码") : L("Not connected", "未连接")),
@@ -167,7 +185,9 @@ definePage("settings", () => {
           h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })());
-    el.append(master);
+    if (topRow.parentNode !== el) el.prepend(topRow);
+    masterSlot.replaceChildren(master);
+    findBox.hidden = moduleOff;
     if (moduleOff) {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
@@ -176,12 +196,11 @@ definePage("settings", () => {
     const shownIds = [...GROUPS.flatMap(g => g.rows.flat().filter(Boolean)), ...(S.prefs.lab ? LAB : [])];
     const anyChanged = shownIds.some(id => BY_ID[id] && vals[id] !== undefined && appliesTo(BY_ID[id], S.hwType) && changed(id, vals));
     // Top row: search (with the legend) and the master switch; one row on desktop, stacked on a phone.
-    const legend = anyChanged ? h("span", { class: "legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置")) : null;
-    el.insertBefore(h("div", { class: "set-top span" }, h("div", { class: "set-find" }, searchBox, legend), master), el.firstChild);
-    if (hadFocus) searchInput.focus();
+    legendSlot.replaceChildren(...(anyChanged ? [h("span", { class: "legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置"))] : []));
     const groupsBefore = el.childElementCount;
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
     if (query) {
+      if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;
     }

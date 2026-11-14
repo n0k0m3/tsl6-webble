@@ -4,7 +4,7 @@ import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, b
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab } from "../app.js";
 import { WebLink } from "../ble.js";
 import {
-  STATUS_ROWS, ROW_BY_ID, A7_HARD_GATED, A7_RELEASE, A2_RELEASE, decodeLiveState, switchCommand, memoryCommand, tapCommand,
+  ROW_BY_ID, A7_HARD_GATED, A7_RELEASE, A2_RELEASE, decodeLiveState, switchCommand, memoryCommand, tapCommand,
   canStateText, formatC1Reply, decodeA7Reply,
 } from "../../lib/tsl6-status.js";
 
@@ -31,7 +31,6 @@ const TONE = { pulseHighBeam: "t-blue", sportMode: "t-amber", offRearMotor: "t-a
 definePage("status", () => {
   const el = h("div", { class: "page", "data-page": "car" });
   const switches = {};
-  const subs = {};
   const held = new Set();
   let timer = 0, countdown = 0;
   const refs = {};
@@ -156,12 +155,22 @@ definePage("status", () => {
         h("button", { class: "btn primary", type: "button", "data-id": "enter-password", onclick: () => askPassword("manual") }, L("Enter password", "输入密码")))));
   }
 
+  // Authed, but the module has not answered yet: do not ask for the password again.
+  function waitingState() {
+    el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
+      h("span", { class: "chip blue" }, icon("refresh-cw", 24)),
+      h("h2", null, L("Waiting for the module", "等待模块应答")),
+      h("p", null, L("The module has not sent car data yet.", "模块尚未发送车辆数据。")),
+      h("button", { class: "btn primary", type: "button", onclick: () => S.link.readStatus().catch(() => {}) }, L("Read again", "重新读取")))));
+  }
+
   function build() {
     clear(el);
     const link = S.link;
     const live = !!(link && link.connected && S.status && !S.blank);
     el.className = "page" + (live ? " cols" : " narrow");
     if (!link || !link.connected) return emptyState();
+    if (!S.status && link.authed) return waitingState();
     if (!S.status || S.blank) return lockedState();
 
     // Cluster: the vehicle, the three CAN buses and a telltale for each function that is on.
@@ -171,7 +180,7 @@ definePage("status", () => {
     refs.tt = h("div", { class: "cl-tt", role: "group", "aria-label": L("Functions that are on", "已开启的功能") });
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
-        h("div", { class: "cl-name" }, refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })),
+        h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })] : h("span", { class: "vehicle-name" }, "TSL6")),
         h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
       refs.pills, refs.tt);
     pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
@@ -185,7 +194,7 @@ definePage("status", () => {
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
     switches.apAssist = { sw: apSw, chip: refs.apChip, sub: null, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
-    el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help]])),
+    el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),
       h("div", { class: "card lead" },
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
           h("button", { class: "li-text hero-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + apName, onclick: () => showHelp(ap.help, L(ap.en, ap.zh)) },
@@ -193,8 +202,10 @@ definePage("status", () => {
           apSw),
         ...ASSIST.map(switchItem).filter(Boolean))));
 
-    const lightsGrp = grp(sec("Lights and horn", "灯光与喇叭", groupHelp("Lights and horn", "灯光与喇叭", LIGHTS)), listCard(LIGHTS.map(switchItem)));
-    const comfortGrp = grp(sec("Comfort and charging", "舒适与充电", groupHelp("Comfort and charging", "舒适与充电", COMFORT)), listCard(COMFORT.map(switchItem)));
+    // A group shows only when this device type has at least one of its rows.
+    const switchGroup = (en, zh, rows) => { const items = rows.map(switchItem).filter(Boolean); return items.length ? grp(sec(en, zh, groupHelp(en, zh, rows)), listCard(items)) : null; };
+    const lightsGrp = switchGroup("Lights and horn", "灯光与喇叭", LIGHTS);
+    const comfortGrp = switchGroup("Comfort and charging", "舒适与充电", COMFORT);
 
     // Doors and access
     const doorRow = ROW_BY_ID.openDoor, ctl = ROW_BY_ID.control;
@@ -205,10 +216,11 @@ definePage("status", () => {
     const ctlButtons = ctl && shown(ctl) ? ctl.buttons.filter(b => (!b.types || b.types.includes(S.hwType)) && !b.vendorGate) : [];
     // One plan-view grid: doors at the four corners, frunk and trunk on the centre line (CSS places each button).
     const taps = [...(shown(doorRow) ? doorRow.buttons.map(b => tapBtn(doorRow, b)) : []), ...ctlButtons.map(b => tapBtn(ctl, b))];
-    if (taps.length) el.append(grp(sec("Doors and access", "车门与开启", helpButton(doorRow.help, { en: doorRow.en, zh: doorRow.zh })),
+    const doorHelp = groupHelpButton({ en: "Doors and access", zh: "车门与开启" }, [doorRow, ctl].filter(shown).map(r => [L(r.en, r.zh), r.help]));
+    if (taps.length) el.append(grp(sec("Doors and access", "车门与开启", doorHelp),
       h("div", { class: "card" }, h("div", { class: "acts plan" }, taps))));
     // Doors come right after driver assist (the car actions people use most), then the switch groups.
-    el.append(lightsGrp, comfortGrp);
+    el.append(...[lightsGrp, comfortGrp].filter(Boolean));
 
     // Seats
     const seatBlock = (moveId, memId, en, zh) => {
@@ -217,11 +229,11 @@ definePage("status", () => {
       return h("div", { class: "seat" },
         h("div", { class: "subhead" }, h("span", null, L(en, zh))),
         h("div", { class: "acts seatgrid" },
-          shown(mv) ? mv.buttons.map(b => hold(0xa7, b.btn, A7_RELEASE, icon(ARROW[b.icon], 26), L(b.en))) : null,
+          shown(mv) ? mv.buttons.map(b => hold(0xa7, b.btn, A7_RELEASE, icon(ARROW[b.icon], 26), `${L(en, zh)}: ${L(b.en)}`)) : null,
           shown(mem) ? (() => {
             const memBtn = b => {
               const lab = MEM_LABEL[b.icon];
-              const e = h("button", { class: "act", type: "button", "data-id": `mem-${b.btn}`, "aria-label": L(b.en) },
+              const e = h("button", { class: "act", type: "button", "data-id": `mem-${b.btn}`, "aria-label": `${L(en, zh)}: ${L(b.en)}` },
                 b.text ? h("b", null, b.text) : icon(MEM_ICON[b.icon], 20), b.text ? null : h("span", null, L(...lab)));
               return pressable(e, { ontap: () => onMemory(mem, b, false), onlong: () => onMemory(mem, b, true) });
             };
@@ -269,7 +281,6 @@ definePage("status", () => {
       const on = live.blank ? null : live.toggles[id];
       s.sw.set(on);
       s.chip.classList.toggle("on", on === true);
-      if (s.sub) { s.sub.textContent = on == null ? "—" : on ? L("On", "开启") : L("Off", "关闭"); s.sub.classList.toggle("on", on === true); }
     }
     if (refs.vehicleName) {
       refs.vehicleName.textContent = L(live.vehicle.en, live.vehicle.zh);
@@ -305,6 +316,7 @@ definePage("status", () => {
   render();
   return {
     el,
+    refresh: render, // show(true) calls it: a link change on a sub-page must not leave stale switches here
     enter() {
       offs.push(onBus("status", p => { const was = !!el.querySelector('[data-row="vehicleType"]'); if (!was || S.blank) render(); else update(p); }));
       offs.push(onBus("conn", st => { if (!st.connected) releaseAll(); render(); }));

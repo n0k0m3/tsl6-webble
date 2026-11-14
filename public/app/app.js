@@ -162,11 +162,11 @@ function wireLink(link) {
     for (let i = 18; i < 40 && blank; i++) if (p[i] !== 0) blank = false;
     S.blank = blank;
     bus.dispatchEvent(new CustomEvent("status", { detail: p }));
-    renderTop();
+    updateChip();
     if (blank && !link.authed) askPassword("asked");
   });
-  link.on("password", () => askPassword("asked"));
-  link.on("auth", () => renderTop());
+  link.on("password", () => { updateChip(); askPassword("asked"); });
+  link.on("auth", () => updateChip());
   link.on("frame", fr => bus.dispatchEvent(new CustomEvent("frame", { detail: fr })));
   link.on("state", st => {
     if (!st.connected) { S.status = null; }
@@ -259,17 +259,31 @@ window.addEventListener("popstate", () => { if (stack.length > 1) back(); });
 // ---------------------------------------------------------------- chrome
 // Top bar: on a tab root it holds the connection chip (the page shows its own large title);
 // on a sub-page it holds a back button and the page title.
+// The link chip: its text and lamp class from the current link state.
+function chipState() {
+  const link = S.link;
+  const on = !!(link && link.connected);
+  return { text: !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name, dot: "dot" + (on ? (link.authed ? " on" : " warn") : "") };
+}
+// Status and auth frames change only the chip. Rebuilding the whole bar on each frame lost focus and taps.
+function updateChip() {
+  const chip = document.querySelector("#top [data-id=conn-chip]");
+  if (!chip) return renderTop();
+  const st = chipState();
+  chip.setAttribute("aria-label", st.text); chip.title = st.text;
+  chip.querySelector(".dot").className = st.dot;
+  chip.querySelector(".chip-name").textContent = st.text;
+}
 function renderTop() {
   const top = $("#top");
   if (!top) return;
   const c = current();
   const sub = stack.length > 1;
-  const link = S.link;
-  const on = !!(link && link.connected);
-  const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name;
-  const chip = h("button", { class: "conn-chip" + (sub ? " compact" : ""), type: "button", "data-id": "conn-chip", "aria-label": chipText, title: chipText, onclick: () => { if (sub) { alertBox(chipText, L("Connection", "连接")); return; } if (current().id !== "me") switchTab("me"); } },
+  const st = chipState();
+  const chip = h("button", { class: "conn-chip" + (sub ? " compact" : ""), type: "button", "data-id": "conn-chip", "aria-label": st.text, title: st.text,
+    onclick: () => { if (stack.length > 1) { alertBox(chipState().text, L("Connection", "连接")); return; } if (current().id !== "me") switchTab("me"); } },
     sub ? h("span", { class: "chip-bt", "aria-hidden": "true" }, icon("bluetooth", 22)) : null,
-    h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", { class: "chip-name" }, chipText));
+    h("span", { class: st.dot }), h("span", { class: "chip-name" }, st.text));
   // A tab root shows the tab name as the page title. A sub-page shows its own title and a link lamp.
   const tabDef = TABS.find(t => t.id === tab);
   top.classList.toggle("root", !sub);
@@ -280,9 +294,6 @@ function renderTop() {
     h("button", { class: "top-lang", onclick: () => setLang(getLang() === "zh" ? "en" : "zh"), "aria-label": "Language / 语言" }, getLang() === "zh" ? "EN" : "中"),
   ].filter(Boolean));
   document.title = (sub && c.page.title ? L(c.page.title) + " | " : "") + "TSL6";
-  // The sidebar lamp (desktop) shows the same link state as the chip.
-  const mark = document.querySelector(".side-brand .mark");
-  if (mark) mark.className = "mark" + (on ? (link.authed ? " on" : " warn") : "");
 }
 window.addEventListener("scroll", () => { const t = $("#top"); if (t) t.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
 function renderTabs() {
@@ -292,7 +303,7 @@ function renderTabs() {
     onclick: () => { if (t.id !== tab || stack.length > 1) switchTab(t.id); },
   }, icon(t.icon, 22), h("span", null, L(t)))),
   // Desktop sidebar brand. It is the last child, so the tab order (nth-child) does not change; CSS puts it first.
-  h("div", { class: "side-brand" }, h("span", { class: "mark", "aria-hidden": "true" }), "TSL6"));
+  h("div", { class: "side-brand" }, "TSL6"));
 }
 
 onLang(() => { rerender(); });

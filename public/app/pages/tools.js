@@ -3,6 +3,7 @@
 import { h, L, icon, toast, clear } from "../ui.js";
 import { S, definePage, onBus, ask, send, go } from "../app.js";
 import { SET_ACTIONS, buildA4, serviceModeCommand } from "../../lib/tsl6-status.js";
+import { decodeSettings } from "../../lib/tsl6-settings.js";
 
 async function restoreDefaults() {
   if (!S.status) return toast(L("Connect to the module first.", "请先连接蓝牙"));
@@ -45,8 +46,8 @@ definePage("tools", () => {
   const el = h("div", { class: "page cols", "data-page": "tools" });
   function render() {
     clear(el);
-    // Like the vendor app: while the module is off, only restore defaults and change password stay.
-    const moduleOff = S.status && !S.blank && S.status.length > 28 && ((S.status[28] >> 3) & 1) === 1;
+    // While the module is off, the vendor settings-page tools hide; the tools that the old Me tab always showed stay.
+    const moduleOff = !!S.status && !S.blank && decodeSettings(S.status).mianSwitch === 1;
     for (const g of GROUPS) {
       const items = g.items.filter(([id]) => !moduleOff || ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"].includes(id));
       if (!items.length) continue;
@@ -63,6 +64,7 @@ definePage("tools", () => {
   render();
   return {
     el,
+    refresh: render,
     enter() { offs.push(onBus("status", render)); offs.push(onBus("conn", render)); },
     leave() { offs.splice(0).forEach(f => f()); },
   };

@@ -117,7 +117,6 @@ input, textarea, pre.log, pre.log * { -webkit-user-select: text; user-select: te
   #tabs { top: 0; right: auto; bottom: 0; width: var(--side-w); height: auto; padding: 18px 12px; display: flex; flex-direction: column; gap: 2px;
     border-top: 0; border-right: 1px solid var(--line); background: var(--card); }
   .side-brand { display: flex; align-items: center; gap: 10px; padding: 6px 12px 22px; font: 700 23px/1 var(--font-head); }
-  .side-brand .mark { width: 12px; height: 12px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
   .tab { flex-direction: row; justify-content: flex-start; gap: 12px; height: 42px; padding: 0 12px; border-radius: var(--r-sm); font-size: 16px; }
   .tab:hover { background: var(--btn-hover); }
   .tab.on { background: var(--accent-soft); }
@@ -402,12 +401,6 @@ pre.log .ok { color: var(--ok); } pre.log .bad { color: var(--bad); } pre.log .w
 .vehicle .ibtn, .cluster .ibtn { touch-action: manipulation; }
 [data-page="settings"] .li.sub { padding-left: 34px; position: relative; }
 [data-page="settings"] .li.sub::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 50%; width: 9px; border-left: 1.5px solid var(--btn-b); border-bottom: 1.5px solid var(--btn-b); border-bottom-left-radius: 6px; }
-/* sidebar lamp: hollow = no link, amber = password needed, green = live */
-@media (min-width: 960px) {
-  .side-brand .mark { background: none; box-shadow: none; border: 2px solid var(--tt-off); }
-  .side-brand .mark.on { background: var(--ok); border-color: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
-  .side-brand .mark.warn { background: var(--warn); border-color: var(--warn); box-shadow: 0 0 0 4px var(--warn-soft); }
-}
 .sec-title { display: inline-flex; align-items: center; gap: 4px; }
 .check-row { cursor: pointer; }
 .check-row input { width: 20px; height: 20px; margin: 0 2px; accent-color: var(--accent); flex: none; }
@@ -525,8 +518,6 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .acts.seatgrid .act.hold { min-height: 48px; }
 /* dependent rows: label and value on one size */
 .li.sub .li-trail { font-size: 15px; }
-/* the desktop sidebar shows the brand only; the header chip shows the link */
-.side-brand .mark { display: none !important; }
 /* settings: the master switch is the lead card of the page */
 .card.lead.master > .li { min-height: 72px; padding: 14px 16px; }
 .card.lead.master > .li .li-title { font: 700 21px/1.2 var(--font-head); }
@@ -603,3 +594,4 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* small tile labels at weight 500: at 1x, 600 closes the dot of the "i" */
 .act { font-weight: 500; }
 .vehicle-name.warn { color: var(--cl-amber); }
+.slot { display: contents; }

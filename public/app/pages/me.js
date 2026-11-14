@@ -1,8 +1,8 @@
 // Device tab: connection (was the Bluetooth tab), module info, restart, preferences (was the Me tab).
-import { h, L, btn, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang } from "../ui.js";
-import { S, definePage, onBus, ask, go, savePref, setHwType, connect, disconnect, askPassword } from "../app.js";
+import { h, L, btn, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
+import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword } from "../app.js";
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
-import { meInfo, buildA5 } from "../../lib/tsl6-status.js";
+import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
 
 export const APP_BUILD = "2026-11-14";
 const TYPES = [[6, "TSL6 (type 6)"], [8, "TSL6 (type 8)"], [19, "Type 19"], [7, "Type 7"], [5, "Type 5"], [3, "Type 3"]];
@@ -111,8 +111,12 @@ definePage("me", () => {
 
     const lang = h("div", { class: "seg" },
       ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
+    // The vendor shows this row only for the device types of the autoGauge row; its help text stays reachable.
+    const ag = ROW_BY_ID.autoGauge;
+    const autoGaugeShown = !ag.types || ag.types.includes(S.hwType);
     const [gaugeRow, gaugeSw] = switchRow("autoGauge", "gauge", "Open gauges on connect", "自动进入仪表", null, null, S.prefs.autoGauge,
       async v => { savePref("autoGauge", v); gaugeSw.set(v); });
+    gaugeRow.querySelector(".li-title").append(helpButton(ag.help, { en: ag.en, zh: ag.zh }));
     const [driveRow, driveSw] = switchRow("allowDrive", "shield-alert", "Allow driving-system controls", "允许驾驶系统控制",
       "Motor off, ESP off, service mode, CAN send", "关闭电机、关闭ESP、维护模式、CAN发送", S.prefs.allowDrive, async v => {
         if (v && !(await confirmBox({
@@ -133,7 +137,7 @@ definePage("me", () => {
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
           h("div", { class: "li-sub" }, L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), chev())),
-      gaugeRow, driveRow, skipRow)));
+      autoGaugeShown ? gaugeRow : null, driveRow, skipRow)));
 
     el.append(grp(h("div", { class: "sec-label" }, L("About", "关于")), h("div", { class: "card pad about" },
       h("p", null, L(
