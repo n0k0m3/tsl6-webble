@@ -1,6 +1,7 @@
 // BLE link to the TSL6 runtime: framing, chunked writes, request/reply, frame dispatch.
 // Framing, chunk sizes and the 20-byte fallback are the same as the flasher page (tested on the car).
 import { hex } from "../lib/tsl6-settings.js";
+import { inBoot } from "../lib/tsl6-flash.js";
 
 export const SVC = "0000fff0-0000-1000-8000-00805f9b34fb";
 export const SAFE_CHUNK = 20;
@@ -68,6 +69,7 @@ export class LinkBase extends EventTarget {
     this.name = "";
     this.id = "";
     this.status = null;          // last status payload (A0/A1/A3 reply)
+    this.boot = null;            // last bootloader status (boot mode); status is null then
     this.authed = false;         // true after A8 01
     this.chunk = +store("tsl6.chunk") || platformChunk();
     this.decoder = new Decoder(f => this.log(`bad checksum, frame dropped: ${hex(f, " ")}`, "warn"));
@@ -84,14 +86,21 @@ export class LinkBase extends EventTarget {
   }
 
   onFrame(fr) {
-    if (this.verbose && fr.cmd !== 0xb0 && fr.cmd !== 0xc0) this.log(`rx ${fr.cmd.toString(16).toUpperCase()} (${fr.payload.length}) ${hex(fr.payload, " ")}`);
+    // B0/C0 are streams; 57 is one reply per flash page.
+    if (this.verbose && fr.cmd !== 0xb0 && fr.cmd !== 0xc0 && fr.cmd !== 0x57) this.log(`rx ${fr.cmd.toString(16).toUpperCase()} (${fr.payload.length}) ${hex(fr.payload, " ")}`);
     if (fr.cmd === 0xa8) {
       const v = fr.payload[0];
       if (v === 0xff) { this.authed = false; this.emit("password", { reason: "asked" }); }
       else if (v === 1) { this.authed = true; this.emit("auth", { ok: true }); }
       else if (v === 0) { this.authed = false; this.emit("auth", { ok: false }); }
     }
-    if ((fr.cmd === 0xa0 || fr.cmd === 0xa1 || fr.cmd === 0xa3) && fr.payload.length >= 18) {
+    // A bootloader status (byte 3 bit 0 = 0) is not a runtime status. The pages never see it as S.status.
+    if ((fr.cmd === 0xa0 || fr.cmd === 0xa1 || fr.cmd === 0xa3) && inBoot(fr.payload)) {
+      this.boot = fr.payload;
+      this.status = null;
+      this.emit("boot", fr.payload);
+    } else if ((fr.cmd === 0xa0 || fr.cmd === 0xa1 || fr.cmd === 0xa3) && fr.payload.length >= 18) {
+      this.boot = null;
       this.status = fr.payload;
       // Runtime V1.0.00 fills bytes 18-39 only on a link that passed A8. A non-blank status means "authenticated".
       if (!isBlankStatus(fr.payload) && !this.authed) { this.authed = true; this.emit("auth", { ok: true }); }
@@ -117,7 +126,7 @@ export class LinkBase extends EventTarget {
 
   async writeFrame(frame) {
     if (!this.connected) throw new Error("not connected");
-    if (this.verbose && frame[2] !== 0xb0 && frame[2] !== 0xd0) this.log(`tx ${hex(frame, " ")}`);
+    if (this.verbose && frame[2] !== 0xb0 && frame[2] !== 0xd0 && frame[2] !== 0x57) this.log(`tx ${hex(frame, " ")}`);
     try {
       for (let i = 0; i < frame.length; i += this.chunk) await this.rawWrite(frame.slice(i, i + this.chunk));
     } catch (e) {
@@ -170,6 +179,7 @@ export class LinkBase extends EventTarget {
     this.connected = false;
     this.authed = false;
     this.status = null;
+    this.boot = null;
     for (const w of this.waiters.splice(0)) w.resolve(null);
     this.emit("state", { connected: false });
   }
@@ -196,6 +206,7 @@ export class WebLink extends LinkBase {
     this.id = d.id;
     this.emit("state", { connecting: true });
     const server = await d.gatt.connect();
+    if (this.retired) throw new Error("this link was replaced by a new connection");
     const svc = await server.getPrimaryService(SVC);
     const chars = await svc.getCharacteristics();
     const short = c => { const u = String(c.uuid).toLowerCase(); return u.length > 8 ? u.slice(4, 8) : u.padStart(4, "0").slice(-4); }; // Bluefy gives "fff1", others the full UUID
@@ -205,6 +216,8 @@ export class WebLink extends LinkBase {
     this.log(`service has ${chars.length} characteristic(s); using ${this.chr.uuid} (properties: ${props})`);
     this.rawCount = 0;
     this.chr.addEventListener("characteristicvaluechanged", e => {
+      // The browser can hand the same characteristic object to a later link. Only the current link reads it.
+      if (this.retired || e.target !== this.chr) return;
       const v = e.target.value;
       this.rawCount++;
       const bytes = v && v.buffer ? new Uint8Array(v.buffer, v.byteOffset, v.byteLength) : new Uint8Array(v || []);
@@ -228,5 +241,15 @@ export class WebLink extends LinkBase {
     else await c.writeValue(part);
   }
 
-  close() { if (this.device && this.device.gatt.connected) this.device.gatt.disconnect(); }
+  // A retired link shares the device with the new link, so it must not disconnect it.
+  close() { if (!this.retired && this.device && this.device.gatt.connected) this.device.gatt.disconnect(); }
+
+  // A new connection replaces this link: it stops reading notifications and disconnect events,
+  // and a reconnect that is still running fails. (Only for a link that is not connected.)
+  retire() {
+    this.retired = true;
+    if (this.device) this.device.removeEventListener("gattserverdisconnected", this.onDisc);
+    this.connected = false;
+    for (const w of this.waiters.splice(0)) w.resolve(null);
+  }
 }

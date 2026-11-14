@@ -14,6 +14,7 @@ export const S = {
   link: null,
   mock: false,
   status: null,              // last status payload
+  boot: null,                // last bootloader status (module in boot mode), else null
   hwType: pref("hwType", 6), // the runtime sends 0 in byte 0; the vendor gets the type from its server
   prefs: {
     allowDrive: pref("allowDrive", false),       // motor off, ESP off, service mode, raw CAN send
@@ -157,6 +158,7 @@ function wireLink(link) {
   link.on("log", d => log(d.msg, d.cls));
   link.on("status", p => {
     S.status = p;
+    S.boot = null;
     // A status read before the password has bytes 18-39 = 0 (runtime V1.0.00).
     let blank = p.length >= 40;
     for (let i = 18; i < 40 && blank; i++) if (p[i] !== 0) blank = false;
@@ -165,11 +167,22 @@ function wireLink(link) {
     updateChip();
     if (blank && !link.authed) askPassword("asked");
   });
+  // Boot mode: the bootloader answers A0 with its own short status. Only the firmware page can use the module then.
+  link.on("boot", p => {
+    S.status = null;
+    S.boot = p;
+    bus.dispatchEvent(new CustomEvent("boot", { detail: { link, payload: p } }));
+    updateChip();
+    if (PAGES.firmware && !stack.some(x => x.id === "firmware")) {
+      toast(L("The module is in boot mode. Flash a runtime.", "模块处于升级模式，请刷写运行固件。"), "warn", 3500);
+      go("firmware");
+    }
+  });
   link.on("password", () => { updateChip(); askPassword("asked"); });
   link.on("auth", () => updateChip());
   link.on("frame", fr => bus.dispatchEvent(new CustomEvent("frame", { detail: fr })));
   link.on("state", st => {
-    if (!st.connected) { S.status = null; }
+    if (!st.connected) { S.status = null; S.boot = null; }
     bus.dispatchEvent(new CustomEvent("conn", { detail: st }));
     renderTop();
   });
@@ -178,7 +191,7 @@ function wireLink(link) {
 export async function connect({ all = false } = {}) {
   if (S.link && S.link.connected) return;
   const link = S.mock ? S.link : new WebLink();
-  if (!S.mock) { S.link = link; wireLink(link); }
+  if (!S.mock) { if (S.link && S.link.retire) S.link.retire(); S.link = link; wireLink(link); }
   try {
     await link.open({ all });
     const st = await link.readStatus();
@@ -186,7 +199,7 @@ export async function connect({ all = false } = {}) {
       log("no status reply after connect: the module sent nothing back", "bad");
       toast(L("The module does not answer. See Tools > Log and capture.", "模块无应答，请查看「工具 > 日志与抓包」"), "bad", 4000);
     }
-    if (S.prefs.autoGauge && S.hwType && !S.blank) go("gauge");
+    if (S.prefs.autoGauge && S.hwType && !S.blank && !link.boot) go("gauge");
   } catch (e) {
     if (e && e.name === "NotFoundError") return; // user closed the chooser
     log(`connect failed: ${e.name || ""} ${e.message}`, "bad");
@@ -263,6 +276,7 @@ window.addEventListener("popstate", () => { if (stack.length > 1) back(); });
 function chipState() {
   const link = S.link;
   const on = !!(link && link.connected);
+  if (on && link.boot) return { text: L("Boot mode", "升级模式"), dot: "dot warn" };
   return { text: !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name, dot: "dot" + (on ? (link.authed ? " on" : " warn") : "") };
 }
 // Status and auth frames change only the chip. Rebuilding the whole bar on each frame lost focus and taps.
@@ -317,6 +331,8 @@ export async function start({ mock = false, MockLink } = {}) {
     document.body.classList.add("is-mock");
   }
   if (!S.mock && !WebLink.available()) log("Web Bluetooth is not available in this browser", "warn");
+  // #firmware opens the firmware page over Tools. (#flash still goes to flash.html, see index.html.)
+  if (location.hash === "#firmware" && PAGES.firmware) { switchTab("tools"); go("firmware"); return; }
   switchTab({ "#settings": "settings", "#tools": "tools", "#me": "me", "#device": "me" }[location.hash] || "status");
 }
 
