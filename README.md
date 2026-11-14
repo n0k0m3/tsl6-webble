@@ -3,7 +3,7 @@
 A Web Bluetooth app for the TSL6 (Feifan Commander 6th gen) autopilot module. It replaces the vendor WeChat Mini App, makes no network calls, and can flash or recover the module firmware.
 
 **Live app:** https://tsl6-app.surge.sh/
-(The old recovery address, https://tsl6-recovery.surge.sh/, redirects to the flasher, `flash.html#flash`.)
+(The old recovery address, https://tsl6-recovery.surge.sh/, redirects to `/#flash`, which opens the Firmware page. Old `flash.html` links also land there.)
 
 > Use at your own risk. This project is not affiliated with the module maker, its resellers, or Tesla. Work only while the car is parked.
 
@@ -22,9 +22,8 @@ The app has the functions of the vendor Mini App, in its own layout. The labels 
 | Tools > **Battery** | Pack, cell and DC-DC values (`D0`) |
 | Tools > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
 | Tools | Log and capture, change password, firmware flasher, restore defaults, BLE host pairing, CAN debug, Tesla service mode |
-| **Device** | Connect through the browser's device chooser, BLE password, bytes per write. Module ID, MAC, VIN, versions, restart, preferences |
-| Tools > **Firmware** (`#firmware`) | Restarts the module into boot mode and flashes a runtime in one step, on the app's own connection. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). When the app connects to a module in boot mode, it opens this page by itself. Not yet tested on the car |
-| **Standalone flasher** (`flash.html`) | The earlier flasher page, proven on the car. It makes its own connection. `#flash` and the old recovery address open it until the Firmware page passes a car flash |
+| **Device** | Connect through the browser's device chooser, BLE password, bytes per write. Module ID, MAC, VIN, versions, restart, flash firmware, preferences |
+| Tools > **Firmware**, Device > **Flash firmware** (`#firmware`, `#flash`) | Restarts the module into boot mode and flashes a runtime in one step, on the app's own connection. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). When the app connects to a module in boot mode, it opens this page by itself. Tested on the car (2026-11-14) |
 
 Safety rules in the app:
 - It never sends the vendor server commands `AD`, `AE` and `AF`.
@@ -73,7 +72,7 @@ The page checks every image:
 
 ## Flash a working module
 
-1. Open **Tools > Firmware** (or the standalone flasher, `flash.html`). Tap **Connect** and pick `TSL6`. The page reads the status.
+1. Open **Tools > Firmware** (or **Device > Flash firmware**). Tap **Connect** and pick `TSL6`. The page reads the status.
 2. Tap **Load secured build**. It must show **Image OK**.
 3. Tick the confirm box. Tap **Enter boot mode and flash**.
 
@@ -91,7 +90,7 @@ After a failed OTA, the module advertises as `TSL6-BOOT`. The vendor Mini App fl
 One known cause: for some module IDs, the vendor update server (`iffrc.com/ffkj/user/ble.php`, `fun=update`) replies `success: true` but sends 10 pages of the byte `0x31` ("1111…") instead of firmware. The bootloader writes this filler to the app slot and jumps to it. The app crashes, and the module returns to the bootloader.
 
 To recover:
-1. Open https://tsl6-app.surge.sh/#flash.
+1. Open https://tsl6-app.surge.sh/#flash. (Or open the app and connect: a module in boot mode opens the Firmware page by itself.)
 2. Tap **Connect** and pick `TSL6-BOOT`. The page reads the status and fills in the module ID.
 3. Tap **Load secured build**. It must show **Image OK**.
 4. Tick the confirm box. Tap **Flash runtime** (under "Module already in boot mode").
@@ -160,7 +159,7 @@ To test the Firmware page without a module, open the app with `?mock`. The mock 
 ## Deploy
 
 ```sh
-# App and flasher. Put runtime-nokey.bin (the secured build) next to flash.html first.
+# App with the Firmware page. Put runtime-nokey.bin (the secured build) next to index.html first.
 surge public tsl6-app.surge.sh
 # Redirect for the old recovery address
 surge redirect tsl6-recovery.surge.sh
@@ -168,7 +167,7 @@ surge redirect tsl6-recovery.surge.sh
 
 ## Notes for browsers
 
-- Bluefy gives short characteristic UUIDs (`FFF1`, `FFF2`) and lists `FFF2` first. Both pages pick `FFF1` for receive and send.
+- Bluefy gives short characteristic UUIDs (`FFF1`, `FFF2`) and lists `FFF2` first. The app picks `FFF1` for receive and send.
 - iPhone browsers do not save downloads. **Back up** and **Download** open the share sheet, or show the text with a **Copy** button. **Restore** takes a file or pasted text.
 - iOS shares one BLE link between apps. While one app is logged in, another app on the same phone (also the vendor Mini App) uses that link without the password. Disconnect before you switch apps.
 - The page cannot read the BLE MTU. Bytes per write default to 180 on Apple and 240 elsewhere, and drop to 20 by themselves if large writes fail.
