@@ -94,6 +94,8 @@ async function startAuto() {
   const link = S.link;
   if (!link || !inRuntime(link.status) || !F.image || !F.image.pages) return;
   F.armed = true; F.armedUntil = Date.now() + ARMED_MS; F.restarting = false;
+  // flash.html disarmed on the next connect after the expiry. Here a timer does it, so the button comes back.
+  setTimeout(() => { if (F.armed && Date.now() > F.armedUntil) { F.armed = false; F.restarting = false; log("armed flash expired", "warn"); changed(); } }, ARMED_MS + 100);
   F.modId = "";
   F.busy = true; changed();
   try {
@@ -107,7 +109,7 @@ async function startAuto() {
     close: () => { if (S.link === link) link.close(); }, // never close a link that a manual Connect replaced
     log, sleep,
     // As in flash.html, only a status after the drop (a reconnect) can say that the boot window passed.
-    onDropped: () => { F.restarting = !link.connected; F.busy = false; changed(); },
+    onDropped: () => { F.restarting = F.restarting || !link.connected; F.busy = false; changed(); },
   });
   if (F.armed && !ok && S.link === link) say("Tap Connect now and pick TSL6-BOOT. The flash starts by itself.", "请立即点“连接”并选择 TSL6-BOOT，刷写会自动开始。", "warn");
   changed();
@@ -127,7 +129,8 @@ onBus("status", p => {
   }
   changed();
 });
-onBus("conn", () => changed());
+// A drop after the arming is the restart (it can come later than the 3 s wait in reconnectFast).
+onBus("conn", st => { if (F.armed && st && st.connected === false) F.restarting = true; changed(); });
 
 // ---------------------------------------------------------------- page
 function loadCss() {
