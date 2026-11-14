@@ -15,6 +15,7 @@ function initialStatus() {
   p[3] = 0x01 | (4 << 4);                          // runtime running, Tesla model 4 (Model Y)
   for (let i = 0; i < 12; i++) p[4 + i] = 0xa0 + i; // synthetic module ID
   p[16] = p[4]; p[17] = p[5];
+  p[18] = 0x0c;                                    // charge port open, driver massage on (as in the owner capture)
   p[22] = 1;                                       // make 1 = Tesla
   p[23] = 0b011;                                   // CAN1 and CAN2 connected
   p.set([0x00, 0x00, 0x03, 0x11, 0x11, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00], 24);
