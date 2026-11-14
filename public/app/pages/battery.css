@@ -3,7 +3,7 @@
 .bat { --bat-max: var(--warn); --bat-min: var(--accent-text); --bat-avg: var(--ok); --bat-dim: var(--muted); }
 .bat .seg { margin-top: 4px; }
 .bat .seg button { white-space: nowrap; }
-.bat .sub-note { color: var(--muted); font-size: 13px; margin: 0 4px 12px; }
+.bat .sub-note { color: var(--muted); font-size: 13px; margin: 0 2px 12px; }
 .bat-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px 12px; margin: 0 0 16px; }
 .bat-head { min-height: 28px; font: 700 20px/1.2 var(--font-head); }
 .bat-head.center { display: flex; justify-content: center; align-items: center; color: var(--bat-dim); }

@@ -9,6 +9,8 @@ import {
 } from "../../lib/tsl6-status.js";
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
+// Display names that say what the switch does (the codec keeps the vendor names for its tests).
+const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" }, vehicleAPState: { en: "Autopilot", zh: "车辆AP" } };
 
 // Switch rows by section. Icons are Lucide names.
 const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
@@ -104,7 +106,7 @@ definePage("status", () => {
   function switchItem([id, ico]) {
     const r = ROW_BY_ID[id];
     if (!shown(r)) return null;
-    const label = { en: r.en, zh: r.zh };
+    const label = NAME[id] || { en: r.en, zh: r.zh };
     const sw = toggle({ checked: null, label: L(label), onchange: v => onSwitch(r, v) });
     sw.dataset.id = `sw-${id}`;
     const tone = TONE[id] || "";
@@ -119,7 +121,7 @@ definePage("status", () => {
     onclick: () => showHelp(help, name) }, h("div", { class: "li-title" }, h("span", null, name)), sub || null);
   // Help for a switch group: every shown row with its help text.
   const groupHelp = (en, zh, rows, extra = []) => groupHelpButton({ en, zh },
-    [...extra, ...rows.map(([id]) => ROW_BY_ID[id]).filter(shown).map(r => [L(r.en, r.zh), r.help])]);
+    [...extra, ...rows.map(([id]) => ROW_BY_ID[id]).filter(shown).map(r => [L(NAME[r.id] || { en: r.en, zh: r.zh }), r.help])]);
   const listCard = (items, cls = "") => h("div", { class: "card " + cls }, items.filter(Boolean));
 
   function emptyState() {
@@ -191,29 +193,31 @@ definePage("status", () => {
           apSw)),
       listCard(ASSIST.map(switchItem))));
 
-    el.append(grp(sec("Lights", "灯光", groupHelp("Lights", "灯光", LIGHTS)), listCard(LIGHTS.map(switchItem))));
-    el.append(grp(sec("Comfort and charging", "舒适与充电", groupHelp("Comfort and charging", "舒适与充电", COMFORT)), listCard(COMFORT.map(switchItem))));
+    const lightsGrp = grp(sec("Lights", "灯光", groupHelp("Lights", "灯光", LIGHTS)), listCard(LIGHTS.map(switchItem)));
+    const comfortGrp = grp(sec("Comfort and charging", "舒适与充电", groupHelp("Comfort and charging", "舒适与充电", COMFORT)), listCard(COMFORT.map(switchItem)));
 
     // Doors and access
     const doorRow = ROW_BY_ID.openDoor, ctl = ROW_BY_ID.control;
     const tapBtn = (r, b) => {
       const [en, zh] = DOOR_LABEL[b.btn] || [b.en, b.info || b.en];
-      return h("button", { class: "act", type: "button", "data-id": `tap-${b.btn}`, onclick: () => onTap(r, b) }, icon(DOOR_ICON[b.btn] || "circle-dot", 22), h("span", null, L(en, zh)));
+      return h("button", { class: "act", type: "button", "data-id": `tap-${b.btn}`, onclick: () => onTap(r, b) }, icon(DOOR_ICON[b.btn] || "circle-dot", 26), h("span", null, L(en, zh)));
     };
     const ctlButtons = ctl && shown(ctl) ? ctl.buttons.filter(b => (!b.types || b.types.includes(S.hwType)) && !b.vendorGate) : [];
     // One plan-view grid: doors at the four corners, frunk and trunk on the centre line (CSS places each button).
     const taps = [...(shown(doorRow) ? doorRow.buttons.map(b => tapBtn(doorRow, b)) : []), ...ctlButtons.map(b => tapBtn(ctl, b))];
     if (taps.length) el.append(grp(sec("Doors and access", "车门与开启", helpButton(doorRow.help, { en: doorRow.en, zh: doorRow.zh })),
       h("div", { class: "card" }, h("div", { class: "acts plan" }, taps))));
+    // Doors come right after driver assist (the car actions people use most), then the switch groups.
+    el.append(lightsGrp, comfortGrp);
 
     // Seats
     const seatBlock = (moveId, memId, en, zh) => {
       const mv = ROW_BY_ID[moveId], mem = ROW_BY_ID[memId];
       if (!shown(mv) && !shown(mem)) return null;
       return h("div", { class: "seat" },
-        h("div", { class: "subhead" }, h("span", null, L(en, zh)), shown(mv) ? helpButton(mv.help, { en: mv.en, zh: mv.zh }) : null),
+        h("div", { class: "subhead" }, h("span", null, L(en, zh))),
         h("div", { class: "acts seatgrid" },
-          shown(mv) ? mv.buttons.map(b => hold(0xa7, b.btn, A7_RELEASE, icon(ARROW[b.icon], 22), L(b.en))) : null,
+          shown(mv) ? mv.buttons.map(b => hold(0xa7, b.btn, A7_RELEASE, icon(ARROW[b.icon], 26), L(b.en))) : null,
           shown(mem) ? (() => {
             const memBtn = b => {
               const lab = MEM_LABEL[b.icon];
@@ -227,7 +231,10 @@ definePage("status", () => {
           })() : null));
     };
     const seats = [seatBlock("driverSeat", "driverMemory", "Driver", "主驾"), seatBlock("passengerSeat", "passengerMemory", "Passenger", "副驾")].filter(Boolean);
-    if (seats.length) el.append(grp(sec("Seats", "座椅", helpButton("help_sideMemory", { en: "Seat memory", zh: "座椅记忆" })),
+    const seatHelp = groupHelpButton({ en: "Seats", zh: "座椅" }, [
+      ...["driverSeat", "passengerSeat"].map(id => ROW_BY_ID[id]).filter(shown).map(r => [L(r.en, r.zh), r.help]),
+      [L("Seat memory", "座椅记忆"), "help_sideMemory"]]);
+    if (seats.length) el.append(grp(sec("Seats", "座椅", seatHelp),
       h("div", { class: "card" }, seats), h("p", { class: "sec-foot" }, L("Hold an arrow to move. Tap a memory to recall it, hold it to save.",
         "按住箭头移动。点击记忆位置恢复，长按保存。"))));
 

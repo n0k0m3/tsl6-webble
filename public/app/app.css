@@ -42,7 +42,7 @@
     --off: #788395; --btn: #1d232b; --btn-b: #667081; --btn-hover: #232a33;
     --sw-track: #343d49; --sw-knob: #c9d0da; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
     --hl-g: #6ee7a0; --hl-o: #fcd34d; --hl-r: #fca5a5;
-    --cl-bg: #1f2731; --cl-line: #364354;
+    --cl-bg: #0b0e12; --cl-line: #3d4858;
     --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
     color-scheme: dark;
   }
@@ -55,7 +55,7 @@
   --off: #788395; --btn: #1d232b; --btn-b: #667081; --btn-hover: #232a33;
   --sw-track: #343d49; --sw-knob: #c9d0da; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
   --hl-g: #6ee7a0; --hl-o: #fcd34d; --hl-r: #fca5a5;
-  --cl-bg: #1f2731; --cl-line: #364354;
+  --cl-bg: #0b0e12; --cl-line: #3d4858;
   --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
   color-scheme: dark;
 }
@@ -96,7 +96,7 @@ input, textarea, pre.log, pre.log * { -webkit-user-select: text; user-select: te
 .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--tt-off); flex: none; }
 .dot.on { background: var(--ok); border-color: var(--ok); }
 .dot.warn { background: var(--warn); border-color: var(--warn); }
-#page { max-width: 720px; margin: 0 auto; padding: 0 16px calc(var(--tab-h) + 32px + env(safe-area-inset-bottom)); }
+#page { max-width: 720px; margin: 0 auto; padding: 8px 16px calc(var(--tab-h) + 32px + env(safe-area-inset-bottom)); }
 .lg-title { margin: 2px 0 18px; font: 700 32px/1.1 var(--font-head); letter-spacing: -.005em; }
 #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; height: calc(var(--tab-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom); background: var(--card);
@@ -174,7 +174,7 @@ button.li:disabled { cursor: progress; }
 .li-trail .val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* a value that differs from the factory default: ink, semibold, with a blue mark */
 .li-trail .val.changed { color: var(--fg); font-weight: 600; }
-.li-trail .val.changed::before, .legend-dot { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 8px 2px 0; border-radius: 50%; background: var(--accent-ui); vertical-align: middle; }
+.li-trail .val.changed::before, .legend-dot { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 8px 2px 0; border-radius: 50%; background: var(--fg); vertical-align: middle; }
 .chev { color: var(--faint); display: inline-grid; }
 .li.sub { padding-left: 46px; min-height: 48px; }
 .li.sub .li-title { font-size: 15px; color: var(--muted); }
@@ -269,7 +269,7 @@ button.li:disabled { cursor: progress; }
 .empty-state .check { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--muted); cursor: pointer; }
 .empty-state .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .linkbtn { background: none; border: 0; color: var(--accent-text); font-weight: 600; font-size: 14px; cursor: pointer; padding: 8px; }
-.steps { margin: 0; padding: 0 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.steps { margin: 0; padding: 0 0 0 20px; color: var(--muted); font-size: 15px; line-height: 1.55; }
 .steps li::marker { color: var(--fg); font-weight: 600; }
 
 /* ---------------------------------------------------------------- controls */
@@ -358,7 +358,7 @@ input.text:focus { outline: 2px solid var(--accent-ui); outline-offset: 0; borde
 .dlg-text { margin: 4px 0; text-align: left; white-space: pre-line; color: var(--muted); font-size: 16px; }
 .dlg-input { width: 100%; margin-top: 12px; padding: 12px; border: 1px solid var(--btn-b); border-radius: var(--r-sm); background: var(--bg); font: 600 24px var(--font); text-align: center; letter-spacing: .4em; }
 .dlg-input:focus { outline: 2px solid var(--accent-ui); outline-offset: 0; border-color: var(--accent-ui); }
-.dlg-btns { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line-2); }
+.dlg-btns { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid var(--line-2); }
 .dlg-btn { min-height: 42px; padding: 8px 18px; background: var(--btn); border: 1px solid var(--btn-b); border-radius: var(--r-sm); font-size: 16px; font-weight: 600; cursor: pointer; color: var(--fg); }
 .dlg-btn:hover { background: var(--btn-hover); }
 .dlg-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -508,3 +508,26 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .tpick.unknown svg:first-child { color: var(--warn); }
 /* sub-pages on a phone: the link chip shows only its lamp, so the page title has room */
 @media (max-width: 559px) { .conn-chip.compact { width: 40px; padding: 0; justify-content: center; } .conn-chip.compact span:last-child { display: none; } }
+/* round 3 (council) */
+/* compact link chip on sub-pages: a bare lamp, not an empty button */
+.conn-chip.compact { border-color: transparent; background: none; }
+/* section help marks sit back */
+.sec-label .help-btn svg { width: 16px; height: 16px; }
+/* seat arrows: a direction needs a compact key, not a tile */
+.acts.seatgrid .act.hold { min-height: 48px; }
+/* dependent rows: label and value on one size */
+.li.sub .li-trail { font-size: 15px; }
+/* the desktop sidebar shows the brand only; the header chip shows the link */
+.side-brand .mark { display: none !important; }
+/* settings: the master switch is the lead card of the page */
+.card.lead > .li { min-height: 72px; padding: 14px 16px; }
+.card.lead > .li .li-title { font: 700 21px/1.2 var(--font-head); }
+.card.lead > .li .chip { width: 28px; height: 28px; }
+/* settings search */
+.set-search { position: relative; margin: 0 0 6px; }
+.set-search svg { position: absolute; left: 12px; top: 50%; margin-top: -9px; color: var(--faint); pointer-events: none; }
+.set-search input { width: 100%; min-height: 44px; padding: 10px 12px 10px 38px; border: 1px solid var(--btn-b); border-radius: var(--r-md); background: var(--card); color: var(--fg); font-size: 16px; }
+.set-search input:focus { outline: 2px solid var(--accent-ui); outline-offset: 0; border-color: var(--accent-ui); }
+.set-none { padding: 18px 2px; color: var(--muted); }
+@media (min-width: 1180px) { .page.cols > .set-search { margin-bottom: 10px; } .page.cols > .legend { margin-bottom: 18px; } }
+.page.cols > .card.lead.master { break-inside: avoid; display: inline-block; width: 100%; }

@@ -208,7 +208,8 @@ export async function chooseOption({ title, options, value, help }) {
       i = Math.min(options.length - 1, Math.max(0, n));
       range.value = String(i);
       val.textContent = plainLabel(options[i][1]);
-      def.textContent = isDefault(options[i][1]) ? L("Default", "默认") : "";
+      const d = options.find(([, t]) => isDefault(t));
+      def.textContent = isDefault(options[i][1]) ? L("Default", "默认") : d ? L(`Default: ${plainLabel(d[1])}`, `默认：${plainLabel(d[1])}`) : "";
       range.setAttribute("aria-valuetext", val.textContent);
       range.style.setProperty("--fill", `${(i / (options.length - 1)) * 100}%`);
       minus.disabled = i === 0; plus.disabled = i === options.length - 1;

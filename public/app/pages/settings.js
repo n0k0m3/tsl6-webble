@@ -29,6 +29,13 @@ const HELP_ON_SET = new Set(["apAutoOpenType", "stoppingMode", "steerAssistanceL
 definePage("settings", () => {
   const el = h("div", { class: "page", "data-page": "settings" });
   let busy = false;
+  // Search: the field lives across renders, so typing is not lost when a status frame comes in.
+  let query = "";
+  const searchInput = h("input", { type: "search", placeholder: L("Search settings", "搜索设置"), "aria-label": L("Search settings", "搜索设置"), "data-id": "set-search",
+    autocomplete: "off", enterkeyhint: "search" });
+  searchInput.addEventListener("input", () => { query = searchInput.value.trim().toLowerCase(); render(); });
+  const searchBox = h("div", { class: "set-search span" }, icon("search", 18), searchInput);
+  const matches = id => !query || L(label(id)).toLowerCase().includes(query);
 
   const label = id => ({ en: BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
   function options(id, vals) {
@@ -113,6 +120,7 @@ definePage("settings", () => {
   function group(title, rows, vals, foot) {
     const items = [];
     for (const [id, subId] of rows) {
+      if (!matches(id) && !(subId && matches(subId))) continue;
       const it = item(id, vals);
       if (!it) continue;
       items.push(it);
@@ -123,6 +131,7 @@ definePage("settings", () => {
   }
 
   function render() {
+    const hadFocus = document.activeElement === searchInput;
     clear(el);
     const link = S.link, p = S.status;
     el.className = "page" + (link && link.connected && p && !S.blank ? " cols" : " narrow");
@@ -141,7 +150,7 @@ definePage("settings", () => {
     const moduleOff = vals.mianSwitch === 1;
 
     // Master switch first. While the module is off, the vendor app hides every other row.
-    el.append(h("div", { class: "card span master" }, (() => {
+    el.append(h("div", { class: "card lead master" }, (() => {
       const f = "mianSwitch";
       return h("button", { class: "li first", type: "button", "data-id": "set-mianSwitch", disabled: busy, onclick: () => pick(f, vals, "help_mianSwitch") },
         h("span", { class: "chip" + (moduleOff ? "" : " on") }, icon("power", 24)),
@@ -153,7 +162,18 @@ definePage("settings", () => {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
     }
+    // The legend shows only when a row carries the changed dot.
+    const shownIds = [...GROUPS.flatMap(g => g.rows.flat().filter(Boolean)), ...(S.prefs.lab ? LAB : [])];
+    const anyChanged = shownIds.some(id => BY_ID[id] && vals[id] !== undefined && appliesTo(BY_ID[id], S.hwType) && changed(id, vals));
+    el.insertBefore(searchBox, el.firstChild);
+    if (anyChanged) searchBox.after(h("p", { class: "legend span" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置")));
+    if (hadFocus) searchInput.focus();
+    const groupsBefore = el.childElementCount;
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
+    if (query) {
+      if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
+      return;
+    }
 
     // Lab: a local switch. The vendor app asks for a code from its server here.
     const labItem = h("button", { class: "li first", type: "button", "data-id": "set-lab", onclick: async () => {
@@ -172,11 +192,7 @@ definePage("settings", () => {
     h("div", { class: "li-trail" }, h("span", { class: "val" }, S.prefs.lab ? L("On", "开启") : L("Off", "关闭")), h("span", { class: "chev" }, icon("chevron-right", 18))));
     const labRows = S.prefs.lab ? LAB.map(id => item(id, vals)).filter(Boolean) : [];
     el.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L("Lab", "实验室")), h("div", { class: "card" }, labItem, labRows)));
-    // The legend shows only when a row carries the changed dot.
-    const shownIds = [...GROUPS.flatMap(g => g.rows.flat().filter(Boolean)), ...(S.prefs.lab ? LAB : [])];
-    const anyChanged = shownIds.some(id => BY_ID[id] && vals[id] !== undefined && appliesTo(BY_ID[id], S.hwType) && changed(id, vals));
-    el.append(h("p", { class: "foot span" }, anyChanged ? [h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default. ", "已改动的设置。")] : null,
-      L("Each change saves to the module at once.", "每项修改会立即保存到模块。")));
+    el.append(h("p", { class: "foot span" }, L("Each change saves to the module at once.", "每项修改会立即保存到模块。")));
   }
 
   const offs = [];

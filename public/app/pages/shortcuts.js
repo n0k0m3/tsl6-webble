@@ -120,12 +120,12 @@ definePage("shortcuts", () => {
       () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令"), unknown: !isDraft && !!r.trigger && !fnKnown(list.btn, r.trigger) });
     const delBtn = h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20));
     const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") },
-      h("span", { class: "sc-tag" }, h("span", { class: "sc-num" }, `#${i + 1}`), L("When", "当")), trig, delBtn);
+      h("span", { class: "sc-num" }, String(i + 1)), h("span", { class: "sc-tag" }, L("When", "当")), trig, delBtn);
     if (isDraft) {
       c.append(h("p", { class: "sc-draft-note" }, L("Not saved. Select a trigger to save this row.", "未保存。选择快捷指令后保存。")));
       return c;
     }
-    c.append(h("span", { class: "sc-tag" }, L("Then", "则")),
+    c.append(h("span", { class: "sc-tag sc-then" }, L("Then", "则")),
       pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作"), unknown: !!r.action && !fnKnown(list.fun, r.action) }),
       h("button", { class: "ibtn flat sc-try", type: "button", disabled: busy || !r.action, "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"),
         onclick: () => tryAction(r.action) }, icon("play", 18)));
@@ -139,7 +139,7 @@ definePage("shortcuts", () => {
     const ready = !!table && linkState() === "ok";
     const hasFun = list.fun.length > 0;
     el.append(h("section", { class: "card tbl-toolbar" },
-      h("span", { class: "tbl-count" }, table ? L(`${rows.length} of ${SHORTCUT_SLOTS}`, `${rows.length} / ${SHORTCUT_SLOTS}`) : ""),
+      h("span", { class: "tbl-count" }, table ? L(`${rows.length} rules, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : ""),
       h("div", { class: "tools" },
         helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" }),
         hasFun ? h("button", { class: "btn small primary", type: "button", disabled: !ready || busy || draft, onclick: add }, icon("plus", 18), h("span", null, L("Add", "添加"))) : null)));

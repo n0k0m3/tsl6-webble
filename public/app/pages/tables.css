@@ -31,9 +31,14 @@
 .link-btn:disabled { opacity: .4; cursor: not-allowed; }
 
 /* shortcuts: one joined list. Each entry reads "When <trigger> / Then <action>". */
-.sc-card { padding: 10px 6px 10px 12px; display: grid; grid-template-columns: 3.4em minmax(0, 1fr) 44px; column-gap: 6px; row-gap: 6px; align-items: center; margin: 0; border-radius: 0; border-bottom-width: 0; }
-.sc-card > .sc-tag { width: auto; display: flex; flex-direction: column; line-height: 1.15; }
-.sc-tag .sc-num { font: 600 12.5px var(--font); color: var(--faint); min-width: 0; text-align: left; }
+.sc-card { padding: 10px 6px 10px 8px; display: grid; grid-template-columns: 22px 2.9em minmax(0, 1fr) 44px; column-gap: 6px; row-gap: 6px; align-items: center; margin: 0; border-radius: 0; border-bottom-width: 0; }
+.sc-card > .sc-tag { width: auto; }
+.sc-card > .sc-then { grid-column: 2; }
+.sc-card > .sc-num { align-self: center; font: 600 12.5px var(--font); color: var(--faint); min-width: 0; text-align: left; }
+/* a picker in a rule reads as list text: a light edge at rest, the full edge on hover and focus */
+.sc-card .tpick { border-color: var(--line); }
+.sc-card .tpick:hover, .sc-card .tpick:focus-visible { border-color: var(--btn-b); }
+.sc-card .tpick.unknown { border-color: color-mix(in srgb, var(--warn) 60%, var(--btn-b)); }
 .sc-card > .ibtn.flat { width: 44px; height: 44px; justify-self: center; }
 .sc-card > .sc-try { color: var(--accent-text); }
 .sc-card > .sc-try:hover { color: var(--accent-text); background: var(--accent-soft); }

@@ -59,7 +59,7 @@ definePage("battery", () => {
     cellMax: "cells", cellMin: "cells", cellDelta: "cells",
     charged: "life", discharged: "life", odo: "life",
   };
-  const GROUP_NAME = { pack: ["Pack", "电池包"], energy: ["Charge and range", "电量与里程"], cells: ["Cells", "单体"], life: ["Lifetime", "累计"] };
+  const GROUP_NAME = { pack: ["Pack", "电池包"], energy: ["Charge and range", "电量与里程"], cells: ["Cell voltage", "单体电压"], life: ["Lifetime", "累计"] };
   const ORDER = ["energy", "pack", "cells", "life"];
 
   // Value rows, keyed by id. Texts change in place so that a tap on the capacity value is not lost.
