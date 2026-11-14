@@ -1,4 +1,5 @@
 // Small DOM toolkit for the app. All text goes in as text nodes (no innerHTML with data).
+import { ICONS } from "./icons.js";
 
 // ---------------------------------------------------------------- language
 const LANG_KEY = "tsl6.lang";
@@ -42,48 +43,26 @@ function append(el, kids) {
 }
 export const clear = el => { while (el.firstChild) el.firstChild.remove(); return el; };
 
-// ---------------------------------------------------------------- icons (inline SVG, stroke = currentColor)
-const P = {
-  status: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 3 2.5 3h-5L12 6Zm0 12-2.5-3h5L12 18Zm-6-6 3-2.5v5L6 12Zm12 0-3 2.5v-5L18 12Z",
-  ble: "M7 7l10 10-5 4V3l5 4L7 17",
-  gear: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2.1-1.6Z",
-  me: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c0-3.9 3.1-6 7-6s7 2.1 7 6",
-  help: "M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01",
-  back: "M15 5l-7 7 7 7",
-  left: "M15 6l-6 6 6 6", right: "M9 6l6 6-6 6", up: "M6 15l6-6 6 6", down: "M6 9l6 6 6-6",
-  ok: "M5 12.5l4.5 4.5L19 7",
-  more: "M6 12h.01M12 12h.01M18 12h.01",
-  trash: "M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10 11v5M14 11v5",
-  plus: "M12 5v14M5 12h14",
-  link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
-  camp: "M3 19l9-14 9 14H3Zm9-14v14m-3 0 3-5 3 5",
-  queen: "M4 15c3 0 4-5 8-5s4 3 8 3M6 15l-1 4M17 13l1 6M9 8a2 2 0 1 0 0-.01",
-  doorFL: "M8 4h7l3 4v11a1 1 0 0 1-1 1H8V4Zm0 0L5 7v10l3 3M14 13h2",
-  doorFR: "M16 4H9L6 8v11a1 1 0 0 0 1 1h9V4Zm0 0 3 3v10l-3 3M8 13h2",
-  doorRL: "M8 4h9a1 1 0 0 1 1 1v15H8V4Zm0 0L5 8v8l3 4M14 12h2",
-  doorRR: "M16 4H7a1 1 0 0 0-1 1v15h10V4Zm0 0 3 4v8l-3 4M8 12h2",
-  frunk: "M4 15l2-6h12l2 6v3H4v-3Zm2-6 1-3h10l1 3M7 15h2m6 0h2",
-  trunk: "M4 9h16v9H4V9Zm2 0 2-4h8l2 4m-8 3v3",
-  glove: "M4 7h16v11H4V7Zm0 4h16M10 14h4",
-  mirror: "M5 8c0-2 2-3 4-3h6c2 0 4 1 4 3v5c0 2-2 3-4 3H9c-2 0-4-1-4-3V8Zm7 8v4",
-  unlock: "M7 11V8a5 5 0 0 1 9.6-2M5 11h14v9H5v-9Zm7 3v3",
-  lock: "M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5v-9Zm7 3v3",
-  power: "M12 3v8M7 6a7 7 0 1 0 10 0",
-  battery: "M4 8h14v8H4V8Zm14 3h2v2h-2M7 11h5",
-  gauge: "M4 16a8 8 0 1 1 16 0M12 16l4-5M8 16h.01M16 16h.01",
-  log: "M6 4h12v16H6V4Zm3 4h6M9 12h6M9 16h4",
-  flash: "M13 3 5 14h6l-1 7 8-11h-6l1-7Z",
+// ---------------------------------------------------------------- icons (Lucide, see icons.js)
+// Old names used by the first pages map to Lucide names. An unknown name logs an error and shows "info".
+const ALIAS = {
+  status: "car", ble: "bluetooth", gear: "settings", me: "cpu", help: "info", back: "chevron-left",
+  left: "chevron-left", right: "chevron-right", up: "chevron-up", down: "chevron-down", ok: "check",
+  more: "sliders-horizontal", trash: "trash-2", camp: "tent", queen: "crown",
+  doorFL: "door-open", doorFR: "door-open", doorRL: "door-open", doorRR: "door-open",
+  frunk: "package-open", trunk: "package", glove: "inbox", mirror: "flip-horizontal-2", unlock: "lock-open",
+  battery: "battery-medium", log: "file-text", flash: "hard-drive-download",
 };
-export function icon(name, size = 20) {
+export function icon(name, size = 20, stroke = 2) {
+  const key = ICONS[name] ? name : ALIAS[name];
+  if (!key || !ICONS[key]) console.error(`icon(): unknown icon "${name}"`);
   const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   s.setAttribute("viewBox", "0 0 24 24");
   s.setAttribute("width", size); s.setAttribute("height", size);
   s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor");
-  s.setAttribute("stroke-width", "1.8"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round");
+  s.setAttribute("stroke-width", String(stroke)); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round");
   s.setAttribute("aria-hidden", "true");
-  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  p.setAttribute("d", P[name] || P.help);
-  s.append(p);
+  s.innerHTML = ICONS[key] || ICONS.info; // static icon markup from icons.js, never data
   return s;
 }
 
@@ -163,7 +142,7 @@ export async function showHelp(id, title) {
 }
 export function helpButton(id, title) {
   return h("button", { class: "help-btn", type: "button", "aria-label": L("Help", "帮助") + ": " + (typeof title === "object" ? L(title) : title),
-    onclick: e => { e.stopPropagation(); showHelp(id, typeof title === "object" ? L(title) : title); } }, "?");
+    onclick: e => { e.stopPropagation(); showHelp(id, typeof title === "object" ? L(title) : title); } }, icon("info", 18));
 }
 
 // ---------------------------------------------------------------- list building blocks
