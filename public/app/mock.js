@@ -29,15 +29,21 @@ function initialStatus() {
 export class MockLink extends LinkBase {
   constructor() {
     super();
-    this.name = "TSL6 (mock)";
     this.id = "mock";
     this.state = initialStatus();
     this.auth = false;
     this.txDecoder = new Decoder();
     this.timer = 0;
+    // Bootloader simulation: ?mock&boot starts in boot mode. A runtime 0x55 restarts into it.
+    this.mode = new URLSearchParams(location.search).has("boot") ? "boot" : "runtime";
+    this.down = false;     // restarting: the module does not advertise
+    this.flash = null;     // {started, pages}
   }
+  get name() { return this.mode === "boot" ? "TSL6-BOOT (mock)" : "TSL6 (mock)"; }
+  set name(_) { /* fixed by the mode */ }
   async open() {
     await sleep(300);
+    if (this.down) { const e = new Error("Connection failed (mock module restarting)"); e.name = "NetworkError"; throw e; }
     this.connected = true;
     this.log("connected to the MOCK module", "warn");
     this.emit("state", { connected: true });
@@ -70,7 +76,31 @@ export class MockLink extends LinkBase {
     for (const fr of this.txDecoder.feed(part)) this.handle(fr.cmd, fr.payload);
   }
 
+  // Module ID as the bootloader reports it. The runtime sends UID14 = id[4:12] + id[0:6] in status bytes 4-17.
+  moduleId() { const s = this.state; return Uint8Array.from([...s.slice(12, 16), ...s.slice(4, 12)]); }
+  bootStatus() { return Uint8Array.from([0x00, 0x12, 0x10, 0x00, ...this.moduleId()]); }
+  restart(mode, { window = false } = {}) {
+    setTimeout(() => { clearInterval(this.timer); this.auth = false; this.log("mock module restarts", "warn"); this.dropLink(); }, 200);
+    setTimeout(() => { this.mode = mode; this.down = true; }, 400);
+    setTimeout(() => { this.down = false; }, 1200);
+    // Bootloader mode 1 goes back to the runtime after about 10 s without a valid 0x53.
+    if (window) setTimeout(() => { if (this.mode === "boot" && !(this.flash && this.flash.started)) { this.mode = "runtime"; this.log("mock: boot window passed", "warn"); } }, 11200);
+  }
+  handleBoot(type, p) {
+    const uid = Uint8Array.from([...this.state.slice(4, 18)]);
+    const uidOk = p.length === 15 && p[0] === 1 && p.slice(1).every((b, i) => b === uid[i]);
+    switch (type) {
+      case 0xa0: return this.reply(0xa0, this.bootStatus());
+      case 0x55: return this.reply(0x55, Uint8Array.of(uidOk ? 0 : 1));
+      case 0x53: this.flash = { started: uidOk, pages: 0 }; return this.reply(0x53, Uint8Array.of(uidOk ? 0 : 0xff));
+      case 0x57: if (this.flash) this.flash.pages++; return this.reply(0x57, Uint8Array.of(0));
+      case 0x45: this.reply(0x45, Uint8Array.of(0)); return this.restart("runtime");
+      default: this.log(`mock bootloader: ignores ${type.toString(16).toUpperCase()}`, "warn");
+    }
+  }
+
   handle(type, p) {
+    if (this.mode === "boot") return this.handleBoot(type, p);
     const s = this.state;
     const gated = ![0xa0, 0xa8, 0xad, 0xae, 0x55, 0x53, 0x57, 0x45].includes(type);
     if (gated && !this.auth) return this.reply(0xa8, Uint8Array.of(0xff));
@@ -110,6 +140,14 @@ export class MockLink extends LinkBase {
         return this.reply(0xa9, Uint8Array.of(1));
       }
       case 0xc1: return this.reply(0xc1, Uint8Array.of(0x04, 0x01, 0x00, 0x00));
+      case 0x55: {
+        // Runtime 0x55: 01 + status bytes 4-17, no password. Replies 55 01 and restarts into the bootloader.
+        const ok = p.length === 15 && p[0] === 1 && p.slice(1).every((b, i) => b === s[4 + i]);
+        if (!ok) return;
+        this.flash = null;
+        this.reply(0x55, Uint8Array.of(1));
+        return this.restart("boot", { window: true });
+      }
       default: {
         const h = HANDLERS[type];
         if (!h) { this.log(`mock: no handler for ${type.toString(16).toUpperCase()}`, "warn"); return; }
