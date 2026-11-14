@@ -99,7 +99,7 @@ definePage("battery", () => {
 
   function packRows() {
     const v = batteryPackView(pack, readCap());
-    if (v.error) return { odo: "0", rows: [] };
+    if (v.error) return { rows: [] };
     const userCap = readCap() > 0;
     const rows = v.rows.map(r => {
       let text = r.text;
@@ -110,7 +110,7 @@ definePage("battery", () => {
     });
     rows.push({ id: "odo", label: L("Odometer", "总里程"), text: v.odometerText + " km", group: "life" });
     rows.sort((a, b) => ORDER.indexOf(a.group) - ORDER.indexOf(b.group)); // stable: module order inside a group
-    return { odo: v.odometerText, rows, view: v };
+    return { rows };
   }
 
   function render() {
@@ -118,7 +118,7 @@ definePage("battery", () => {
     packWrap.hidden = tab !== 0; card.hidden = tab === 0;
     clear(head);
     if (tab === 0) {
-      const v = pack ? packRows() : { odo: "0", rows: [] };
+      const v = pack ? packRows() : { rows: [] };
       // Summary: state of charge, range and pack power, rounded for reading at a glance.
       // The summary values leave the list, so that no value shows twice.
       const by = Object.fromEntries(v.rows.map(r => [r.id, r]));
