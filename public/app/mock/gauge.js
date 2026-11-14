@@ -63,6 +63,19 @@ function scene(t) {
   return s;
 }
 
+// Prompt build (scroll interval 0 or 9-14): the patch state in the altitude bits, as scroll_prompt.S writes it.
+// The hands-on prompt (hands-on 3) shows at 26-28 s, AP state is 6 while AP is on; one gesture per cycle at 26.6 s.
+const PROMPT_TIMES = [0, 9, 10, 11, 12, 13, 14];
+function promptState(t, s, mock) {
+  if (!PROMPT_TIMES.includes(mock.state[27] & 15)) return null;
+  const cycles = Math.floor((Date.now() - t0) / 1000 / CYCLE_S);
+  const ho = t >= 26 && t < 28 ? 3 : s.ap ? 1 : 0;
+  const ap = s.ap ? 6 : 3;
+  const phase = ho === 3 ? (t < 26.6 ? 1 : 2) : 0;
+  const sent = (cycles + (t >= 26.6 ? 1 : 0)) & 15;
+  return phase | (ho << 2) | (ap << 6) | (sent << 10);
+}
+
 function frame(t, mock) {
   const s = scene(t);
   odo += (s.speed * FRAME_MS) / 3600 / 100; // km/h over one frame, in 0.1 km
@@ -75,7 +88,7 @@ function frame(t, mock) {
   u.set([116, 117, 84, 116], 8);          // tire pressure 2.9, 2.9, 2.1 (low), 2.9 bar
   put(u, 96, 8, Math.round(s.pedal * 2.5));
   put(u, 104, 11, s.rear * 2); put(u, 115, 11, s.front * 2);
-  put(u, 126, 14, 42);                    // altitude 42 m
+  put(u, 126, 14, promptState(t, s, mock) ?? 42); // altitude 42 m, or the prompt-build state
   const heat = (mock.state[18] >> 1) & 1;  // mock status: battery preheat bit
   put(u, 140, 2, heat); put(u, 142, 1, 1); put(u, 143, 1, s.hands);
   const brake = t >= 30 && t < 44 ? 135 : 60;

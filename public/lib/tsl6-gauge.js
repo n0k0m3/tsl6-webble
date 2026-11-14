@@ -79,7 +79,8 @@ export function decodeGauge(p) {
   if (!d.full) return d;
 
   const w15 = u[15] | (u[16] << 8) | (u[17] << 16); // 24 bits
-  d.altitudeM = signed(bits(w15, 6, 14), 14);
+  d.altitudeRaw = bits(w15, 6, 14);
+  d.altitudeM = signed(d.altitudeRaw, 14);
   d.battHeat = (u[17] >> 4) & 3; // 0 off, 1 green, 2 orange, 3 not drawn
   d.speedKmh = (u[17] >> 6) & 1; // 1: km/h, 0: mph
   d.handsOn = (u[17] >> 7) & 1; // 1: hands-on-wheel warning
@@ -110,6 +111,19 @@ export function decodeGauge(p) {
   d.speedLimit = 5 * d.speedLimitRaw; // the vendor shows it only in R, N, D
   d.blindSpot = [bits(w31, 12, 2), bits(w31, 14, 2)]; // left, right. 0 none, 1 yellow, 2 red, 3 not drawn
   return d;
+}
+
+// The prompt build has no altitude (it reads 0x39B in place of 0x3D8). It puts its own state in the
+// 14 altitude bits. Only meaningful when the module runs the prompt build in a prompt mode.
+//   bits 1:0 phase, 5:2 hands-on state, 9:6 AP state, 13:10 gestures sent (modulo 16)
+export const PROMPT_PHASE = [
+  ["Ready", "待命"],
+  ["Prompt seen, scrolling soon", "检测到提示，即将拨动"],
+  ["Scrolled, waiting for the prompt to clear", "已拨动，等待提示消失"],
+  ["Prompt seen, but AP is not active", "检测到提示，但AP未激活"],
+];
+export function promptDiag(raw) {
+  return { raw, phase: raw & 3, handsOn: (raw >> 2) & 15, apState: (raw >> 6) & 15, sent: (raw >> 10) & 15, noData: raw === 0 };
 }
 
 // Named views of the bit masks.

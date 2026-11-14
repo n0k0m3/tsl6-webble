@@ -8,9 +8,15 @@ import {
   B0, startPayload, stopPayload, KEEPALIVE_MS, DRIVE_GEAR, GAUGE_CAR_ACTIONS, CORNER_CYCLE,
   decodeGauge, formatGauge, speedText, clockText, driveTimeText, doorsOpen, lightsOn,
   iconOff, textOn, AUTOPILOT_COLOR, BLIND_SPOT_RGB, BATT_HEAT_COLOR, TIRE_LOW_BAR, BRAKE_HOT_C, powerBarPct,
-  accelTestToggle, accelTestStep,
+  accelTestToggle, accelTestStep, promptDiag,
 } from "../../lib/tsl6-gauge.js";
 import { tapCommand, switchCommand } from "../../lib/tsl6-status.js";
+import { decodeSettings, isPromptTime } from "../../lib/tsl6-settings.js";
+
+// The prompt build has no altitude: in a prompt mode the altitude corner shows how many prompts it answered (modulo 16).
+function promptMode() {
+  try { return isPromptTime(decodeSettings(S.status).time); } catch { return false; }
+}
 import { loadGaugePrefs } from "./gaugemenu.js";
 
 if (!document.querySelector('link[data-page="gauge"]')) {
@@ -414,6 +420,7 @@ definePage("gauge", () => {
     if (!x) return;
     const now = new Date();
     fmt = formatGauge(x, now, d ? fmt : undefined);
+    if (x.full && promptMode()) fmt.LeftBottom[1] = L(`ack ${promptDiag(x.altitudeRaw).sent}`, `拨动${promptDiag(x.altitudeRaw).sent}`);
     if (x.full) fullSeen = true;
     if (x.gear !== lastGear) { lastGear = x.gear; if (x.gear === DRIVE_GEAR) dStart = Date.now(); }
     d = x;
