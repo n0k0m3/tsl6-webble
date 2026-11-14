@@ -21,8 +21,8 @@ export function longPress(el, onlong, ms = 600) {
 
 // A pill button that opens a picker (looks like the vendor picker text with a chevron).
 export function pill(text, onclick, { disabled, label } = {}) {
-  return h("button", { class: "pill", type: "button", onclick, disabled, "aria-label": label ? `${label}: ${text}` : null },
-    h("span", { class: "pill-t" }, text), icon("down", 16));
+  return h("button", { class: "tpick", type: "button", onclick, disabled, "aria-label": label ? `${label}: ${text}` : null },
+    h("span", { class: "tpick-t" }, text), icon("chevron-down", 16));
 }
 
 // Up / down / done bar for the card in move mode.
@@ -114,17 +114,17 @@ definePage("shortcuts", () => {
   }
 
   function card(r, i, isDraft) {
-    const n = h("span", { class: "sc-num" }, String(i + 1));
+    const n = h("span", { class: "sc-num" }, `#${i + 1}`);
     const trig = pill(isDraft ? L(LABELS.triggerNone) : fnLabel(list.btn, r.trigger, LABELS.triggerNone),
       () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令") });
-    const head = h("div", { class: "sc-line" }, trig, h("span", { class: "sc-right" }, n,
-      h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), onclick: () => del(i) }, icon("trash", 22))));
+    const head = h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("When", "当")), trig, h("span", { class: "sc-right" }, n,
+      h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), onclick: () => del(i) }, icon("trash", 20))));
     const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") }, head);
     if (isDraft) {
       c.append(h("p", { class: "sc-draft-note" }, L("Not saved. Select a trigger to save this row.", "未保存。选择快捷指令后保存。")));
       return c;
     }
-    c.append(h("div", { class: "sc-line" },
+    c.append(h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("Then", "则")),
       pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作") }),
       h("button", { class: "link-btn", type: "button", disabled: busy || !r.action, onclick: () => tryAction(r.action) }, L("Try", "尝试"))));
     if (moving === i) c.append(moveBar(i, rows.length, { onmove: move, ondone: () => { moving = -1; render(); }, disabled: busy }));

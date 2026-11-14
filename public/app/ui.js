@@ -176,7 +176,8 @@ export function toggle({ checked, disabled, label, onchange }) {
 // Option sheet, as in the vendor app: a button shows the value; a tap opens a list titled with the row name.
 // (A native <select> kept focus on iPhone while the page rebuilt, and the save stalled until the next tap.)
 // options: [[value, label]]. text: fixed button text (for the "..." sub picker). Returns the button; .value is a string.
-export function chooseOption({ title, options, value }) {
+export async function chooseOption({ title, options, value, help }) {
+  const helpEntry = help ? (await loadHelp())[help] : null;
   return dialog({
     title, wide: false,
     buttons: [{ label: L("Cancel", "取消"), value: null }],
@@ -187,7 +188,7 @@ export function chooseOption({ title, options, value }) {
           h("span", null, t), h("span", { class: "opt-ok", "aria-hidden": "true" }, on ? "✓" : ""));
       }));
       setTimeout(() => { const c = list.querySelector(".opt.on"); if (c) c.scrollIntoView({ block: "center" }); }, 0);
-      return list;
+      return helpEntry ? h("div", null, h("div", { class: "sheet-help" }, helpNode(helpEntry)), list) : list;
     },
   });
 }
@@ -212,8 +213,8 @@ export function picker({ value, options, onchange, disabled, label, text }) {
 }
 
 export function btn(label, onclick, { kind = "", disabled, title, color } = {}) {
-  return h("button", { class: "btn " + kind, type: "button", onclick, disabled, title, style: color ? { color } : null },
-    typeof label === "object" && !(label instanceof Node) ? L(label) : label);
+  const content = Array.isArray(label) || label instanceof Node ? label : typeof label === "object" ? L(label) : label;
+  return h("button", { class: "btn " + kind, type: "button", onclick, disabled, title, style: color ? { color } : null }, content);
 }
 export function iconBtn(name, onclick, { label, disabled, text } = {}) {
   return h("button", { class: "ibtn", type: "button", onclick, disabled, "aria-label": label, title: label }, text != null ? h("b", null, text) : icon(name, 22));

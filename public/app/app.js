@@ -162,9 +162,11 @@ function wireLink(link) {
     for (let i = 18; i < 40 && blank; i++) if (p[i] !== 0) blank = false;
     S.blank = blank;
     bus.dispatchEvent(new CustomEvent("status", { detail: p }));
+    renderTop();
     if (blank && !link.authed) askPassword("asked");
   });
   link.on("password", () => askPassword("asked"));
+  link.on("auth", () => renderTop());
   link.on("frame", fr => bus.dispatchEvent(new CustomEvent("frame", { detail: fr })));
   link.on("state", st => {
     if (!st.connected) { S.status = null; }
@@ -197,10 +199,10 @@ export function disconnect() { if (S.link) S.link.close(); }
 const PAGES = {};
 export function definePage(id, def) { PAGES[id] = def; }
 const TABS = [
-  { id: "status", icon: "status", en: "Status", zh: "状态" },
-  { id: "connect", icon: "ble", en: "Bluetooth", zh: "蓝牙" },
-  { id: "settings", icon: "gear", en: "Settings", zh: "设置" },
-  { id: "me", icon: "me", en: "Me", zh: "我的" },
+  { id: "status", icon: "car", en: "Car", zh: "车辆" },
+  { id: "settings", icon: "sliders-horizontal", en: "Settings", zh: "设置" },
+  { id: "tools", icon: "wrench", en: "Tools", zh: "工具" },
+  { id: "me", icon: "cpu", en: "Device", zh: "设备" },
 ];
 let stack = [];      // [{id, page}]
 let tab = "status";
@@ -228,7 +230,7 @@ export function back() {
   stack.pop();
   show(true);
 }
-function switchTab(id) {
+export function switchTab(id) {
   leaveTop();
   tab = id;
   stack = [{ id, page: mount(id) }];
@@ -255,27 +257,35 @@ export function rerender() {
 window.addEventListener("popstate", () => { if (stack.length > 1) back(); });
 
 // ---------------------------------------------------------------- chrome
+// Top bar: on a tab root it holds the connection chip (the page shows its own large title);
+// on a sub-page it holds a back button and the page title.
 function renderTop() {
   const top = $("#top");
   if (!top) return;
   const c = current();
   const sub = stack.length > 1;
   const link = S.link;
-  const state = !link || !link.connected ? L("Not connected", "蓝牙未连接") : L("BLE connected", "蓝牙已连接");
-  const title = sub && c.page.title ? L(c.page.title) : (c && c.id === "me" ? L("Me", "我的") : state);
-  clear(top).append(
-    sub ? h("button", { class: "top-back", "aria-label": L("Back", "返回"), onclick: () => history.back() }, icon("back", 22)) : h("span", { class: "top-spacer" }),
-    h("h1", null, title, link && link.connected ? null : (sub ? null : h("span", { class: "dot off", title: state }))),
+  const on = !!(link && link.connected);
+  const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L(`${link.name} · password`, `${link.name} · 需密码`) : link.name;
+  const chip = h("button", { class: "conn-chip", type: "button", "data-id": "conn-chip", onclick: () => { if (current().id !== "me" || stack.length > 1) switchTab("me"); } },
+    h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", null, chipText));
+  clear(top).append(...[
+    sub ? h("button", { class: "top-back", "aria-label": L("Back", "返回"), onclick: () => history.back() }, icon("chevron-left", 24)) : h("span", { class: "top-spacer" }),
+    h("h1", null, sub && c.page.title ? L(c.page.title) : ""),
+    sub ? null : chip,
     h("button", { class: "top-lang", onclick: () => setLang(getLang() === "zh" ? "en" : "zh"), "aria-label": "Language / 语言" }, getLang() === "zh" ? "EN" : "中"),
-  );
+  ].filter(Boolean));
   document.title = (sub && c.page.title ? L(c.page.title) + " · " : "") + "TSL6";
 }
+window.addEventListener("scroll", () => { const t = $("#top"); if (t) t.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
 function renderTabs() {
   const bar = $("#tabs");
   clear(bar).append(...TABS.map(t => h("button", {
-    class: "tab" + (t.id === tab ? " on" : ""), "aria-current": t.id === tab ? "page" : null,
+    class: "tab" + (t.id === tab ? " on" : ""), "aria-current": t.id === tab ? "page" : null, "data-id": `tab-${t.id}`,
     onclick: () => { if (t.id !== tab || stack.length > 1) switchTab(t.id); },
-  }, icon(t.icon, 24), h("span", null, L(t)))));
+  }, icon(t.icon, 22), h("span", null, L(t)))),
+  // Desktop sidebar brand. It is the last child, so the tab order (nth-child) does not change; CSS puts it first.
+  h("div", { class: "side-brand" }, h("span", { class: "mark" }, icon("car", 18)), "TSL6"));
 }
 
 onLang(() => { rerender(); });
@@ -289,7 +299,7 @@ export async function start({ mock = false, MockLink } = {}) {
     document.body.classList.add("is-mock");
   }
   if (!S.mock && !WebLink.available()) log("Web Bluetooth is not available in this browser", "warn");
-  switchTab(location.hash === "#settings" ? "settings" : location.hash === "#me" ? "me" : "status");
+  switchTab({ "#settings": "settings", "#tools": "tools", "#me": "me", "#device": "me" }[location.hash] || "status");
 }
 
 // Small helpers for pages.

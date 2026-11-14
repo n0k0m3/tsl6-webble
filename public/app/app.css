@@ -168,7 +168,8 @@ button.li:hover { background: var(--btn-hover); }
 .act svg { color: var(--accent-text); }
 .act:hover { background: var(--btn-hover); }
 .act:active, .act.held { background: var(--accent-soft); border-color: var(--accent); }
-.act.held { touch-action: none; }
+.act.hold { touch-action: none; }
+.dpad .act { min-height: 52px; padding: 0; }
 .act:disabled { opacity: .45; cursor: not-allowed; }
 .subhead { padding: 12px 16px 0; font-size: 13px; font-weight: 600; color: var(--muted); }
 .seat { padding: 4px 0 2px; }
@@ -282,3 +283,9 @@ pre.log .ok { color: var(--ok); } pre.log .bad { color: var(--bad); } pre.log .w
   .acts { gap: 6px; padding: 10px; }
   .act { font-size: 12px; }
 }
+.side-brand { order: -1; }
+.vehicle-foot { padding: 0 16px 14px 78px; }
+.vehicle-foot .pills { margin: 0; }
+.vehicle .ibtn { touch-action: manipulation; }
+[data-page="settings"] .li.sub { padding-left: 34px; position: relative; }
+[data-page="settings"] .li.sub::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 50%; width: 9px; border-left: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); border-bottom-left-radius: 6px; }

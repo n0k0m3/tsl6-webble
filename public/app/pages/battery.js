@@ -43,6 +43,9 @@ definePage("battery", () => {
     h("div", { class: "bat-card" }, head, h("div", { class: "bat-rule" }), list),
   );
 
+  // SI unit spelling on screen (the codec keeps the vendor text "KWH", "KW", "KM" for its vendor diff test).
+  const units = t => String(t).replace(/ KWH\b/g, " kWh").replace(/ KW\b/g, " kW").replace(/ KM\b/g, " km");
+
   // Value rows, keyed by id. Texts change in place so that a tap on the capacity value is not lost.
   let rowKey = null;
   const rowEls = new Map();
@@ -66,7 +69,7 @@ definePage("battery", () => {
     for (const r of rows) {
       const x = rowEls.get(r.id);
       x.lab.textContent = r.label;
-      x.val.textContent = r.text;
+      x.val.textContent = units(r.text);
       x.e.className = "bat-row" + (r.cls ? " " + r.cls : "");
     }
   }
@@ -91,7 +94,7 @@ definePage("battery", () => {
     if (tab === 0) {
       const v = pack ? packRows() : { odo: "0", rows: [] };
       head.className = "bat-head bat-row strong";
-      head.append(h("span", null, L("Odometer", "总里程")), h("span", null, v.odo + " KM"));
+      head.append(h("span", null, L("Odometer", "总里程")), h("span", { class: "bat-val" }, v.odo + " km"));
       syncRows(v.rows);
     } else if (tab === 1) {
       head.className = "bat-head center";

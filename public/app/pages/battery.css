@@ -1,25 +1,25 @@
 /* Battery info page (vendor batteryInfo). Colours follow the vendor: max orange, min blue, average green. */
-.bat { --bat-max: #f6931f; --bat-min: #3798ff; --bat-avg: #5fa893; --bat-dim: #606060; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bat { --bat-max: #f6a54a; --bat-min: #6ab2ff; --bat-avg: #78c3af; --bat-dim: #aab1ba; } }
-:root[data-theme="dark"] .bat { --bat-max: #f6a54a; --bat-min: #6ab2ff; --bat-avg: #78c3af; --bat-dim: #aab1ba; }
-.bat .seg { gap: 28px; margin-top: 8px; }
-.bat .seg button { padding: 6px 2px 8px; white-space: nowrap; }
-.bat .sub-note { color: #a8adb5; font-size: 12.5px; margin: 6px 0 12px; }
-.bat-card { background: var(--card); border-radius: 15px; padding: 14px 16px 16px; margin: 0 4px 16px; box-shadow: var(--shadow); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bat-card { border: 1px solid var(--line); } }
-:root[data-theme="dark"] .bat-card { border: 1px solid var(--line); }
-.bat-head { min-height: 28px; font-weight: 700; }
+/* max = warm, min = accent blue, average = green (vendor meaning, new palette). */
+.bat { --bat-max: var(--warn); --bat-min: var(--accent-text); --bat-avg: var(--ok); --bat-dim: var(--muted); }
+.bat .seg { margin-top: 4px; }
+.bat .seg button { white-space: nowrap; }
+.bat .sub-note { color: var(--muted); font-size: 13px; margin: 0 4px 12px; }
+.bat-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px 12px; margin: 0 0 16px; box-shadow: var(--shadow); }
+.bat-head { min-height: 28px; font-weight: 650; font-size: 17px; }
 .bat-head.center { display: flex; justify-content: center; align-items: center; color: var(--bat-dim); }
-.bat-head .muted { color: #a8adb5; }
+.bat-head .muted { color: var(--muted); }
 .bat-rule { height: 1px; background: var(--line); margin: 12px 0 8px; }
-.bat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 16.5px; }
+.bat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; font-size: 15.5px; border-top: 1px solid var(--line-2); }
+.bat-rule + div > .bat-row:first-child, .bat-head + .bat-rule + * .bat-row:first-child { border-top: 0; }
+.bat-lab { color: var(--muted); }
+.bat-val { color: var(--fg); font-weight: 500; }
 .bat-row.strong { font-weight: 700; }
 .bat-head.bat-row { padding: 0; }
 .bat-row.max { color: var(--bat-max); } .bat-row.min { color: var(--bat-min); }
 .bat-row.avg { color: var(--bat-avg); } .bat-row.delta { color: var(--bat-dim); }
 .bat-val { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
-.bat-link { color: var(--bat-avg); text-decoration: underline; text-underline-offset: 3px; }
+.bat-link { color: var(--accent-text); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 4px; }
 .bat-empty { color: var(--muted); text-align: center; margin: 14px 0 4px; font-size: 14px; }
 .bat-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
 .bat-cell { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: 8px; background: var(--bg); font-variant-numeric: tabular-nums; }

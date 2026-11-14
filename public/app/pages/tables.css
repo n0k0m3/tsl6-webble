@@ -1,50 +1,52 @@
 /* Shortcut, BLE button and backup pages (vendor btn, blebtn, backup). */
-.tbl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: var(--btn); }
-.tbl-toolbar .help-btn { width: 24px; height: 24px; font-size: 15px; line-height: 24px; }
-.tbl-toolbar .tools { display: flex; gap: 12px; }
-.tbl-toolbar .ibtn { background: var(--card); }
-.tbl-toolbar .ibtn.link { color: #3b82f6; }
+.tbl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 8px 14px; }
+.tbl-toolbar .tools { display: flex; gap: 8px; }
+.tbl-toolbar .ibtn.link { color: var(--accent-text); }
 .tbl-toolbar .ibtn:disabled { opacity: .45; cursor: not-allowed; }
-.tbl-empty { padding: 22px 12px; text-align: center; color: var(--warn); font-size: 18px; }
+.tbl-empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 15px; }
 .tbl-center { display: flex; justify-content: center; padding: 0 12px 14px; }
-.tbl-busy { text-align: center; color: var(--mint-d); }
+.tbl-busy { text-align: center; color: var(--accent-text); }
 
-.ibtn.flat { border: 0; background: none; box-shadow: none; width: 38px; height: 38px; color: var(--muted); }
+.ibtn.flat { border: 0; background: none; box-shadow: none; width: 36px; height: 36px; color: var(--faint); }
+.ibtn.flat:hover { color: var(--bad); background: var(--btn-hover); }
 .ibtn.flat:disabled { opacity: .4; cursor: not-allowed; }
-.ibtn.flat.on-mint { color: #fff; }
+.ibtn.flat.on-mint { color: var(--on-accent); }
 
-/* a picker opener: text + chevron, like the vendor picker text */
-.pill { display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; max-width: 100%; min-height: 38px; padding: 5px 8px 5px 10px; border: 1px solid var(--line);
-  border-radius: 6px; background: var(--btn); color: var(--fg); font-size: 17px; text-align: left; cursor: pointer; }
-.pill-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.pill svg { flex: none; color: var(--fg); }
-.pill:disabled { opacity: .55; cursor: not-allowed; }
-.link-btn { background: none; border: 0; padding: 6px 2px; color: var(--mint-d); text-decoration: underline; text-underline-offset: 3px; font-size: 17px; cursor: pointer; flex: none; }
+/* picker opener: current value + chevron */
+.tpick { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; max-width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid var(--line);
+  border-radius: var(--r-sm); background: var(--card-2); color: var(--fg); font-size: 15px; text-align: left; cursor: pointer; }
+.tpick:hover { background: var(--btn-hover); }
+.tpick-t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tpick svg { flex: none; color: var(--faint); }
+.tpick:disabled { opacity: .55; cursor: not-allowed; }
+.link-btn { flex: none; background: none; border: 0; min-height: 36px; padding: 6px 8px; color: var(--accent-text); font-size: 14px; font-weight: 600; cursor: pointer; border-radius: var(--r-sm); }
+.link-btn:hover { background: var(--accent-soft); }
 .link-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-/* shortcut cards */
-.sc-card { border: 2px solid var(--mint); border-radius: 18px; padding: 8px 10px 8px 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; user-select: none; -webkit-user-select: none; }
+/* shortcut cards: When <trigger> / Then <action> */
+.sc-card { padding: 10px 10px 10px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .sc-card.draft { border-style: dashed; }
-.sc-card.moving, .bb-card.moving { box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 45%, transparent); }
-.sc-line { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 42px; }
-.sc-right { display: flex; align-items: center; gap: 2px; flex: none; }
-.sc-num { font-size: 17px; color: var(--muted); min-width: 1.5em; text-align: right; }
-.sc-draft-note { margin: 0 0 4px; font-size: 13px; color: var(--warn); }
-.move-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.sc-card.moving, .bb-card.moving { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); border-color: var(--accent); }
+.sc-line { min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.sc-tag { flex: none; width: 3.2em; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--faint); text-transform: uppercase; }
+.sc-right { display: flex; align-items: center; gap: 0; flex: none; }
+.sc-num { font-size: 13px; color: var(--faint); min-width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.sc-draft-note { margin: 0 0 2px; font-size: 13px; color: var(--warn); }
+.move-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); }
 .move-bar .move-note { margin-right: auto; color: var(--muted); font-size: 14px; }
 
 /* BLE button cards */
-.bb-card { user-select: none; -webkit-user-select: none; }
 .bb-card .move-bar { padding: 8px 12px; }
-.bb-head { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 12px; background: var(--mint); color: #fff; }
-.bb-name { flex: 1; min-width: 0; font-size: 17px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bb-bat { font-size: 13px; opacity: .95; margin-right: 4px; white-space: nowrap; }
-.bb-row { min-height: 54px; }
+.bb-head { display: flex; align-items: center; gap: 6px; padding: 10px 8px 10px 14px; border-bottom: 1px solid var(--line-2); }
+.bb-name { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb-bat { font-size: 13px; color: var(--muted); margin-right: 4px; white-space: nowrap; }
+.bb-head .ibtn.flat { color: var(--faint); }
+.bb-row { min-height: 52px; }
 .bb-row .row-left { flex: none; }
 .bb-row .row-label { white-space: nowrap; }
 .bb-row .row-right { flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; }
-.bb-row .pill { max-width: 100%; }
-.bb-spin { width: 34px; height: 34px; margin: 6px auto 10px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--mint-d); animation: bb-spin 1s linear infinite; }
+.bb-row .tpick { max-width: 100%; }
+.bb-spin { width: 34px; height: 34px; margin: 6px auto 10px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: bb-spin 1s linear infinite; }
 @keyframes bb-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .bb-spin { animation-duration: 3s; } }
 
@@ -53,14 +55,14 @@
 .bk-intro p { margin: 0 0 6px; font-size: 14px; }
 .bk-intro .bk-small { color: var(--muted); font-size: 13px; margin: 0; }
 .bk-card { border-color: var(--line); }
-.bk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 12px 14px; background: var(--btn); border-bottom: 1px solid var(--line); }
-.bk-title { font-size: 17px; font-weight: 600; }
+.bk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line-2); }
+.bk-title { font-size: 16px; font-weight: 600; }
 .bk-time { font-size: 13px; color: var(--muted); text-align: right; }
 .bk-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; }
 .bk-row .btn { min-width: 88px; font-weight: 600; }
-.btn.blue { color: #3b82f6; }
+.btn.blue { color: var(--accent-text); }
 .bk-check { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 15px; cursor: pointer; }
-.bk-check input { width: 22px; height: 22px; accent-color: var(--mint-d); margin: 0; }
+.bk-check input { width: 22px; height: 22px; accent-color: var(--accent); margin: 0; }
 .bk-foot { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 12px; }
 .bk-plan ul, .bk-res { margin: 6px 0 10px; padding-left: 20px; }
 .bk-plan li, .bk-res li { margin: 4px 0; }
@@ -69,6 +71,6 @@
 .bk-warn { margin: 6px 0; color: var(--warn); font-size: 14px; }
 
 @media (max-width: 380px) {
-  .pill { font-size: 15px; }
+  .tpick { font-size: 14px; }
   .bk-row .btn { min-width: 72px; }
 }

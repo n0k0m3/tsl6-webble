@@ -1,8 +1,8 @@
-// Settings tab (vendor pages/set): action buttons and the settings rows. Each change writes one A3 at once.
-import { h, L, row, section, picker, btn, toast, confirmBox, showHelp, clear, pressable } from "../ui.js";
-import { S, definePage, onBus, ask, send, go, savePref, log } from "../app.js";
+// Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
+// help text above the options. Each change writes one A3 at once (same logic as before the redesign).
+import { h, L, btn, toast, confirmBox, showHelp, clear, icon, chooseOption } from "../ui.js";
+import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches } from "../../lib/tsl6-settings.js";
-import { SET_ACTIONS, buildA4, serviceModeCommand } from "../../lib/tsl6-status.js";
 
 let ZH = null;
 async function zhLabels() {
@@ -10,49 +10,49 @@ async function zhLabels() {
   return ZH;
 }
 
-// Screen order (vendor, hw_ver 6/8). sub = the "..." picker of the row.
-const CAR = [
-  ["mianSwitch"], ["apAutoOpenType", "apAutoOpenTime"], ["oneClickOpenAP"], ["APSpeedExit"], ["fsd"], ["OffAPAutoWiper"],
-  ["dynamicBrakeLight"], ["apHighBeam"], ["blinkHighBeam"], ["pluseHighBeam", "pluseHighBeamAndLowBeam"], ["pluseFrontFogLight"],
-  ["pluseRearFogLight"], ["gentryHorn", "gentryHornCount"], ["pluseHorn", "longPluseHorn"], ["hornLinkedHighBeam"],
-  ["highBeamLinkedHorn"], ["turnLightPriority"], ["openDoorHazardLight"], ["backHazardLight"], ["KERS"], ["stoppingMode"],
-  ["autoSportMode"], ["autoParkBrake"], ["frontRightEasyAccess"], ["TimeOpenFrontBox"], ["TimeOpenChargeDoor"],
+// Topic groups. [id, subId] = a row and its sub-setting (the vendor "..." picker), shown as an indented row.
+const GROUPS = [
+  { en: "Autopilot", zh: "Autopilot", rows: [["apAutoOpenType", "apAutoOpenTime"], ["oneClickOpenAP"], ["APSpeedExit"], ["fsd"]] },
+  { en: "AP assist", zh: "AP辅助", foot: { en: "How the module keeps Autopilot from asking for your hands.", zh: "模块如何避免 Autopilot 要求手扶方向盘。" },
+    rows: [["automdr"], ["ModeMDR"], ["lr"], ["time"], ["rand"], ["enable_save"], ["jg"], ["jj"], ["dblclickMDR"]] },
+  { en: "Lights", zh: "灯光", rows: [["dynamicBrakeLight"], ["apHighBeam"], ["blinkHighBeam"], ["pluseHighBeam", "pluseHighBeamAndLowBeam"],
+    ["pluseFrontFogLight"], ["pluseRearFogLight"], ["turnLightPriority"], ["openDoorHazardLight"], ["backHazardLight"]] },
+  { en: "Horn", zh: "喇叭", rows: [["gentryHorn", "gentryHornCount"], ["pluseHorn", "longPluseHorn"], ["hornLinkedHighBeam"], ["highBeamLinkedHorn"]] },
+  { en: "Driving", zh: "驾驶", rows: [["KERS"], ["stoppingMode"], ["autoSportMode"], ["autoParkBrake"], ["OffAPAutoWiper"]] },
+  { en: "Doors and charging", zh: "车门与充电", rows: [["frontRightEasyAccess"], ["TimeOpenFrontBox"], ["TimeOpenChargeDoor"]] },
+  { en: "Module", zh: "模块", rows: [["beep"], ["led"], ["BLEPWR"]] },
 ];
 const LAB = ["airAutoArid", "backHazardRearFogLight", "steerAssistanceLighting"]; // the seat-belt rows need vendor admin: not shown
-const BASIC = ["beep", "led", "BLEPWR"];
-const ASSIST = ["automdr", "ModeMDR", "lr", "time", "rand", "enable_save", "jg", "jj", "dblclickMDR"];
 // The vendor opens the help text after these change to a value > 0.
 const HELP_ON_SET = new Set(["apAutoOpenType", "stoppingMode", "steerAssistanceLighting", "backHazardRearFogLight"]);
 
-const ACTION_COLOR = { reset: "#F6931F", backup: "#C36FE4", xgblePass: "#33a6e9", btn: "#4CAF50", battery: "#777", blebtn: "#33a6e9", service: "#F6931F", rgb: "#C36FE4" };
-const ACTION_ROWS = [["reset", "backup", "xgblePass"], ["btn", "battery", "blebtn"], ["service", null, "rgb"]];
-
 definePage("settings", () => {
-  const el = h("div", { class: "page" });
+  const el = h("div", { class: "page", "data-page": "settings" });
   let busy = false;
 
-  function label(id) {
-    const f = BY_ID[id];
-    return { en: f.label, zh: ZH && ZH[id] ? ZH[id].zh : null };
-  }
+  const label = id => ({ en: BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
   function options(id, vals) {
-    const f = BY_ID[id];
-    const en = optionsFor(f, vals, S.hwType);
+    const en = optionsFor(BY_ID[id], vals, S.hwType);
     let zh = ZH && ZH[id] && ZH[id].options;
     if (id === "lr" && [6, 8, 19].includes(S.hwType) && ZH) zh = ZH._lr68.options;
     if (id === "time" && ZH) zh = (vals.rand === 0 ? ZH._timeFixed : ZH._timeRand).options;
     return en.map(([v, t]) => [v, L(t, zh && zh[v])]);
   }
+  // Rows show the value without "(default)"; the sheet still marks the default option.
+  const valueText = (id, vals) => {
+    const o = options(id, vals).find(([v]) => v === vals[id]);
+    return o ? o[1].replace(/\s*\((default)\)|\s*[（(]默认[)）]/g, "") : `? (${vals[id]})`;
+  };
 
-  async function save(id, raw, sel) {
+  async function save(id, raw) {
     if (busy) return;
     const base = S.status;
-    if (!base || S.blank) { toast(L("Enter the BLE password first.", "请先输入蓝牙密码"), "warn"); render(); return; }
+    if (!base || S.blank) { toast(L("Enter the BLE password first.", "请先输入蓝牙密码"), "warn"); return; }
     let payload;
-    try { payload = encodeSettings(base, { [id]: raw }, S.hwType, id); } catch (e) { toast(e.message, "bad", 3000); render(); return; }
+    try { payload = encodeSettings(base, { [id]: raw }, S.hwType, id); } catch (e) { toast(e.message, "bad", 3000); return; }
     const why = writeBlocker(payload);
-    if (why) { toast(why, "bad", 4000); render(); return; }
-    busy = true; if (sel) sel.disabled = true;
+    if (why) { toast(why, "bad", 4000); return; }
+    busy = true; render();
     try {
       let ok = false;
       for (let a = 0; a < 2 && !ok; a++) {
@@ -68,86 +68,86 @@ definePage("settings", () => {
     }
   }
 
-  function settingRow(id, vals, subId) {
-    const f = BY_ID[id];
-    if (!f || !appliesTo(f, S.hwType) || vals[id] === undefined) return null;
-    const ctl = picker({ value: vals[id], options: options(id, vals), label: L(label(id)), onchange: (v, s) => save(id, v, s) });
-    const extra = [];
-    if (subId && vals[subId] !== undefined) {
-      const sub = picker({ value: vals[subId], options: options(subId, vals), label: L(label(subId)), text: "···", onchange: (v, s) => save(subId, v, s) });
-      sub.classList.add("sub-btn");
-      extra.push(sub);
-    }
-    return row(label(id), { help: "help_" + id, helpTitle: label(id) }, ...extra, ctl);
+  async function pick(id, vals, help) {
+    const v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help });
+    if (v == null || v === vals[id]) return;
+    setTimeout(() => save(id, Number(v)), 0); // run the save after the sheet is gone
   }
 
-  async function onAction(id) {
-    const a = SET_ACTIONS.find(x => x.id === id);
-    if (id === "reset") {
-      if (!S.status) return toast(L("Connect to the module first.", "请先连接蓝牙"));
-      const c = buildA4(S.status);
-      const r = await ask(c.type, c.payload, { confirm: a.confirm, timeout: 3000 });
-      if (r) { toast(L("Defaults restored", "恢复默认设置成功"), "ok"); setTimeout(() => S.link.readStatus().catch(() => {}), 500); }
-    } else if (id === "service") {
-      const c = serviceModeCommand({ allowDangerous: true });
-      if (await send(c.type, c.payload, { danger: "service", confirm: { en: c.confirm.en, zh: c.confirm.zh.replace(/\r/g, "") } })) toast(L("Sent", "指令已发送"), "ok");
-    } else {
-      go({ backup: "backup", xgblePass: "password", btn: "shortcuts", battery: "battery", blebtn: "blebtn", rgb: "rgb" }[id]);
+  function item(id, vals, { sub = false, first = false } = {}) {
+    const f = BY_ID[id];
+    if (!f || !appliesTo(f, S.hwType) || vals[id] === undefined) return null;
+    return h("button", {
+      class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
+      onclick: () => pick(id, vals, sub ? null : "help_" + id),
+    },
+    h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(id))))),
+    h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(id, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
+  }
+
+  function group(title, rows, vals, foot) {
+    const items = [];
+    for (const [id, subId] of rows) {
+      const it = item(id, vals);
+      if (!it) continue;
+      items.push(it);
+      if (subId) { const s = item(subId, vals, { sub: true }); if (s) items.push(s); }
     }
+    if (!items.length) return [];
+    return [h("div", { class: "sec-label" }, L(title)), h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null].filter(Boolean);
   }
 
   function render() {
     clear(el);
-    const p = S.status;
-    const ready = p && !S.blank;
-    const vals = ready ? decodeSettings(p) : {};
-    const moduleOff = vals.mianSwitch === 1;
-
-    // Action buttons (always shown; navigation buttons hide while the module is off, as in the vendor app).
-    const grid = h("div", { class: "act-grid" });
-    for (const line of ACTION_ROWS) for (const id of line) {
-      if (!id) { grid.append(h("span")); continue; }
-      const a = SET_ACTIONS.find(x => x.id === id);
-      const hide = moduleOff && a.gate;
-      if (hide) { grid.append(h("span")); continue; }
-      const b = btn({ en: a.en, zh: a.zh }, () => onAction(id), { color: ACTION_COLOR[id], kind: "act" });
-      if (id === "service") b.classList.add("wide");
-      grid.append(b);
-    }
-    el.append(h("section", { class: "card pad" }, grid));
-
-    if (!ready) {
-      el.append(section(null, h("p", { class: "empty" }, !p
-        ? L("Connect to the module to read the settings.", "请先连接蓝牙")
-        : L("Enter the BLE password to read the settings.", "请先输入蓝牙密码"))));
+    el.append(h("h1", { class: "lg-title" }, L("Settings", "设置")));
+    const link = S.link, p = S.status;
+    if (!link || !link.connected || !p || S.blank) {
+      const on = link && link.connected;
+      el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
+        h("span", { class: "chip" + (on ? " amber" : " blue") }, icon(on ? "key-round" : "bluetooth", 26)),
+        h("h2", null, on ? L("Enter the BLE password", "请输入蓝牙密码") : L("Not connected", "未连接")),
+        h("p", null, on ? L("The module sends its settings after it accepts the password.", "模块验证密码后才会发送设置。")
+          : L("Connect to the module to read and change its settings.", "连接模块后即可读取和修改设置。")),
+        on ? h("button", { class: "btn primary", type: "button", onclick: () => askPassword("manual") }, L("Enter password", "输入密码"))
+          : h("button", { class: "btn primary", type: "button", "data-id": "connect", onclick: () => connect() }, L("Connect", "连接")))));
       return;
     }
+    const vals = decodeSettings(p);
+    const moduleOff = vals.mianSwitch === 1;
 
-    const car = [];
-    for (const [id, sub] of CAR) {
-      if (moduleOff && id !== "mianSwitch") continue;
-      car.push(settingRow(id, vals, sub));
+    // Master switch first. While the module is off, the vendor app hides every other row.
+    el.append(h("div", { class: "card" }, (() => {
+      const f = "mianSwitch";
+      return h("button", { class: "li first", type: "button", "data-id": "set-mianSwitch", disabled: busy, onclick: () => pick(f, vals, "help_mianSwitch") },
+        h("span", { class: "chip" + (moduleOff ? " amber" : " green") }, icon("power", 18)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(f)))),
+          h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
+        h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
+    })()));
+    if (moduleOff) {
+      el.append(h("p", { class: "sec-foot" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
+      return;
     }
-    if (!moduleOff) {
-      const lab = picker({
-        value: S.prefs.lab ? 1 : 0, label: L("Lab functions", "实验室功能"),
-        options: [[0, L("Off (default)", "关闭(默认)")], [1, L("On", "开启")]],
-        onchange: async (v, s) => {
-          if (v === 1 && !(await confirmBox({
-            en: "Lab functions may be unstable. Use them with care. (The vendor app asks for a code from its server here. This app has no server, so it asks only for this confirmation.)",
-            zh: "实验室功能谨慎使用(可能不稳定)。原厂小程序需输入服务器提供的实验码，本应用无服务器，仅需确认。",
-          }))) { s.value = "0"; return; }
-          savePref("lab", v === 1); render();
-        },
-      });
-      const r = row({ en: "Lab functions", zh: "实验室功能" }, { help: "help_test", helpTitle: { en: "Lab functions", zh: "实验室功能" }, cls: "lab" }, lab);
-      car.push(r);
-      if (S.prefs.lab) for (const id of LAB) car.push(settingRow(id, vals));
-    }
-    el.append(section({ en: "Basic functions", zh: "基本功能设置" }, car));
-    if (moduleOff) return;
-    el.append(section({ en: "Basic parameters", zh: "基本参数设置" }, BASIC.map(id => settingRow(id, vals))));
-    el.append(section({ en: "AP assist parameters", zh: "AP辅助参数设置" }, ASSIST.map(id => settingRow(id, vals))));
+    for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
+
+    // Lab: a local switch. The vendor app asks for a code from its server here.
+    const labItem = h("button", { class: "li first", type: "button", "data-id": "set-lab", onclick: async () => {
+      const v = await chooseOption({ title: L("Lab functions", "实验室功能"), help: "help_test", value: S.prefs.lab ? 1 : 0,
+        options: [[0, L("Off (default)", "关闭(默认)")], [1, L("On", "开启")]] });
+      if (v == null || (v === 1) === S.prefs.lab) return;
+      if (v === 1 && !(await confirmBox({
+        en: "Lab functions may be unstable. Use them with care. (The vendor app asks for a code from its server here. This app has no server, so it asks only for this confirmation.)",
+        zh: "实验室功能谨慎使用(可能不稳定)。原厂小程序需输入服务器提供的实验码，本应用无服务器，仅需确认。",
+      }))) return;
+      savePref("lab", v === 1); render();
+    } },
+    h("span", { class: "chip amber" }, icon("activity", 18)),
+    h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Lab functions", "实验室功能"))),
+      h("div", { class: "li-sub" }, L("Experimental rows from the vendor app", "原厂小程序中的实验功能"))),
+    h("div", { class: "li-trail" }, h("span", { class: "val" }, S.prefs.lab ? L("On", "开启") : L("Off", "关闭")), h("span", { class: "chev" }, icon("chevron-right", 18))));
+    const labRows = S.prefs.lab ? LAB.map(id => item(id, vals)).filter(Boolean) : [];
+    el.append(h("div", { class: "sec-label" }, L("Lab", "实验室")), h("div", { class: "card" }, labItem, labRows));
+    el.append(h("p", { class: "foot" }, L("Each change is saved on the module at once.", "每项修改会立即保存到模块。")));
   }
 
   const offs = [];
