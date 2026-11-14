@@ -18,6 +18,18 @@ const BEEP_PCT = ["0%", "5%", "10%", "15%", "20%", "25%", "30%", "35%", "40%", "
 const TIME_RAND = [[1, "Every 2-3 s, random (default)"], [2, "Every 3-5 s, random"], [3, "Every 5-10 s, random"],
   [4, "Every 10-15 s, random"], [5, "Every 15-20 s, random"], [6, "Every 20-25 s, random"],
   [7, "Every 25-30 s, random"], [8, "Every 30-35 s, random"], [15, "Fixed-point assist"]];
+// App extras, not in the vendor menu: scroll interval values for the prompt build (Firmware page).
+// The prompt build scrolls once per hands-on prompt, after a random delay of mean +/- 50 %.
+// The stock build runs 0 as every 2-3 s and 9-14 as every 35-65 s.
+// [value, delay mean in ms], in menu order (shortest delay first).
+export const PROMPT_TIMES = [[9, 300], [0, 600], [10, 1000], [11, 1500], [12, 2000], [13, 3000], [14, 5000]];
+const PROMPT_MEAN = new Map(PROMPT_TIMES);
+// Delay mean in ms for a prompt-build scroll interval value, or 0 for a stock value.
+export const promptDelayMs = time => PROMPT_MEAN.get(time) || 0;
+export const isPromptTime = time => PROMPT_MEAN.has(time);
+const secs = ms => (ms / 1000).toString();
+export const TIME_PROMPT = PROMPT_TIMES.map(([v, ms]) => [v, `On hands-on prompt, after about ${secs(ms)} s`]);
+export const TIME_PROMPT_ZH = Object.fromEntries(PROMPT_TIMES.map(([v, ms]) => [v, `手扶提示时，约${secs(ms)}秒后`]));
 const TIME_FIXED = [[1, "Every 2 s"], [2, "Every 3 s"], [3, "Every 5 s"], [4, "Every 10 s"], [5, "Every 15 s"],
   [6, "Every 20 s"], [7, "Every 25 s"], [8, "Every 30 s"], [15, "Fixed-point assist"]];
 
@@ -114,8 +126,12 @@ function present(f, payload) {
 }
 
 // Options for a field, given the other decoded values (the "time" labels depend on "rand").
-export function optionsFor(f, values, hwType) {
-  if (f.id === "time" && values && values.rand === 0) return TIME_FIXED;
+// promptBuild adds the "time" prompt values (TIME_PROMPT) first. Without it the lists match the vendor menus.
+export function optionsFor(f, values, hwType, { promptBuild = false } = {}) {
+  if (f.id === "time") {
+    const list = values && values.rand === 0 ? TIME_FIXED : TIME_RAND;
+    return promptBuild ? [...TIME_PROMPT, ...list] : list;
+  }
   if (f.id === "lr" && [6, 8, 19].includes(hwType)) {
     return [[0, "Left wheel, volume (default)"], [1, "Right wheel, speed"], [2, "Left and right, alternate"], [3, "Right wheel, follow distance"]];
   }

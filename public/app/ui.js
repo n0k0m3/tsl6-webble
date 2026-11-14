@@ -121,10 +121,13 @@ export function promptBox({ title, label, value = "", placeholder = "", maxlengt
 
 // ---------------------------------------------------------------- help texts (data/help.json)
 let helpData = null;
+const helpExtras = []; // app-owned additions to the vendor texts, applied once after the load
+export function extendHelp(fn) { helpExtras.push(fn); if (helpData) fn(helpData); }
 async function loadHelp() {
   if (!helpData) {
     try { helpData = await (await fetch(new URL("../data/help.json", import.meta.url))).json(); }
     catch { helpData = {}; }
+    for (const fn of helpExtras) fn(helpData);
   }
   return helpData;
 }

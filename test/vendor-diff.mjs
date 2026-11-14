@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import vm from "node:vm";
 import assert from "node:assert/strict";
-import { FIELDS, BY_ID, decodeSettings, encodeSettings, optionsFor, TSL_TYPES } from "../public/lib/tsl6-settings.js";
+import { FIELDS, BY_ID, decodeSettings, encodeSettings, optionsFor, TSL_TYPES, PROMPT_TIMES, isPromptTime, promptDelayMs } from "../public/lib/tsl6-settings.js";
 
 const setJs = process.argv[2];
 if (!setJs) { console.error("usage: node test/vendor-diff.mjs <vendor set.js>"); process.exit(2); }
@@ -174,6 +174,23 @@ for (const hw of TSL_TYPES) {
   assert.equal(v[32] & UNMAPPED[32], 0, "vendor clears unmapped bits");
   assert.equal(o[32] & UNMAPPED[32], UNMAPPED[32], "we keep unmapped bits");
   checks += 4;
+}
+
+// 6. The prompt-build options are an app extra: only with promptBuild, first in the list.
+for (const rand of [0, 1]) {
+  const plain = optionsFor(BY_ID.time, { rand }, 6);
+  const extra = optionsFor(BY_ID.time, { rand }, 6, { promptBuild: true });
+  const promptVals = PROMPT_TIMES.map(([v]) => v);
+  assert.ok(!plain.some(([v]) => promptVals.includes(v)), "vendor list has no prompt values");
+  assert.deepEqual(extra.slice(0, promptVals.length).map(([v]) => v), promptVals, "promptBuild adds the prompt values first");
+  assert.deepEqual(extra.slice(promptVals.length), plain, "the rest is the vendor list");
+  for (const v of promptVals) {
+    assert.equal(encodeSettings(validPayload(40, 6), { time: v }, 6, "time")[27] & 15, v, `time ${v} encodes`);
+    assert.ok(isPromptTime(v) && promptDelayMs(v) > 0, `time ${v} is a prompt value`);
+  }
+  for (const v of [1, 2, 8, 15]) assert.ok(!isPromptTime(v) && promptDelayMs(v) === 0, `time ${v} is a stock value`);
+  assert.deepEqual(PROMPT_TIMES.map(([, ms]) => ms), [300, 600, 1000, 1500, 2000, 3000, 5000], "delay means match scroll_prompt.S");
+  checks += 4 + 2 * promptVals.length + 4;
 }
 
 console.log(`vendor-diff: ${checks} checks passed`);

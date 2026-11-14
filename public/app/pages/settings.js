@@ -1,8 +1,8 @@
 // Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
-import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton } from "../ui.js";
+import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton, extendHelp } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
-import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches } from "../../lib/tsl6-settings.js";
+import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, TIME_PROMPT_ZH } from "../../lib/tsl6-settings.js";
 
 let ZH = null;
 async function zhLabels() {
@@ -22,6 +22,31 @@ const GROUPS = [
   { en: "Doors and charging", zh: "车门与充电", rows: [["frontRightEasyAccess"], ["TimeOpenFrontBox"], ["TimeOpenChargeDoor"]] },
   { en: "Module", zh: "模块", rows: [["beep"], ["led"], ["BLEPWR"]] },
 ];
+// App extras beyond the vendor menus: Scroll interval "On hands-on prompt" (prompt build, see the Firmware page).
+const EXTRA = { promptBuild: true };
+// Help for the prompt options, after the vendor text of "Scroll interval". Same span format as data/help.json.
+const PROMPT_HELP = {
+  en: [
+    [[["", "When set to "], ["g", "On hands-on prompt"], ["", " (needs the prompt build: Tools → Firmware):"]],
+      [["", "When AP assist is "], ["o", "on"], ["", ", the module scrolls the wheel -1 and +1 only when the car shows the hands-on prompt."]],
+      [["", "It waits about the time in the option (random, +/-50 %). Then it sends one pair, and nothing more until the prompt goes away."]],
+      [["", "The gap between -1 and +1 is the "], ["g", "Up/down tick gap"], ["", " +/-50 %, random."]],
+      [["", "The Car tab shows the live state while it is open."]]],
+    [[["", "Note: with the normal firmware, these options scroll every 2-3 s (about 0.6 s) or every 35-65 s (the others). The vendor Mini App does not know them: if you save settings there, it sets every 2-3 s."]]],
+  ],
+  zh: [
+    [[["", "设置为"], ["g", "手扶提示时"], ["", "（需要提示版固件：工具 → 固件）："]],
+      [["", "当"], ["o", "开启"], ["", "AP辅助后，只有车机显示手扶方向盘提示时，模块才操作滚轮减1加1。"]],
+      [["", "它等待选项中的时间（随机±50%），然后操作一次减加，提示消失前不再操作。"]],
+      [["", "减1与加1之间的间隔为"], ["g", "加减时间间隔"], ["", "±50%随机。"]],
+      [["", "车辆页打开时显示实时状态。"]]],
+    [[["", "注：普通固件下，这些选项为每2-3秒（约0.6秒）或每35-65秒（其他）。厂家小程序不认识这些选项：在小程序里保存设置会改为每2-3秒。"]]],
+  ],
+};
+extendHelp(H => {
+  const base = H.help_time || { en: [], zh: [] };
+  H.help_time = { en: [...(base.en || []), ...PROMPT_HELP.en], zh: [...(base.zh || []), ...PROMPT_HELP.zh] };
+});
 const LAB = ["airAutoArid", "backHazardRearFogLight", "steerAssistanceLighting"]; // the seat-belt rows need vendor admin: not shown
 // The vendor opens the help text after these change to a value > 0.
 const HELP_ON_SET = new Set(["apAutoOpenType", "stoppingMode", "steerAssistanceLighting", "backHazardRearFogLight"]);
@@ -49,10 +74,10 @@ definePage("settings", () => {
   const EN_NAME = { apAutoOpenType: "AP resume mode" };
   const label = id => ({ en: EN_NAME[id] || BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
   function options(id, vals) {
-    const en = optionsFor(BY_ID[id], vals, S.hwType);
+    const en = optionsFor(BY_ID[id], vals, S.hwType, EXTRA);
     let zh = ZH && ZH[id] && ZH[id].options;
     if (id === "lr" && [6, 8, 19].includes(S.hwType) && ZH) zh = ZH._lr68.options;
-    if (id === "time" && ZH) zh = (vals.rand === 0 ? ZH._timeFixed : ZH._timeRand).options;
+    if (id === "time" && ZH) zh = { ...TIME_PROMPT_ZH, ...(vals.rand === 0 ? ZH._timeFixed : ZH._timeRand).options };
     return en.map(([v, t]) => [v, L(t, zh && zh[v])]);
   }
   // Rows show the value without "(default)"; the sheet still marks the default option.
@@ -62,8 +87,8 @@ definePage("settings", () => {
   };
   // True when the value differs from the factory default (the English option list marks the default).
   const changed = (id, vals) => {
-    const o = optionsFor(BY_ID[id], vals, S.hwType).find(([v]) => v === vals[id]);
-    return !!o && !/\(default\)/.test(o[1]) && optionsFor(BY_ID[id], vals, S.hwType).some(([, t]) => /\(default\)/.test(t));
+    const o = optionsFor(BY_ID[id], vals, S.hwType, EXTRA).find(([v]) => v === vals[id]);
+    return !!o && !/\(default\)/.test(o[1]) && optionsFor(BY_ID[id], vals, S.hwType, EXTRA).some(([, t]) => /\(default\)/.test(t));
   };
 
   async function save(id, raw) {
@@ -101,7 +126,7 @@ definePage("settings", () => {
 
   // A setting with exactly the options "Off" and "On" shows a switch. Returns [offValue, onValue] or null.
   function onOff(id, vals) {
-    const o = optionsFor(BY_ID[id], vals, S.hwType);
+    const o = optionsFor(BY_ID[id], vals, S.hwType, EXTRA);
     if (o.length !== 2) return null;
     const off = o.find(([, t]) => plainLabel(t) === "Off"), on = o.find(([, t]) => plainLabel(t) === "On");
     return off && on ? [off[0], on[0]] : null;
@@ -139,7 +164,7 @@ definePage("settings", () => {
       if (!it) continue;
       items.push(it);
       // A sub-row stays visible (search finds it) but looks quiet while its parent is Off.
-      const parentOff = (() => { const o = optionsFor(BY_ID[id], vals, S.hwType).find(([v]) => v === vals[id]); return !!o && plainLabel(o[1]) === "Off"; })();
+      const parentOff = (() => { const o = optionsFor(BY_ID[id], vals, S.hwType, EXTRA).find(([v]) => v === vals[id]); return !!o && plainLabel(o[1]) === "Off"; })();
       if (subId) { const s = item(subId, vals, { sub: true, off: parentOff }); if (s) items.push(s); }
     }
     if (!items.length) return [];
