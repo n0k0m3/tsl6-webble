@@ -10,14 +10,14 @@ import {
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
-const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" }, vehicleAPState: { en: "Car Autopilot", zh: "车辆AP" } };
+const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" }, vehicleAPState: { en: "Car Autopilot state", zh: "车辆AP状态" } };
 
 // Switch rows by section. Icons are Lucide names.
 const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
 const LIGHTS = [["pulseHighBeam", "lamp-high-strobe"], ["pulseFrontFog", "fog-front-strobe"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear-strobe"], ["pilotRearFog", "fog-rear"], ["pulseHorn", "megaphone"]];
 const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"]];
 const DRIVING = [["sportMode", "zap"], ["offRearMotor", "power-off"], ["offFrontMotor", "power-off"], ["offESP", "shield-off"]];
-const DOOR_ICON = { 0: "car-door-fl", 1: "car-door-fr", 2: "car-door-rl", 3: "car-door-rr", 8: "car-frunk", 9: "car-trunk", 10: "inbox", 11: "car-mirrors", 22: "lock", 23: "lock-open" };
+const DOOR_ICON = { 0: "car-door-fl", 1: "car-door-fr", 2: "car-door-rl", 3: "car-door-rr", 8: "car-frunk", 9: "car-trunk", 10: "car-glovebox", 11: "car-mirrors", 22: "lock", 23: "lock-open" };
 const DOOR_LABEL = {
   0: ["Front left", "左前门"], 1: ["Front right", "右前门"], 2: ["Rear left", "左后门"], 3: ["Rear right", "右后门"],
   8: ["Frunk", "前备箱"], 9: ["Trunk", "后备箱"], 10: ["Glovebox", "储物箱"], 11: ["Mirrors", "后视镜"], 22: ["Lock", "锁车"], 23: ["Unlock", "解锁"],
@@ -235,8 +235,8 @@ definePage("status", () => {
       ...["driverSeat", "passengerSeat"].map(id => ROW_BY_ID[id]).filter(shown).map(r => [L(r.en, r.zh), r.help]),
       [L("Seat memory", "座椅记忆"), "help_sideMemory"]]);
     if (seats.length) el.append(grp(sec("Seats", "座椅", seatHelp),
-      h("div", { class: "card" }, seats), h("p", { class: "sec-foot" }, L("Hold an arrow to move. Tap a memory to recall it, hold it to save.",
-        "按住箭头移动。点击记忆位置恢复，长按保存。"))));
+      h("div", { class: "card" }, seats, h("p", { class: "card-foot" }, L("Hold an arrow to move. Tap a memory to recall it, hold it to save.",
+        "按住箭头移动。点击记忆位置恢复，长按保存。")))));
 
     // Scroll wheel
     const wheel = ROW_BY_ID.wheel;

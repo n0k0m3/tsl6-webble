@@ -94,7 +94,7 @@ definePage("settings", () => {
     return off && on ? [off[0], on[0]] : null;
   }
 
-  function item(id, vals, { sub = false, first = false } = {}) {
+  function item(id, vals, { sub = false, first = false, off = false } = {}) {
     const f = BY_ID[id];
     if (!f || !appliesTo(f, S.hwType) || vals[id] === undefined) return null;
     const bin = onOff(id, vals);
@@ -103,13 +103,13 @@ definePage("settings", () => {
       const sw = toggle({ checked: vals[id] === bin[1], disabled: busy, label: L(label(id)), onchange: v => save(id, v ? bin[1] : bin[0]) });
       sw.dataset.id = `set-${id}`;
       const name = h("div", { class: "li-title" }, h("span", null, L(label(id))), changed(id, vals) ? h("span", { class: "legend-dot", role: "img", "aria-label": L("Changed from default", "已改动") }) : null);
-      return h("div", { class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), "data-row": id },
+      return h("div", { class: "li" + (sub ? " sub" : "") + (off ? " off" : "") + (first ? " first" : ""), "data-row": id },
         sub ? h("div", { class: "li-text" }, name)
           : h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + L(label(id)), onclick: () => showHelp("help_" + id, L(label(id))) }, name),
         sw);
     }
     return h("button", {
-      class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
+      class: "li" + (sub ? " sub" : "") + (off ? " off" : "") + (first ? " first" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
       onclick: () => pick(id, vals, sub ? null : "help_" + id),
     },
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(id))),
@@ -124,7 +124,9 @@ definePage("settings", () => {
       const it = item(id, vals);
       if (!it) continue;
       items.push(it);
-      if (subId) { const s = item(subId, vals, { sub: true }); if (s) items.push(s); }
+      // A sub-row stays visible (search finds it) but looks quiet while its parent is Off.
+      const parentOff = (() => { const o = optionsFor(BY_ID[id], vals, S.hwType).find(([v]) => v === vals[id]); return !!o && plainLabel(o[1]) === "Off"; })();
+      if (subId) { const s = item(subId, vals, { sub: true, off: parentOff }); if (s) items.push(s); }
     }
     if (!items.length) return [];
     const help = groupHelpButton(title, rows.map(r => r[0]).filter(id => BY_ID[id] && appliesTo(BY_ID[id], S.hwType) && vals[id] !== undefined).map(id => [L(label(id)), "help_" + id]));

@@ -19,7 +19,7 @@
 .bat-row.avg { color: var(--bat-avg); } .bat-row.delta { color: var(--bat-dim); }
 .bat-val { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
-.bat-link { display: inline-flex; align-items: center; gap: 2px; margin-right: -4px; color: var(--muted); font-weight: 500; min-height: 32px; }
+.bat-link { display: inline-flex; align-items: center; gap: 2px; margin-right: -4px; color: var(--fg); font-weight: 600; min-height: 32px; }
 .bat-link svg { color: var(--faint); }
 .bat-empty { color: var(--muted); text-align: center; margin: 14px 0 4px; font-size: 14px; }
 .bat-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
@@ -37,7 +37,7 @@ button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor:
 .bat-stat-l { margin-top: 2px; font-size: 13.5px; color: var(--muted); }
 .bat-sum-card { margin-bottom: 0; }
 /* one card per group, rows like the settings rows */
-.bat-group .bat-row { padding: 10px 16px; align-items: center; min-height: 46px; }
+.bat-group .bat-row { padding: 7px 16px; align-items: center; min-height: 40px; }
 .bat-group .bat-row:first-child { border-top: 0; }
 .bat-groups .grp:first-child .sec-label { margin-top: 26px; }
 @media (max-width: 380px) { .bat-stat-v { font-size: 26px; } }

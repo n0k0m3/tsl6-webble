@@ -122,16 +122,18 @@ definePage("shortcuts", () => {
     const delBtn = editing || isDraft
       ? h("button", { class: "ibtn flat sc-del", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20))
       : h("span");
+    // View mode: Try sits at the right of both lines. Edit mode: delete on the first line, Try on the second.
+    const tryBtn = isDraft ? null : h("button", { class: "ibtn flat sc-try" + (editing ? "" : " span2"), type: "button", disabled: busy || !r.action,
+      "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"), onclick: () => tryAction(r.action) }, icon("play", 18));
     const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") },
-      h("span", { class: "sc-num" }, String(i + 1)), h("span", { class: "sc-tag" }, L("When", "当")), trig, delBtn);
+      h("span", { class: "sc-num" }, String(i + 1)), h("span", { class: "sc-tag" }, L("When", "当")), trig, editing || isDraft ? delBtn : tryBtn);
     if (isDraft) {
       c.append(h("p", { class: "sc-draft-note" }, L("Not saved. Select a trigger to save this row.", "未保存。选择快捷指令后保存。")));
       return c;
     }
     c.append(h("span", { class: "sc-tag sc-then" }, L("Then", "则")),
       pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作"), unknown: !!r.action && !fnKnown(list.fun, r.action) }),
-      h("button", { class: "ibtn flat sc-try", type: "button", disabled: busy || !r.action, "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"),
-        onclick: () => tryAction(r.action) }, icon("play", 18)));
+      ...(editing ? [tryBtn] : []));
     if (moving === i) c.append(moveBar(i, rows.length, { onmove: move, ondone: () => { moving = -1; render(); }, disabled: busy }));
     longPress(c, () => { if (!busy) { moving = i; render(); } });
     return c;

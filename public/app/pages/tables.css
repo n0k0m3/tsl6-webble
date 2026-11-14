@@ -3,7 +3,8 @@
 .tbl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 12px 0; }
 .card.tbl-toolbar { background: none; border: 0; border-radius: 0; overflow: visible; }
 .tbl-toolbar .help-btn { margin: 0; width: 40px; height: 40px; }
-.tbl-toolbar .help-btn svg { width: 20px; height: 20px; }
+.tbl-toolbar .help-btn svg { width: 16px; height: 16px; }
+.tbl-toolbar .btn.small { min-height: 40px; }
 .tbl-toolbar .tools { display: flex; align-items: center; gap: 8px; }
 .tbl-count { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; padding-left: 2px; }
 .tbl-end { display: flex; justify-content: center; margin: 4px 0 16px; }
@@ -31,7 +32,7 @@
 .link-btn:disabled { opacity: .4; cursor: not-allowed; }
 
 /* shortcuts: one joined list. Each entry reads "When <trigger> / Then <action>". */
-.sc-card { padding: 10px 6px 10px 8px; display: grid; grid-template-columns: 22px 2.9em minmax(0, 1fr) 44px; column-gap: 6px; row-gap: 6px; align-items: center; margin: 0; border-radius: 0; border-bottom-width: 0; }
+.sc-card { padding: 10px 6px 10px 8px; display: grid; grid-template-columns: 16px 2.6em minmax(0, 1fr) 40px; column-gap: 6px; row-gap: 6px; align-items: center; margin: 0; border-radius: 0; border-bottom-width: 0; }
 .sc-card > .sc-tag { width: auto; font: 600 13px var(--font); color: var(--muted); }
 .sc-card > .sc-then { grid-column: 2; }
 .sc-card > .sc-num { align-self: center; font: 600 13px var(--font); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 0; text-align: left; }
@@ -41,7 +42,8 @@
 .sc-card > .sc-del { color: var(--bad); }
 .sc-card > .sc-del:hover { color: var(--bad); background: var(--bad-soft); }
 .sc-card .tpick.unknown { border-color: transparent; background: var(--warn-soft); padding-left: 8px; }
-.sc-card > .ibtn.flat { width: 44px; height: 44px; justify-self: center; }
+.sc-card > .ibtn.flat { width: 40px; height: 44px; justify-self: center; }
+.sc-card > .sc-try.span2 { grid-row: span 2; }
 .sc-card > .sc-try { color: var(--accent-text); }
 .sc-card > .sc-try:hover { color: var(--accent-text); background: var(--accent-soft); }
 .sc-card > .sc-draft-note, .sc-card > .move-bar { grid-column: 1 / -1; }
