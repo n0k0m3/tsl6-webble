@@ -274,10 +274,10 @@ button.li:disabled { cursor: progress; }
 .steps li::marker { color: var(--fg); font-weight: 600; }
 
 /* ---------------------------------------------------------------- controls */
-/* Switch: a rocker, not a pill. Off = outlined track and a grey knob on the left.
+/* Switch: a pill (owner's choice after the council run). Off = outlined track and a grey knob on the left.
    On = blue track and a white knob on the right. Unknown = dashed track, knob in the middle. */
-.switch { position: relative; width: 50px; height: 30px; border-radius: 9px; border: 1.5px solid var(--btn-b); background: var(--sw-track); cursor: pointer; flex: none; padding: 0; transition: background .15s, border-color .15s; }
-.switch::after { content: ""; position: absolute; top: 3.5px; left: 3.5px; width: 20px; height: 20px; border-radius: 5px; background: var(--sw-knob); box-shadow: 0 0 0 1px var(--btn-b), 0 1px 2px rgba(18, 24, 33, .3); transition: left .15s, background .15s; }
+.switch { position: relative; width: 50px; height: 30px; border-radius: 15px; border: 1.5px solid var(--btn-b); background: var(--sw-track); cursor: pointer; flex: none; padding: 0; transition: background .15s, border-color .15s; }
+.switch::after { content: ""; position: absolute; top: 3.5px; left: 3.5px; width: 20px; height: 20px; border-radius: 50%; background: var(--sw-knob); box-shadow: 0 0 0 1px var(--btn-b), 0 1px 2px rgba(18, 24, 33, .3); transition: left .15s, background .15s; }
 .switch[aria-checked="true"] { background: var(--accent-ui); border-color: var(--accent-ui); }
 .switch[aria-checked="true"]::after { left: 23.5px; background: #fff; box-shadow: 0 1px 2px rgba(18, 24, 33, .3); }
 .switch.unknown { border-style: dashed; }
@@ -484,9 +484,9 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
   background: linear-gradient(to right, var(--accent-ui) var(--fill), var(--sw-track) var(--fill)); }
 .opt-range-row input::-moz-range-track { height: 6px; border-radius: 3px; background: var(--sw-track); }
 .opt-range-row input::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--accent-ui); }
-.opt-range-row input::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 6px; background: #fff;
+.opt-range-row input::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 50%; background: #fff;
   border: 1.5px solid var(--btn-b); box-shadow: 0 1px 3px rgba(18, 24, 33, .3); }
-.opt-range-row input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 6px; background: #fff; border: 1.5px solid var(--btn-b); }
+.opt-range-row input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 1.5px solid var(--btn-b); }
 /* the sheet edge shows against the dimmed page in dark */
 .dlg { border-top-color: var(--line); }
 /* checkbox in the palette */
