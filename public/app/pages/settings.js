@@ -102,18 +102,18 @@ definePage("settings", () => {
       // The switch writes at once. The name opens the help text (sub-rows have none).
       const sw = toggle({ checked: vals[id] === bin[1], disabled: busy, label: L(label(id)), onchange: v => save(id, v ? bin[1] : bin[0]) });
       sw.dataset.id = `set-${id}`;
-      const name = h("div", { class: "li-title" }, h("span", null, L(label(id))));
+      const name = h("div", { class: "li-title" }, h("span", null, L(label(id))), changed(id, vals) ? h("span", { class: "legend-dot", role: "img", "aria-label": L("Changed from default", "已改动") }) : null);
       return h("div", { class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), "data-row": id },
         sub ? h("div", { class: "li-text" }, name)
           : h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + L(label(id)), onclick: () => showHelp("help_" + id, L(label(id))) }, name),
-        changed(id, vals) ? h("span", { class: "legend-dot", role: "img", "aria-label": L("Changed from default", "已改动") }) : null,
         sw);
     }
     return h("button", {
       class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
       onclick: () => pick(id, vals, sub ? null : "help_" + id),
     },
-    h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(id))))),
+    h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(id))),
+      changed(id, vals) ? h("span", { class: "legend-dot", role: "img", "aria-label": L("Changed from default", "已改动") }) : null)),
     h("div", { class: "li-trail" }, h("span", { class: "val" + (changed(id, vals) ? " changed" : "") }, valueText(id, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
   }
 
@@ -150,11 +150,11 @@ definePage("settings", () => {
     const moduleOff = vals.mianSwitch === 1;
 
     // Master switch first. While the module is off, the vendor app hides every other row.
-    el.append(h("div", { class: "card lead master" }, (() => {
+    el.append(h("div", { class: "card lead master span" }, (() => {
       const f = "mianSwitch";
       return h("button", { class: "li first", type: "button", "data-id": "set-mianSwitch", disabled: busy, onclick: () => pick(f, vals, "help_mianSwitch") },
         h("span", { class: "chip" + (moduleOff ? "" : " on") }, icon("power", 24)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(f)))),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Master switch", ZH && ZH[f] ? ZH[f].zh : "总开关"))),
           h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })()));
@@ -166,10 +166,11 @@ definePage("settings", () => {
     const shownIds = [...GROUPS.flatMap(g => g.rows.flat().filter(Boolean)), ...(S.prefs.lab ? LAB : [])];
     const anyChanged = shownIds.some(id => BY_ID[id] && vals[id] !== undefined && appliesTo(BY_ID[id], S.hwType) && changed(id, vals));
     el.insertBefore(searchBox, el.firstChild);
-    if (anyChanged) searchBox.after(h("p", { class: "legend span" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置")));
     if (hadFocus) searchInput.focus();
     const groupsBefore = el.childElementCount;
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
+    const firstHead = el.querySelector(".grp .sec-label");
+    if (anyChanged && firstHead) firstHead.append(h("span", { class: "sec-side legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed", "已改动")));
     if (query) {
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;

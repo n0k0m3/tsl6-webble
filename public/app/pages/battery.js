@@ -44,14 +44,14 @@ definePage("battery", () => {
   const card = h("div", { class: "bat-card" }, head, h("div", { class: "bat-rule" }), list);
   el.append(
     h("div", { class: "seg", role: "tablist" }, segBtns),
-    h("p", { class: "sub-note" }, L("For reference only. The car maker's data is the authority.", "本数据仅供参考，以车企官方数据为准")),
     packWrap, card,
+    h("p", { class: "sec-foot" }, L("For reference only. The car maker's data is the authority.", "本数据仅供参考，以车企官方数据为准")),
   );
 
   // SI unit spelling on screen (the codec keeps the vendor text "KWH", "KW", "KM" for its vendor diff test).
   // Large numbers get a thousands separator; "℃" becomes "°C" (the Barlow font has no ℃ glyph).
   const units = t => String(t).replace(/ KWH\b/g, " kWh").replace(/ KW\b/g, " kW").replace(/ KM\b/g, " km")
-    .replace(/\s*℃/g, " °C").replace(/(^|[^.\d])(\d{4,})(?=[.\s]|$)/g, (m, p, d) => p + d.replace(/\B(?=(\d{3})+$)/g, ",")); // no lookbehind: older iOS
+    .replace(/\s*℃/g, " °C").replace(/(\d) %/g, "$1%").replace(/(^|[^.\d])(\d{4,})(?=[.\s]|$)/g, (m, p, d) => p + d.replace(/\B(?=(\d{3})+$)/g, ",")); // no lookbehind: older iOS
   // Pack tab groups (presentation only; every row of the module stays).
   const GROUP = {
     voltage: "pack", current: "pack", power: "pack", temp: "pack", heating: "pack",

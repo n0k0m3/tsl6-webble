@@ -10,7 +10,7 @@ import {
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
-const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" }, vehicleAPState: { en: "Autopilot", zh: "车辆AP" } };
+const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" } };
 
 // Switch rows by section. Icons are Lucide names.
 const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
