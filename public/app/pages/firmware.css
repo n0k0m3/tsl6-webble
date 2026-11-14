@@ -1,9 +1,7 @@
-/* Firmware page (the flasher in the app). Same look as flash.html. */
+/* Firmware page (the flasher in the app). */
 [data-page="firmware"] .btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 [data-page="firmware"] .fw-note { margin: 0; }
 [data-page="firmware"] .card a { color: var(--accent-text); }
-[data-page="firmware"] a.li { text-decoration: none; color: inherit; }
-[data-page="firmware"] a.li:hover { background: var(--btn-hover); }
 [data-page="firmware"] .row.check-row { justify-content: flex-start; }
 [data-page="firmware"] .subhead + .form { padding-top: 8px; }
 /* Fixed red, as .dlg-btn.danger: the dark-theme --bad is too light for white text. */

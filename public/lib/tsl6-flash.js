@@ -1,6 +1,7 @@
 // Firmware flash over BLE: image checks, the bootloader UID, and the two update sequences.
-// Moved from flash.html, which flashed a module on the car (2026-11-13). Keep the timeouts, the try counts
-// and the frame order as they are. flash.html keeps its own copy until a car flash passes with the app page.
+// Moved from the earlier flasher page (flash.html), which flashed a module on the car (2026-11-13).
+// The app Firmware page with this code passed a car flash on 2026-11-14.
+// Keep the timeouts, the try counts and the frame order as they are.
 //
 // The link interface (app/ble.js LinkBase):
 //   request(cmd, payload, {timeout, tries}) -> reply frame {cmd, payload} or null

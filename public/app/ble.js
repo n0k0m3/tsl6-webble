@@ -1,5 +1,5 @@
 // BLE link to the TSL6 runtime: framing, chunked writes, request/reply, frame dispatch.
-// Framing, chunk sizes and the 20-byte fallback are the same as the flasher page (tested on the car).
+// Framing, chunk sizes and the 20-byte fallback are the same as the earlier flasher page (tested on the car).
 import { hex } from "../lib/tsl6-settings.js";
 import { inBoot } from "../lib/tsl6-flash.js";
 

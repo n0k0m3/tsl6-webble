@@ -1,4 +1,4 @@
-// Firmware: flash a runtime image on the app's own BLE link (the flasher of flash.html, as an app page).
+// Firmware: flash a runtime image on the app's own BLE link. It replaces the earlier flasher page (flash.html).
 // The flash frames go straight to link.request. They never pass gate(): its "untested command" dialog
 // would use up the 10 s boot window.
 // The session (image, armed flash, progress) lives at module scope. A language change mounts a new page,
@@ -94,7 +94,7 @@ async function startAuto() {
   const link = S.link;
   if (!link || !inRuntime(link.status) || !F.image || !F.image.pages) return;
   F.armed = true; F.armedUntil = Date.now() + ARMED_MS; F.restarting = false;
-  // flash.html disarmed on the next connect after the expiry. Here a timer does it, so the button comes back.
+  // The earlier page disarmed on the next connect after the expiry. Here a timer does it, so the button comes back.
   setTimeout(() => { if (F.armed && Date.now() > F.armedUntil) { F.armed = false; F.restarting = false; log("armed flash expired", "warn"); changed(); } }, ARMED_MS + 100);
   F.modId = "";
   F.busy = true; changed();
@@ -108,7 +108,7 @@ async function startAuto() {
     keepGoing: () => F.armed && S.link === link,
     close: () => { if (S.link === link) link.close(); }, // never close a link that a manual Connect replaced
     log, sleep,
-    // As in flash.html, only a status after the drop (a reconnect) can say that the boot window passed.
+    // As in the earlier page, only a status after the drop (a reconnect) can say that the boot window passed.
     onDropped: () => { F.restarting = F.restarting || !link.connected; F.busy = false; changed(); },
   });
   if (F.armed && !ok && S.link === link) say("Tap Connect now and pick TSL6-BOOT. The flash starts by itself.", "请立即点“连接”并选择 TSL6-BOOT，刷写会自动开始。", "warn");
@@ -221,11 +221,7 @@ definePage("firmware", () => {
         h("div", { class: "li-trail" }, chunkVal)),
       h("button", { class: "li", type: "button", onclick: () => go("log") }, h("span", { class: "chip" }, icon("file-text", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Log and capture", "日志与抓包"))),
-          h("div", { class: "li-sub" }, L("Every frame of the flash", "刷写的全部数据帧"))), h("span", { class: "chev" }, icon("chevron-right", 18))),
-      h("a", { class: "li", href: "flash.html", "data-id": "fw-standalone" }, h("span", { class: "chip" }, icon("hard-drive-download", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Standalone flasher", "独立刷写页面"))),
-          h("div", { class: "li-sub" }, L("The earlier flasher page, proven on the car. It opens a new connection.", "已在实车验证的旧刷写页面，会建立新的连接。"))),
-        h("span", { class: "chev" }, icon("chevron-right", 18)))));
+          h("div", { class: "li-sub" }, L("Every frame of the flash", "刷写的全部数据帧"))), h("span", { class: "chev" }, icon("chevron-right", 18)))));
 
   function drawImage() {
     clear(imgOut);
