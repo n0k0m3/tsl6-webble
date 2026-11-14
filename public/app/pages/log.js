@@ -53,7 +53,7 @@ definePage("log", () => {
       h("p", { style: { margin: 0 } }, L(
         "A capture holds the last status and this log. It contains your module ID and VIN. Do not post it in public.",
         "抓包包含最新状态与日志，其中有模块ID与车架号，请勿公开发布。")),
-      h("div", { class: "tools", style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+      h("div", { class: "tools wrap" },
         btn({ en: "Copy capture", zh: "复制抓包" }, async () => {
           try { await navigator.clipboard.writeText(capture()); toast(L("Copied", "已复制"), "ok"); }
           catch { toast(L("Clipboard blocked. Use Download.", "无法复制，请下载"), "warn"); }

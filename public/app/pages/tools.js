@@ -19,30 +19,30 @@ async function serviceMode() {
 // [id, icon, chip color, en, zh, sub en, sub zh, action]
 const GROUPS = [
   { en: "Car features", zh: "车辆功能", items: [
-    ["shortcuts", "workflow", "blue", "Shortcuts", "快捷指令", "Run a car action from a button or an event", "用按键或事件触发车辆动作", () => go("shortcuts")],
-    ["blebtn", "radio", "blue", "BLE buttons", "蓝牙按钮", "Pair remote buttons and set their actions", "配对蓝牙按钮并设置动作", () => go("blebtn")],
-    ["rgb", "palette", "blue", "Ambient light", "原厂氛围灯", "Zone rules and whole-car effects", "分区联动与整车效果", () => go("rgb")],
-    ["gauge", "gauge", "blue", "Gauges", "仪表盘", "Full-screen dashboard", "全屏仪表", () => go("gauge")],
+    ["shortcuts", "workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
+    ["blebtn", "radio", "", "BLE buttons", "蓝牙按钮", "Remote buttons and their actions", "遥控按钮及其动作", () => go("blebtn")],
+    ["rgb", "palette", "", "Ambient light", "原厂氛围灯", "Zone rules and effects", "分区联动与整车效果", () => go("rgb")],
+    ["gauge", "gauge", "", "Gauges", "仪表盘", "Full-screen dashboard", "全屏仪表", () => go("gauge")],
   ] },
   { en: "Data", zh: "数据", items: [
-    ["battery", "battery-medium", "green", "Battery", "电池信息", "Pack, cells and DC-DC", "动力电池、单体电压、DCDC", () => go("battery")],
-    ["backup", "database-backup", "green", "Backup and restore", "备份恢复", "Save settings, shortcuts and buttons to a file", "将设置、快捷指令和按钮保存为文件", () => go("backup")],
-    ["log", "file-text", "green", "Log and capture", "日志与抓包", "Frames sent and received", "收发数据帧", () => go("log")],
+    ["battery", "battery-medium", "", "Battery", "电池信息", "Pack, cells and DC-DC", "动力电池、单体电压、DCDC", () => go("battery")],
+    ["backup", "database-backup", "", "Backup and restore", "备份恢复", "Settings, shortcuts and buttons in one file", "设置、快捷指令和按钮存为一个文件", () => go("backup")],
+    ["log", "file-text", "", "Log and capture", "日志与抓包", "Frames sent and received", "收发数据帧", () => go("log")],
   ] },
   { en: "Module", zh: "模块", items: [
-    ["password", "key-round", "amber", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
-    ["firmware", "hard-drive-download", "amber", "Firmware", "固件", "Flash the runtime (opens the flasher)", "刷写固件（打开刷写页面）", () => { location.href = "flash.html"; }],
-    ["reset", "rotate-ccw", "red", "Restore defaults", "恢复默认", "Reset every setting of the module", "将模块所有设置恢复默认", restoreDefaults],
+    ["password", "key-round", "", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
+    ["firmware", "hard-drive-download", "", "Firmware", "固件", "Opens the flasher", "打开刷写页面", () => { location.href = "flash.html"; }],
+    ["reset", "rotate-ccw", "red", "Restore defaults", "恢复默认", "Resets every module setting", "重置模块所有设置", restoreDefaults],
   ] },
   { en: "Advanced", zh: "高级", items: [
     ["blehost", "bluetooth-searching", "", "BLE host pairing", "蓝牙配对", "Devices that the module connects to", "模块连接的蓝牙设备", () => go("blehost")],
     ["debug", "terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
-    ["service", "wrench", "red", "Tesla service mode", "特斯拉维护模式", "Car in P. Needs driving-system controls", "需挂P档，需允许驾驶系统控制", serviceMode],
+    ["service", "wrench", "red", "Tesla service mode", "特斯拉维护模式", "Car in P, driving-system controls on", "P档，并允许驾驶系统控制", serviceMode],
   ] },
 ];
 
 definePage("tools", () => {
-  const el = h("div", { class: "page", "data-page": "tools" });
+  const el = h("div", { class: "page cols", "data-page": "tools" });
   function render() {
     clear(el);
     el.append(h("h1", { class: "lg-title" }, L("Tools", "工具")));
@@ -51,14 +51,14 @@ definePage("tools", () => {
     for (const g of GROUPS) {
       const items = g.items.filter(([id]) => !moduleOff || ["password", "reset", "firmware", "log"].includes(id));
       if (!items.length) continue;
-      el.append(h("div", { class: "sec-label" }, L(g.en, g.zh)),
+      el.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(g.en, g.zh)),
         h("div", { class: "card" }, items.map(([id, ico, color, en, zh, sen, szh, fn], i) =>
           h("button", { class: "li" + (i === 0 ? " first" : "") + (color === "red" ? " danger" : ""), type: "button", "data-id": `tool-${id}`, onclick: fn },
-            h("span", { class: "chip " + color }, icon(ico, 18)),
+            h("span", { class: "chip " + color }, icon(ico, 22)),
             h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub" }, L(sen, szh))),
-            h("span", { class: "chev", style: { color: "var(--faint)" } }, icon("chevron-right", 18))))));
+            h("span", { class: "chev" }, icon("chevron-right", 18)))))));
     }
-    if (moduleOff) el.append(h("p", { class: "sec-foot" }, L("The module is off, so most tools are hidden. Turn it on in Settings.", "模块已停用，大部分工具已隐藏。请在设置中启用。")));
+    if (moduleOff) el.append(h("p", { class: "sec-foot span" }, L("The module is off, so most tools are hidden. Turn it on in Settings.", "模块已停用，大部分工具已隐藏。请在设置中启用。")));
   }
   const offs = [];
   render();

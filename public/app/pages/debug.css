@@ -1,16 +1,17 @@
 /* CAN debug page (vendor debug). The log fills the space between the two input bars. */
 .dbg { display: flex; flex-direction: column; gap: 8px;
   height: calc(100dvh - var(--top-h) - var(--tab-h) - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height: 360px; }
-.dbg-bar { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px; flex: none; }
-.dbg-bar input.text { flex: 1 1 auto; min-width: 0; padding: 7px 8px; font-size: 14px; box-shadow: inset 1px 1px 3px rgba(0,0,0,.12); }
+.dbg-bar { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 8px; flex: none; }
+.dbg-bar input.text { flex: 1 1 auto; min-width: 0; padding: 7px 9px; font-size: 14px; background: var(--bg); }
 .dbg-btns { display: flex; gap: 6px; flex: none; }
-.dbg-bar .btn.small { padding: 6px 9px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-.dbg-pause { color: #e08a1e; }
-.dbg-clear { color: #018fe0; }
-.dbg-state { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); padding: 0 4px; flex: none; }
+.dbg-bar .btn.small { padding: 6px 10px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.dbg-pause { color: var(--warn); }
+.dbg-clear { color: var(--fg); }
+.dbg-state { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; color: var(--muted); padding: 0 4px; flex: none; }
 .dbg-mode.on { color: var(--ok); font-weight: 600; }
-.dbg-log { flex: 1 1 auto; min-height: 120px; margin: 0; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+.dbg-log { flex: 1 1 auto; min-height: 120px; margin: 0; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
   padding: 8px 10px; font: 12px/1.5 var(--mono); color: var(--fg); white-space: pre; user-select: text; -webkit-user-select: text; }
-.dbg-tx input.text { color: #3a9d6a; }
-.dbg-warn { flex: none; margin: 0 4px; font-size: 11.5px; color: var(--muted); }
-@media (max-width: 380px) { .dbg-bar .btn.small { padding: 6px 7px; font-size: 13px; } }
+.dbg-tx .btn { color: var(--bad); }
+.dbg-warn { flex: none; margin: 0 4px; font-size: 13px; color: var(--muted); max-width: 62ch; }
+
+@media (max-width: 380px) { .dbg-bar .btn.small { padding: 6px 7px; font-size: 13.5px; } }

@@ -81,8 +81,8 @@ export async function gate(type, opts = {}) {
   if (!link || !link.connected) { toast(L("Connect to the module first.", "请先连接蓝牙")); return false; }
   if (opts.danger && !S.prefs.allowDrive) {
     await alertBox({
-      en: "This control changes a driving system (motor, ESP, service mode or raw CAN). It is off by default. To use it, open Me > Advanced and turn on \"Allow driving-system controls\".",
-      zh: "此控制会改变驾驶相关系统（电机、ESP、维护模式或CAN发送）。默认关闭。如需使用，请在「我的 > 高级」中打开「允许驾驶系统控制」。",
+      en: "This control changes a driving system (motor, ESP, service mode or raw CAN). It is off by default. To use it, turn on Device > Allow driving-system controls.",
+      zh: "此控制会改变驾驶相关系统（电机、ESP、维护模式或CAN发送）。默认关闭。如需使用，请在「设备」中打开「允许驾驶系统控制」。",
     }, L("Blocked", "已阻止"));
     return false;
   }
@@ -184,7 +184,7 @@ export async function connect({ all = false } = {}) {
     const st = await link.readStatus();
     if (!st) {
       log("no status reply after connect: the module sent nothing back", "bad");
-      toast(L("The module does not answer. See Me > Log and capture.", "模块无应答，请查看「我的 > 日志与抓包」"), "bad", 4000);
+      toast(L("The module does not answer. See Tools > Log and capture.", "模块无应答，请查看「工具 > 日志与抓包」"), "bad", 4000);
     }
     if (S.prefs.autoGauge && S.hwType && !S.blank) go("gauge");
   } catch (e) {
@@ -243,8 +243,8 @@ function show(reuse = false) {
   clear(main).append(c.page.el);
   if (c.page.enter) try { c.page.enter(); } catch (e) { log(`enter ${c.id}: ${e.message}`, "bad"); }
   main.scrollTop = 0; window.scrollTo(0, 0);
-  renderTop();
   renderTabs();
+  renderTop();
 }
 // Rebuild the current page (language change or a big state change).
 export function rerender() {
@@ -266,7 +266,7 @@ function renderTop() {
   const sub = stack.length > 1;
   const link = S.link;
   const on = !!(link && link.connected);
-  const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L(`${link.name} · password`, `${link.name} · 需密码`) : link.name;
+  const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name;
   const chip = h("button", { class: "conn-chip", type: "button", "data-id": "conn-chip", onclick: () => { if (current().id !== "me" || stack.length > 1) switchTab("me"); } },
     h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", null, chipText));
   clear(top).append(...[
@@ -275,7 +275,10 @@ function renderTop() {
     sub ? null : chip,
     h("button", { class: "top-lang", onclick: () => setLang(getLang() === "zh" ? "en" : "zh"), "aria-label": "Language / 语言" }, getLang() === "zh" ? "EN" : "中"),
   ].filter(Boolean));
-  document.title = (sub && c.page.title ? L(c.page.title) + " · " : "") + "TSL6";
+  document.title = (sub && c.page.title ? L(c.page.title) + " | " : "") + "TSL6";
+  // The sidebar lamp (desktop) shows the same link state as the chip.
+  const mark = document.querySelector(".side-brand .mark");
+  if (mark) mark.className = "mark" + (on ? (link.authed ? " on" : " warn") : "");
 }
 window.addEventListener("scroll", () => { const t = $("#top"); if (t) t.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
 function renderTabs() {
@@ -285,7 +288,7 @@ function renderTabs() {
     onclick: () => { if (t.id !== tab || stack.length > 1) switchTab(t.id); },
   }, icon(t.icon, 22), h("span", null, L(t)))),
   // Desktop sidebar brand. It is the last child, so the tab order (nth-child) does not change; CSS puts it first.
-  h("div", { class: "side-brand" }, h("span", { class: "mark" }, icon("car", 18)), "TSL6"));
+  h("div", { class: "side-brand" }, h("span", { class: "mark", "aria-hidden": "true" }), "TSL6"));
 }
 
 onLang(() => { rerender(); });

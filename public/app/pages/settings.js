@@ -43,6 +43,11 @@ definePage("settings", () => {
     const o = options(id, vals).find(([v]) => v === vals[id]);
     return o ? o[1].replace(/\s*\((default)\)|\s*[（(]默认[)）]/g, "") : `? (${vals[id]})`;
   };
+  // True when the value differs from the factory default (the English option list marks the default).
+  const changed = (id, vals) => {
+    const o = optionsFor(BY_ID[id], vals, S.hwType).find(([v]) => v === vals[id]);
+    return !!o && !/\(default\)/.test(o[1]) && optionsFor(BY_ID[id], vals, S.hwType).some(([, t]) => /\(default\)/.test(t));
+  };
 
   async function save(id, raw) {
     if (busy) return;
@@ -82,7 +87,7 @@ definePage("settings", () => {
       onclick: () => pick(id, vals, sub ? null : "help_" + id),
     },
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(id))))),
-    h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(id, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
+    h("div", { class: "li-trail" }, h("span", { class: "val" + (changed(id, vals) ? " changed" : "") }, valueText(id, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
   }
 
   function group(title, rows, vals, foot) {
@@ -94,17 +99,18 @@ definePage("settings", () => {
       if (subId) { const s = item(subId, vals, { sub: true }); if (s) items.push(s); }
     }
     if (!items.length) return [];
-    return [h("div", { class: "sec-label" }, L(title)), h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null].filter(Boolean);
+    return [h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(title)), h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null)];
   }
 
   function render() {
     clear(el);
     el.append(h("h1", { class: "lg-title" }, L("Settings", "设置")));
     const link = S.link, p = S.status;
+    el.className = "page" + (link && link.connected && p && !S.blank ? " cols" : " narrow");
     if (!link || !link.connected || !p || S.blank) {
       const on = link && link.connected;
       el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
-        h("span", { class: "chip" + (on ? " amber" : " blue") }, icon(on ? "key-round" : "bluetooth", 26)),
+        h("span", { class: "chip" + (on ? " amber" : " blue") }, icon(on ? "key-round" : "bluetooth", 24)),
         h("h2", null, on ? L("Enter the BLE password", "请输入蓝牙密码") : L("Not connected", "未连接")),
         h("p", null, on ? L("The module sends its settings after it accepts the password.", "模块验证密码后才会发送设置。")
           : L("Connect to the module to read and change its settings.", "连接模块后即可读取和修改设置。")),
@@ -116,16 +122,16 @@ definePage("settings", () => {
     const moduleOff = vals.mianSwitch === 1;
 
     // Master switch first. While the module is off, the vendor app hides every other row.
-    el.append(h("div", { class: "card" }, (() => {
+    el.append(h("div", { class: "card span master" }, (() => {
       const f = "mianSwitch";
       return h("button", { class: "li first", type: "button", "data-id": "set-mianSwitch", disabled: busy, onclick: () => pick(f, vals, "help_mianSwitch") },
-        h("span", { class: "chip" + (moduleOff ? " amber" : " green") }, icon("power", 18)),
+        h("span", { class: "chip" + (moduleOff ? "" : " on") }, icon("power", 24)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(f)))),
           h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })()));
     if (moduleOff) {
-      el.append(h("p", { class: "sec-foot" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
+      el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
     }
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
@@ -141,13 +147,13 @@ definePage("settings", () => {
       }))) return;
       savePref("lab", v === 1); render();
     } },
-    h("span", { class: "chip amber" }, icon("activity", 18)),
+    h("span", { class: "chip" + (S.prefs.lab ? " amber" : "") }, icon("activity", 22)),
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Lab functions", "实验室功能"))),
-      h("div", { class: "li-sub" }, L("Experimental rows from the vendor app", "原厂小程序中的实验功能"))),
+      h("div", { class: "li-sub" }, L("Experimental rows", "实验功能"))),
     h("div", { class: "li-trail" }, h("span", { class: "val" }, S.prefs.lab ? L("On", "开启") : L("Off", "关闭")), h("span", { class: "chev" }, icon("chevron-right", 18))));
     const labRows = S.prefs.lab ? LAB.map(id => item(id, vals)).filter(Boolean) : [];
-    el.append(h("div", { class: "sec-label" }, L("Lab", "实验室")), h("div", { class: "card" }, labItem, labRows));
-    el.append(h("p", { class: "foot" }, L("Each change is saved on the module at once.", "每项修改会立即保存到模块。")));
+    el.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L("Lab", "实验室")), h("div", { class: "card" }, labItem, labRows)));
+    el.append(h("p", { class: "foot span" }, L("Each change saves to the module at once.", "每项修改会立即保存到模块。")));
   }
 
   const offs = [];

@@ -27,7 +27,7 @@ definePage("password", () => {
   }
 
   const el = h("div", { class: "page" }, section({ en: "Change BLE password (default: 1234)", zh: "修改蓝牙密码 (默认:1234)" },
-    h("div", { class: "form" }, oldI, newI, conI, h("div", { style: { textAlign: "center" } }, btn({ en: "Change", zh: "确认修改" }, submit, { kind: "green" })))),
+    h("div", { class: "form" }, oldI, newI, conI, h("div", null, btn({ en: "Change password", zh: "确认修改" }, submit, { kind: "primary" })))),
   h("p", { class: "foot" }, L(
     "Use 4 printable characters. If you forget the new password, you cannot change settings until you reflash the module.",
     "请使用4位可打印字符。忘记新密码后，需重新刷写模块才能修改设置。")));

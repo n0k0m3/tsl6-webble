@@ -14,16 +14,16 @@
 .rgb-rule-head { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px; background: var(--btn); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
 .rgb-rule.moving .rgb-rule-head { background: color-mix(in srgb, var(--mint) 30%, var(--btn)); }
 .rgb-rule.unsaved { border-style: dashed; }
-.rgb-name { display: inline-flex; align-items: center; gap: 4px; max-width: 62%; min-width: 0; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); font-size: 16px; }
+.rgb-name { display: inline-flex; align-items: center; gap: 4px; max-width: 62%; min-width: 0; padding: 6px 10px; border: 1px solid var(--btn-b); border-radius: var(--r-sm); background: var(--btn); font-size: 16px; }
 .rgb-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 button.rgb-name { cursor: pointer; text-align: left; }
 .rgb-head-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.rgb-num { min-width: 22px; text-align: center; font-size: 17px; color: var(--muted); }
+.rgb-num { min-width: 22px; text-align: center; font: 600 17px var(--font-head); color: var(--muted); }
 .rgb-mini { width: 36px; height: 36px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; border-radius: 6px; }
 .rgb-mini:disabled { opacity: .3; cursor: not-allowed; }
 .rgb-mini.on { color: var(--mint-d); }
 .rgb-try { margin-right: auto; }
-.rgb-swatch { width: 128px; height: 40px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; padding: 0; box-shadow: var(--shadow); }
+.rgb-swatch { width: 128px; height: 40px; border: 1px solid var(--btn-b); border-radius: var(--r-sm); cursor: pointer; padding: 0; }
 .rgb-state { display: grid; justify-items: center; gap: 10px; padding: 8px 12px 16px; }
 .rgb-state .empty { padding-bottom: 4px; }
 

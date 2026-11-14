@@ -1,5 +1,9 @@
 /* Shortcut, BLE button and backup pages (vendor btn, blebtn, backup). */
-.tbl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 8px 14px; }
+/* the toolbar is a plain row above the list, not a card */
+.tbl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 12px 0; }
+.card.tbl-toolbar { background: none; border: 0; border-radius: 0; overflow: visible; }
+.tbl-toolbar .help-btn { margin: 0; width: 40px; height: 40px; }
+.tbl-toolbar .help-btn svg { width: 20px; height: 20px; }
 .tbl-toolbar .tools { display: flex; gap: 8px; }
 .tbl-toolbar .ibtn.link { color: var(--accent-text); }
 .tbl-toolbar .ibtn:disabled { opacity: .45; cursor: not-allowed; }
@@ -7,14 +11,14 @@
 .tbl-center { display: flex; justify-content: center; padding: 0 12px 14px; }
 .tbl-busy { text-align: center; color: var(--accent-text); }
 
-.ibtn.flat { border: 0; background: none; box-shadow: none; width: 36px; height: 36px; color: var(--faint); }
+.ibtn.flat { border: 0; background: none; width: 38px; height: 38px; color: var(--faint); }
 .ibtn.flat:hover { color: var(--bad); background: var(--btn-hover); }
 .ibtn.flat:disabled { opacity: .4; cursor: not-allowed; }
 .ibtn.flat.on-mint { color: var(--on-accent); }
 
 /* picker opener: current value + chevron */
-.tpick { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; max-width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid var(--line);
-  border-radius: var(--r-sm); background: var(--card-2); color: var(--fg); font-size: 15px; text-align: left; cursor: pointer; }
+.tpick { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; max-width: 100%; min-height: 40px; padding: 6px 10px; border: 1px solid var(--btn-b);
+  border-radius: var(--r-sm); background: var(--btn); color: var(--fg); font-size: 15.5px; text-align: left; cursor: pointer; }
 .tpick:hover { background: var(--btn-hover); }
 .tpick-t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .tpick svg { flex: none; color: var(--faint); }
@@ -23,23 +27,25 @@
 .link-btn:hover { background: var(--accent-soft); }
 .link-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-/* shortcut cards: When <trigger> / Then <action> */
-.sc-card { padding: 10px 10px 10px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+/* shortcuts: one joined list. Each entry reads "When <trigger> / Then <action>". */
+.sc-card { padding: 12px 10px 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0; border-radius: 0; border-bottom-width: 0; }
+.tbl-toolbar + .sc-card { border-top-left-radius: var(--r-lg); border-top-right-radius: var(--r-lg); }
+section.sc-card:last-of-type, .sc-card:not(:has(+ .sc-card)) { border-bottom-width: 1px; border-bottom-left-radius: var(--r-lg); border-bottom-right-radius: var(--r-lg); margin-bottom: 12px; }
 .sc-card.draft { border-style: dashed; }
 .sc-card.moving, .bb-card.moving { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); border-color: var(--accent); }
 .sc-line { min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 40px; }
-.sc-tag { flex: none; width: 3.2em; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--faint); text-transform: uppercase; }
+.sc-tag { flex: none; width: 2.9em; font: 600 15px var(--font-head); color: var(--muted); }
 .sc-right { display: flex; align-items: center; gap: 0; flex: none; }
-.sc-num { font-size: 13px; color: var(--faint); min-width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; }
-.sc-draft-note { margin: 0 0 2px; font-size: 13px; color: var(--warn); }
+.sc-num { font: 600 14px var(--font-head); color: var(--muted); min-width: 2.2em; text-align: right; }
+.sc-draft-note { margin: 0 0 2px; font-size: 14px; color: var(--warn); }
 .move-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); }
 .move-bar .move-note { margin-right: auto; color: var(--muted); font-size: 14px; }
 
 /* BLE button cards */
 .bb-card .move-bar { padding: 8px 12px; }
 .bb-head { display: flex; align-items: center; gap: 6px; padding: 10px 8px 10px 14px; border-bottom: 1px solid var(--line-2); }
-.bb-name { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bb-bat { font-size: 13px; color: var(--muted); margin-right: 4px; white-space: nowrap; }
+.bb-name { flex: 1; min-width: 0; font: 700 18px var(--font-head); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb-bat { font-size: 14px; color: var(--muted); margin-right: 4px; white-space: nowrap; }
 .bb-head .ibtn.flat { color: var(--faint); }
 .bb-row { min-height: 52px; }
 .bb-row .row-left { flex: none; }
@@ -52,12 +58,12 @@
 
 /* backup */
 .bk-intro { padding: 10px 14px; }
-.bk-intro p { margin: 0 0 6px; font-size: 14px; }
-.bk-intro .bk-small { color: var(--muted); font-size: 13px; margin: 0; }
+.bk-intro p { margin: 0 0 6px; font-size: 15px; max-width: 62ch; }
+.bk-intro .bk-small { color: var(--muted); font-size: 14px; margin: 0; }
 .bk-card { border-color: var(--line); }
 .bk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line-2); }
-.bk-title { font-size: 16px; font-weight: 600; }
-.bk-time { font-size: 13px; color: var(--muted); text-align: right; }
+.bk-title { font: 700 18px var(--font-head); }
+.bk-time { font-size: 14px; color: var(--muted); text-align: right; }
 .bk-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; }
 .bk-row .btn { min-width: 88px; font-weight: 600; }
 .btn.blue { color: var(--accent-text); }
@@ -74,3 +80,5 @@
   .tpick { font-size: 14px; }
   .bk-row .btn { min-width: 72px; }
 }
+/* the backup intro is plain text above the cards */
+.card.bk-intro { background: none; border: 0; border-radius: 0; padding: 0 2px 14px; }

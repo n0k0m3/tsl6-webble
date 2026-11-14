@@ -38,7 +38,7 @@ definePage("gaugemenu", () => {
         }));
     });
     const reset = h("div", { class: "row", style: { justifyContent: "center" } },
-      btn({ en: "Restore defaults", zh: "恢复默认" }, onReset, { kind: "small", color: "#F6931F" }));
+      btn({ en: "Restore defaults", zh: "恢复默认" }, onReset, { kind: "small danger" }));
     el.append(section(null, rows, reset));
     el.append(h("p", { class: "foot" }, L(
       "These settings stay on this phone. Nothing goes to the module.",

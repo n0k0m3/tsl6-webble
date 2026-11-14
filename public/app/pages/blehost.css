@@ -1,34 +1,36 @@
-/* BLE host pairing page (vendor bleHost). */
-.bh-label { color: #808080; font-size: 14.5px; margin: 10px 8px 6px 18px; }
-.bh-label-row { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
-.bh-find { color: #0868f0; background: var(--btn); display: inline-flex; align-items: center; gap: 6px; min-width: 76px; justify-content: center; }
+/* BLE host pairing page (vendor bleHost). Same tokens and section titles as the rest of the app. */
+.bh-label { font: 700 20px/1.2 var(--font-head); color: var(--fg); margin: 4px 2px 10px; }
+.bh-label-row { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
+.bh-find { color: var(--accent-text); display: inline-flex; align-items: center; gap: 6px; min-width: 84px; justify-content: center; }
 .bh-spin { width: 13px; height: 13px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: bh-spin .8s linear infinite; }
 @keyframes bh-spin { to { transform: rotate(360deg); } }
-.bh-card { background: var(--card); border-radius: 15px; padding: 4px 10px; margin: 0 6px 8px; box-shadow: var(--shadow); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bh-card { border: 1px solid var(--line); } }
-:root[data-theme="dark"] .bh-card { border: 1px solid var(--line); }
-.bh-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 6px 2px; border: 0; border-top: 1px solid var(--line);
+@media (prefers-reduced-motion: reduce) { .bh-spin { animation-duration: 3s; } }
+.bh-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 0 12px; margin: 0 0 8px; }
+.bh-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 4px; border: 0; border-top: 1px solid var(--line-2);
   background: none; text-align: left; font: inherit; color: inherit; }
 .bh-card > .bh-row:first-child { border-top: 0; }
 .bh-tap { cursor: pointer; }
-.bh-tap:active { background: var(--mint-l); }
+.bh-tap:hover { background: var(--btn-hover); }
+.bh-tap:active { background: var(--accent-soft); }
 .bh-tap > * { pointer-events: none; }
-.bh-ico { flex: none; color: #8c939d; display: grid; place-items: center; }
-.bh-ico.paired { color: #018fe0; }
+/* telltale: a paired device is lit, a nearby device is dark */
+.bh-ico { flex: none; color: var(--tt-off); display: grid; place-items: center; }
+.bh-ico.paired { color: var(--accent-text); }
 .bh-text { flex: 1 1 auto; min-width: 0; }
-.bh-name { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bh-mac { color: #999; font-size: 12.5px; margin-top: 2px; font-family: var(--mono); }
-.bh-conn { color: #0868f0; font-family: system-ui, sans-serif; }
+.bh-name { color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bh-mac { color: var(--muted); font-size: 13px; margin-top: 2px; font-family: var(--mono); }
+.bh-conn { color: var(--ok); font-family: var(--font); font-weight: 600; }
 .bh-right { flex: none; display: flex; align-items: center; gap: 10px; }
 .bh-dyn { display: flex; align-items: center; gap: 10px; pointer-events: none; }
-.bh-batt { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: #0868f0; }
+.bh-batt { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 600; color: var(--fg); }
 .bh-sig { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
 .bh-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; }
-.bh-bars i { width: 3px; background: rgba(127,127,127,.35); border-radius: 1px; }
+.bh-bars i { width: 3px; background: var(--line); border-radius: 1px; }
 .bh-bars i:nth-child(1) { height: 4px; } .bh-bars i:nth-child(2) { height: 6px; } .bh-bars i:nth-child(3) { height: 8px; }
 .bh-bars i:nth-child(4) { height: 11px; } .bh-bars i:nth-child(5) { height: 13px; } .bh-bars i:nth-child(6) { height: 16px; }
-.bh-bars i.on { background: #30cc30; }
-.bh-dbm { font-size: 9.5px; color: var(--muted); }
-.bh-del { flex: none; width: 38px; height: 38px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; border-radius: 8px; }
-.bh-del:active { background: var(--btn); color: var(--bad); }
+.bh-bars i.on { background: var(--ok); }
+.bh-dbm { font-size: 11px; color: var(--muted); }
+.bh-del { flex: none; width: 40px; height: 40px; border: 0; background: none; color: var(--faint); display: grid; place-items: center; cursor: pointer; border-radius: var(--r-sm); }
+.bh-del:hover { background: var(--btn-hover); color: var(--bad); }
+.bh-del:active { background: var(--bad-soft); color: var(--bad); }
 .bh-empty { color: var(--muted); text-align: center; margin: 0; padding: 18px 0; }
