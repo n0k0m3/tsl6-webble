@@ -10,11 +10,11 @@ import {
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
-const NAME = { apAutoState: { en: "AP resume", zh: "AP恢复" }, vehicleAPState: { en: "Autopilot engaged", zh: "车辆AP已启用" } };
+const NAME = { apAutoState: { en: "AP resume", zh: "AP恢复" }, vehicleAPState: { en: "Autopilot", zh: "车辆AP" } };
 
 // Switch rows by section. Icons are Lucide names.
 const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "steering-wheel"]];
-const LIGHTS = [["pulseHighBeam", "lamp-high-strobe"], ["pulseFrontFog", "fog-front-strobe"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear-strobe"], ["pilotRearFog", "fog-rear"], ["pulseHorn", "megaphone"]];
+const LIGHTS = [["pulseHighBeam", "lamp-high-strobe"], ["pulseFrontFog", "fog-front-strobe"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear-strobe"], ["pilotRearFog", "fog-rear"], ["pulseHorn", "car-horn"]];
 const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"]];
 const DRIVING = [["sportMode", "zap"], ["offRearMotor", "power-off"], ["offFrontMotor", "power-off"], ["offESP", "shield-off"]];
 const DOOR_ICON = { 0: "car-door-fl", 1: "car-door-fr", 2: "car-door-rl", 3: "car-door-rr", 8: "car-frunk", 9: "car-trunk", 10: "car-glovebox", 11: "car-mirrors", 22: "lock", 23: "lock-open" };

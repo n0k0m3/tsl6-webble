@@ -42,3 +42,4 @@ button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor:
 .bat-groups .grp:first-child .sec-label { margin-top: 26px; }
 @media (max-width: 380px) { .bat-stat-v { font-size: 26px; } }
 .bat-stat-v small.pct { margin-left: 1px; }
+button.bat-val.bat-link { font-weight: 600; }

@@ -16,7 +16,7 @@
   --accent: #2563eb; --accent-ui: #2563eb; --accent-text: #1d4ed8; --accent-soft: #e5edfd; --on-accent: #ffffff; --accent-hover: #1d4ed8;
   --ok: #15803d; --ok-soft: #e3f3e8; --warn: #b45309; --warn-soft: #fcf4e8; --bad: #c02626; --bad-soft: #fbe9e9;
   --off: #79849a; --btn: #ffffff; --btn-b: #7f8a9b; --btn-hover: #eef1f5;
-  --sw-track: #d5dbe3; --sw-knob: #ffffff; --tt-off: #7b8698; --tt-green: #15803d; --tt-blue: #1d4ed8; --tt-amber: #b45309;
+  --sw-track: #d5dbe3; --sw-knob: #ffffff; --tt-off: #626d7e; --tt-green: #15803d; --tt-blue: #1d4ed8; --tt-amber: #b45309;
   --hl-g: #15803d; --hl-o: #b45309; --hl-r: #c02626;
   /* cluster panel: the car display */
   --cl-bg: #131a23; --cl-fg: #eef2f7; --cl-muted: #a3afbf; --cl-line: #2b3644; --cl-off: #5f6b7b;
@@ -270,6 +270,7 @@ button.li:disabled { cursor: progress; }
 .linkbtn { background: none; border: 0; color: var(--accent-text); font-weight: 600; font-size: 14px; cursor: pointer; padding: 8px; }
 .steps { margin: 0; padding: 0 0 0 20px; color: var(--muted); font-size: 15px; line-height: 1.45; }
 .steps li + li { margin-top: 8px; }
+.steps li { text-wrap: pretty; }
 .steps li::marker { color: var(--fg); font-weight: 600; }
 
 /* ---------------------------------------------------------------- controls */
@@ -466,7 +467,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* a number setting: one value, a slider and minus / plus */
 .opt-range { padding: 8px 0 4px; }
 .opt-range-val { text-align: center; font: 700 40px/1.1 var(--font-head); font-variant-numeric: tabular-nums; }
-.opt-range-def { display: block; width: fit-content; margin: 2px 0 0 auto; min-height: 40px; padding: 6px 8px; border: 0; background: none; border-radius: var(--r-sm); font: 600 13.5px var(--font); color: var(--accent-text); cursor: pointer; }
+.opt-range-def { display: block; width: fit-content; margin: 6px auto 0; min-height: 44px; padding: 6px 14px; border: 0; background: none; border-radius: var(--r-sm); font: 600 13.5px var(--font); color: var(--accent-text); cursor: pointer; }
 .opt-range-def:disabled { color: var(--muted); font-weight: 500; cursor: default; border-color: transparent; }
 .opt-range-def:not(:disabled):hover { background: var(--accent-soft); }
 .opt-range-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
@@ -509,7 +510,13 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .tpick.unknown { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 60%, var(--btn-b)); }
 .tpick.unknown svg:first-child { color: var(--warn); }
 /* sub-pages on a phone: the link chip shows only its lamp, so the page title has room */
-@media (max-width: 559px) { .conn-chip.compact { padding: 0 10px; gap: 7px; font-size: 13.5px; } .conn-chip.compact span:last-child { max-width: 96px; } }
+@media (max-width: 559px) {
+  .conn-chip.compact { position: relative; width: 40px; padding: 0; justify-content: center; }
+  .conn-chip.compact .chip-name { display: none; }
+  .conn-chip.compact .dot { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; box-shadow: 0 0 0 2px var(--card); }
+}
+.conn-chip:not(.compact) .chip-bt { display: none; }
+@media (min-width: 560px) { .conn-chip.compact .chip-bt { display: none; } }
 /* round 3 (council) */
 /* compact link chip on sub-pages: a bare lamp, not an empty button */
 /* section help marks sit back */
@@ -541,7 +548,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .set-top { display: grid; gap: 12px; margin-bottom: 4px; }
 .set-find { display: flex; flex-direction: column; gap: 6px; }
 .set-find .set-search { margin: 0; }
-.set-find .legend { align-self: flex-end; margin: 0 2px; }
+.set-find .legend { align-self: flex-start; margin: 0 2px; font-size: 13px; }
 .set-top .card.lead.master { margin: 0; }
 @media (min-width: 1180px) {
   .set-top { grid-template-columns: 1fr 1fr; column-gap: 28px; align-items: start; margin-bottom: 14px; }
@@ -583,3 +590,15 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 [data-page="settings"] .li.sub { border-top-color: transparent; background: linear-gradient(var(--line-2), var(--line-2)) 34px 0 / calc(100% - 34px) 1px no-repeat; }
 [data-page="settings"] button.li.sub:hover { background-color: var(--btn-hover); }
 .li.sub.off .chev { opacity: .4; }
+/* round 8 (council) */
+/* action tiles: a light edge on a filled tile; the pressed state keeps the accent edge */
+.acts .act { border-color: var(--line); }
+.dpad .act { border-color: transparent; }
+.dpad > .act:nth-child(5) { border-color: var(--btn-b); }
+/* seats: one control height */
+.acts.seatgrid .act { min-height: 56px; padding: 6px 4px; gap: 3px; }
+/* the row chevron ends on the switch edge */
+.li-trail .chev { margin-right: -6px; }
+/* scroll wheel card fits its dial on wide screens */
+@media (min-width: 1180px) { .grp > .card:has(> .dpad) { max-width: 260px; } }
+@media (max-width: 559px) { .dlg-btn { min-height: 48px; } }

@@ -37,7 +37,9 @@ definePage("settings", () => {
   const searchBox = h("div", { class: "set-search" }, icon("search", 18), searchInput);
   const matches = id => !query || L(label(id)).toLowerCase().includes(query);
 
-  const label = id => ({ en: BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
+  // Display names that differ from the codec label (the Car tab uses "AP resume" for the live switch).
+  const EN_NAME = { apAutoOpenType: "AP resume mode" };
+  const label = id => ({ en: EN_NAME[id] || BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
   function options(id, vals) {
     const en = optionsFor(BY_ID[id], vals, S.hwType);
     let zh = ZH && ZH[id] && ZH[id].options;

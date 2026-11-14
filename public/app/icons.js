@@ -15,16 +15,17 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 export const ICONS = {
-// Car plan glyphs (top view, front up) drawn for this app in the Lucide style; the part that moves is filled.
+// Car plan glyphs (top view, front up) drawn for this app in the Lucide style; the car outline is faint and the part that moves is filled in the accent.
+"car-horn": "<path d=\"M4 9.5h3.5L13 5v14l-5.5-4.5H4z\" /> <path d=\"M16.5 9a4 4 0 0 1 0 6\" /> <path d=\"M19 6.5a7.5 7.5 0 0 1 0 11\" />",
 "steering-wheel": "<circle cx=\"12\" cy=\"12\" r=\"9.5\" /> <circle cx=\"12\" cy=\"12\" r=\"2.5\" /> <path d=\"M2.5 12h7\" /> <path d=\"M14.5 12h7\" /> <path d=\"M12 14.5v7\" />",
 "car-glovebox": "<path d=\"M2.5 8h19\" /> <rect x=\"4.5\" y=\"8\" width=\"15\" height=\"10\" rx=\"2\" /> <path d=\"M10 12.5h4\" />",
-"car-door-fl": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M1.5 8h5v6.5h-5z\" stroke=\"none\" fill=\"currentColor\" />",
-"car-door-fr": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M17.5 8h5v6.5h-5z\" stroke=\"none\" fill=\"currentColor\" />",
-"car-door-rl": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M1.5 13h5v6.5h-5z\" stroke=\"none\" fill=\"currentColor\" />",
-"car-door-rr": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M17.5 13h5v6.5h-5z\" stroke=\"none\" fill=\"currentColor\" />",
-"car-frunk": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M6.5 8V6.5A4.5 4.5 0 0 1 11 2h2a4.5 4.5 0 0 1 4.5 4.5V8z\" fill=\"currentColor\" stroke=\"none\" />",
-"car-trunk": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M6.5 16.5v1A4.5 4.5 0 0 0 11 22h2a4.5 4.5 0 0 0 4.5-4.5v-1z\" fill=\"currentColor\" stroke=\"none\" />",
-"car-mirrors": "<rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /> <path d=\"M1.5 8h5v4h-5z\" fill=\"currentColor\" stroke=\"none\" /> <path d=\"M17.5 8h5v4h-5z\" fill=\"currentColor\" stroke=\"none\" />",
+"car-door-fl": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M1.5 8h5v6.5h-5z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
+"car-door-fr": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M17.5 8h5v6.5h-5z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
+"car-door-rl": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M1.5 13h5v6.5h-5z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
+"car-door-rr": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M17.5 13h5v6.5h-5z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
+"car-frunk": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M6.5 8V6.5A4.5 4.5 0 0 1 11 2h2a4.5 4.5 0 0 1 4.5 4.5V8z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
+"car-trunk": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M6.5 16.5v1A4.5 4.5 0 0 0 11 22h2a4.5 4.5 0 0 0 4.5-4.5v-1z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
+"car-mirrors": "<g style=\"color: var(--faint)\"><rect x=\"6.5\" y=\"2\" width=\"11\" height=\"20\" rx=\"4.5\" /> <path d=\"M8.5 8h7\" /> <path d=\"M8.5 16.5h7\" /></g> <path d=\"M1.5 8h5v4h-5z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" /> <path d=\"M17.5 8h5v4h-5z\" stroke=\"none\" style=\"fill: var(--accent-ui)\" />",
 // Car lamp glyphs drawn for this app in the Lucide style (24 grid, 2 px stroke), after the ISO 2575 telltales.
 "lamp-high": "<path d=\"M12.5 5c5 0 9 3.1 9 7s-4 7-9 7c-.8 0-1.5-.7-1.5-1.5v-11c0-.8.7-1.5 1.5-1.5z\" /> <path d=\"M2 7.5h6.5\" /> <path d=\"M2 12h6.5\" /> <path d=\"M2 16.5h6.5\" />",
 "lamp-high-strobe": "<path d=\"M12.5 5c5 0 9 3.1 9 7s-4 7-9 7c-.8 0-1.5-.7-1.5-1.5v-11c0-.8.7-1.5 1.5-1.5z\" /> <path d=\"M2 12h6.5\" /> <path d=\"M2 16.5h6.5\" /> <path d=\"M7 1 4.5 4.5h3L5 8\" />",

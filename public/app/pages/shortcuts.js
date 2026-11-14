@@ -21,9 +21,14 @@ export function longPress(el, onlong, ms = 600) {
 
 // A pill button that opens a picker (looks like the vendor picker text with a chevron).
 // unknown: the id is not in the function list; the pill shows a warning colour and icon.
-export function pill(text, onclick, { disabled, label, unknown = false } = {}) {
+// split: "Front-left map light, long press" shows the control on line 1 and the gesture (muted) on line 2.
+export function pill(text, onclick, { disabled, label, unknown = false, split = false } = {}) {
+  const k = split ? String(text).search(/[,，]\s*/) : -1;
+  const body = k > 0
+    ? h("span", { class: "tpick-t two" }, h("span", null, String(text).slice(0, k)), h("span", { class: "tpick-sub" }, String(text).slice(k).replace(/^[,，]\s*/, "")))
+    : h("span", { class: "tpick-t" }, text);
   return h("button", { class: "tpick" + (unknown ? " unknown" : ""), type: "button", onclick, disabled, "aria-label": label ? `${label}: ${text}` : null },
-    unknown ? icon("triangle-alert", 16) : null, h("span", { class: "tpick-t" }, text), icon("chevron-down", 16));
+    unknown ? icon("triangle-alert", 16) : null, body, icon("chevron-down", 16));
 }
 
 // Up / down / done bar for the card in move mode.
@@ -118,7 +123,7 @@ definePage("shortcuts", () => {
   function card(r, i, isDraft) {
     // Grid: "#n When" / "Then" | the two pickers (same width) | delete and try.
     const trig = pill(isDraft ? L(LABELS.triggerNone) : fnLabel(list.btn, r.trigger, LABELS.triggerNone),
-      () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令"), unknown: !isDraft && !!r.trigger && !fnKnown(list.btn, r.trigger) });
+      () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令"), split: true, unknown: !isDraft && !!r.trigger && !fnKnown(list.btn, r.trigger) });
     const delBtn = editing || isDraft
       ? h("button", { class: "ibtn flat sc-del", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20))
       : h("span");
@@ -132,7 +137,7 @@ definePage("shortcuts", () => {
       return c;
     }
     c.append(h("span", { class: "sc-tag sc-then" }, L("Then", "则")),
-      pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作"), unknown: !!r.action && !fnKnown(list.fun, r.action) }),
+      pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作"), split: true, unknown: !!r.action && !fnKnown(list.fun, r.action) }),
       ...(editing ? [tryBtn] : []));
     if (moving === i) c.append(moveBar(i, rows.length, { onmove: move, ondone: () => { moving = -1; render(); }, disabled: busy }));
     longPress(c, () => { if (!busy) { moving = i; render(); } });

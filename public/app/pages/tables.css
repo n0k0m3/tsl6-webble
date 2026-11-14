@@ -24,7 +24,10 @@
 .tpick { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; max-width: 100%; min-height: 42px; padding: 6px 10px; border: 1px solid var(--btn-b);
   border-radius: var(--r-sm); background: var(--btn); color: var(--fg); font-size: 15px; text-align: left; cursor: pointer; }
 .tpick:hover { background: var(--btn-hover); }
-.tpick-t { flex: 1; min-width: 0; overflow: hidden; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; text-wrap: balance; }
+.tpick-t { flex: 1; min-width: 0; overflow: hidden; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; text-wrap: pretty; }
+.tpick-t.two { display: flex; flex-direction: column; gap: 1px; }
+.tpick-t.two > span { overflow: hidden; text-overflow: ellipsis; }
+.tpick-sub { font-size: 13.5px; color: var(--muted); }
 .tpick svg { flex: none; color: var(--faint); }
 .tpick:disabled { opacity: .55; cursor: not-allowed; }
 .link-btn { flex: none; background: none; border: 0; min-height: 36px; padding: 6px 8px; color: var(--accent-text); font-size: 14px; font-weight: 600; cursor: pointer; border-radius: var(--r-sm); }
@@ -32,10 +35,10 @@
 .link-btn:disabled { opacity: .4; cursor: not-allowed; }
 
 /* shortcuts: one joined list. Each entry reads "When <trigger> / Then <action>". */
-.sc-card { padding: 10px 6px 10px 8px; display: grid; grid-template-columns: 16px 2.6em minmax(0, 1fr) 40px; column-gap: 6px; row-gap: 6px; align-items: center; margin: 0; border-radius: 0; border-bottom-width: 0; }
+.sc-card { padding: 10px 6px 10px 8px; display: grid; grid-template-columns: 18px 2.6em minmax(0, 1fr) 40px; column-gap: 6px; row-gap: 6px; align-items: center; margin: 0; border-radius: 0; border-bottom-width: 0; }
 .sc-card > .sc-tag { width: auto; font: 500 13px var(--font); color: var(--muted); }
 .sc-card > .sc-then { grid-column: 2; }
-.sc-card > .sc-num { align-self: center; font: 600 13px var(--font); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 0; text-align: left; }
+.sc-card > .sc-num { align-self: center; font: 600 13px var(--font); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 0; text-align: right; }
 /* a picker in a rule reads as list text: a light edge at rest, the full edge on hover and focus */
 .sc-card .tpick { border-color: transparent; background: none; padding-left: 4px; }
 .sc-card .tpick:hover, .sc-card .tpick:focus-visible { border-color: var(--btn-b); background: var(--btn-hover); }
