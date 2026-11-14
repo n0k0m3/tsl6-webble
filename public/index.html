@@ -47,7 +47,7 @@ input[type=file]{font-size:13px;max-width:100%;border:0;padding:0;background:non
 <body>
 <main>
 <h1>TSL6 Web App</h1>
-<p class="sub">Preview. This page reads and writes the TSL6 settings over Web Bluetooth, and flashes a runtime image in boot mode. It makes no network calls except to load the bundled firmware image. It never sends the vendor server commands (AD, AE, AF), factory reset or car controls.</p>
+<p class="sub">This page reads and writes the TSL6 settings over Web Bluetooth, and flashes a runtime image in boot mode. It makes no network calls except to load the bundled firmware image. It never sends the vendor server commands (AD, AE, AF), factory reset or car controls.</p>
 <nav class="tabs">
   <button class="tab active" data-tab="app">App</button>
   <button class="tab" data-tab="flash">Flash firmware</button>
@@ -559,8 +559,10 @@ function showTab(name) {
   for (const b of document.querySelectorAll(".tab")) b.classList.toggle("active", b.dataset.tab === name);
   $("tabApp").hidden = name !== "app";
   $("tabFlash").hidden = name !== "flash";
+  try { history.replaceState(null, "", name === "flash" ? "#flash" : location.pathname + location.search); } catch (_) {}
 }
 for (const b of document.querySelectorAll(".tab")) b.onclick = () => showTab(b.dataset.tab);
+if (location.hash === "#flash") showTab("flash"); // the old recovery site redirects here
 
 const inRuntime = () => !!(lastStatus && lastStatus.length >= 18 && (lastStatus[3] & 1));
 const inBoot = () => !!(lastStatus && lastStatus.length >= 16 && !(lastStatus[3] & 1));
