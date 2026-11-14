@@ -3,18 +3,39 @@
 A Web Bluetooth app for the TSL6 (Feifan Commander 6th gen) autopilot module. It replaces the vendor WeChat Mini App, makes no network calls, and can flash or recover the module firmware.
 
 **Live app:** https://tsl6-app.surge.sh/
-(The old recovery address, https://tsl6-recovery.surge.sh/, redirects to the **Flash firmware** tab.)
+(The old recovery address, https://tsl6-recovery.surge.sh/, redirects to the flasher, `flash.html#flash`.)
 
 > Use at your own risk. This project is not affiliated with the module maker, its resellers, or Tesla. Work only while the car is parked.
 
 ## What the app does
 
-| Tab | Function |
-|---|---|
-| **App** | Connect, BLE password, status, settings editor. A settings write sends one `A3` frame and checks the module's reply |
-| **Flash firmware** | Restarts the module into boot mode and flashes a runtime in one step. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`) |
+The app copies the layout and the functions of the vendor Mini App. The labels are in English, with a switch to the original Chinese (中).
 
-The app never sends the vendor server commands (`AD`, `AE`, `AF`), factory reset or car controls.
+| Tab or page | Function |
+|---|---|
+| **Status** | Vehicle type, live switches (AP assist, AP resume, battery preheat, charge port, horn and light strobes, sport mode, seat massage), seat move and memory, doors, frunk, trunk, lock, simulated scroll wheel |
+| **Bluetooth** | Connect through the browser's device chooser. BLE password. Bytes per write |
+| **Settings** | Restore defaults, change password, Tesla service mode, and every settings row of the vendor app. Each change writes one `A3` frame and checks the module's reply |
+| Settings > **Shortcuts** | The trigger → action table (`AB`), with the vendor function names |
+| Settings > **BLE buttons** | Pair BLE buttons and set click and double-click actions (`BA`) |
+| Settings > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
+| Settings > **Battery info** | Pack, cell and DC-DC values (`D0`) |
+| Settings > **Factory ambient light** | Zone rules and whole-car effects (`B9`) |
+| **Me** | Module ID, MAC, VIN, versions, restart, firmware flasher, gauges, BLE host pairing, CAN debug, log and capture, advanced options |
+| **Gauges** | Full-screen dashboard from the `B0` stream, with the vendor gauge menu |
+| **Flasher** (`flash.html`) | Restarts the module into boot mode and flashes a runtime in one step. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). This is the earlier app page, unchanged |
+
+Safety rules in the app:
+- It never sends the vendor server commands `AD`, `AE` and `AF`.
+- Rear motor off, front motor off, ESP off, Tesla service mode and raw CAN send are blocked until you turn on **Me > Advanced > Allow driving-system controls**.
+- Doors, frunk, trunk, lock, seat memory, restore defaults, restart and password change ask first.
+- Seat and wheel buttons send the release frame when you lift your finger, also if the page loses focus.
+- The first use of a command other than `A0`, `A8` and `A3` in a session shows a warning.
+- Lab settings and service mode need a code from the vendor server in the Mini App. Here they need only a local confirm.
+
+Car test on 2026-11-14 (BLE Link and Bluefy on iPhone): connect, password, status switches, CAN state, settings, shortcuts, BLE buttons, ambient light, backup and restore, battery, gauges and BLE host work. Seat move does nothing on the test car. It does not work in the vendor Mini App either.
+
+The function names and help texts are a copy of the vendor server data from 2026-11-13 (`public/data/`), with English translations.
 Protocol notes: [docs/miniapp-protocol.md](docs/miniapp-protocol.md).
 
 ## Browsers
@@ -26,13 +47,15 @@ Before you start:
 1. Keep the car awake (climate or Camp mode on).
 2. Turn off Bluetooth on any phone that has the vendor Mini App. The module accepts one connection at a time.
 
-## Settings (App tab)
+## Connect and change settings
 
-1. Tap **Connect** and pick `TSL6`.
-2. Type the BLE password (default `1234`) and tap **Send password**. The module sends blank settings until it accepts the password.
-3. Tick **Enable writes**, change settings, tap **Review changes**, then **Write to module**.
+1. Open the **Bluetooth** tab. Tap **Search** and pick `TSL6`.
+2. Type the BLE password (default `1234`). The app saves it in this browser and sends it on the next connection. The module sends blank settings until it accepts the password.
+3. Open the **Settings** tab and change a row. The app writes the change at once and shows **Saved** when the module confirms it.
 
-The editor changes only the fields you edit. It keeps every other bit as the module reported it.
+A settings write changes only the field you edit. It keeps every other bit as the module reported it, including values that no menu lists.
+
+To test the app without a module, open it with `?mock`. A red **MOCK MODULE** label shows. The mock answers from the same notes as the codecs, so it proves nothing about the real module.
 
 ## Firmware images (Flash tab)
 
@@ -49,7 +72,7 @@ The page checks every image:
 
 ## Flash a working module
 
-1. Connect to `TSL6` and read the status (App tab).
+1. Open the flasher (**Me > Flash firmware**, or `flash.html`). Connect to `TSL6` and read the status on its App tab.
 2. Open the **Flash firmware** tab. Tap **Load secured build**. It must show **Image OK**.
 3. Tick the confirm box. Tap **Enter boot mode and flash**.
 
@@ -114,16 +137,21 @@ python3 tools/tsl6_ble_flash.py flash <ADDRESS> public/runtime.bin --id <24-HEX-
 
 ## Tests
 
-`test/vendor-diff.mjs` compares the settings codec with the vendor Mini App settings code. The vendor code is not in this repo. Pass the path to the unpacked `pages/set/set.js`:
+Each codec in `public/lib/` has a differential test that runs the vendor Mini App code in `node:vm` and compares the bytes. The vendor code is not in this repo. Pass the path to the unpacked package (`<src>` = the folder that holds `app.js` and `pages/`):
 
 ```sh
-node test/vendor-diff.mjs <path>/pages/set/set.js
+node test/vendor-diff.mjs  <src>/pages/set/set.js        # settings (A3)
+node test/status-vendor.mjs <src>/pages/index/index.js   # status tab, A1/A2/A4-A7/A9
+node test/tables-vendor.mjs <src>                        # shortcuts (AB), BLE buttons (BA), backup
+node test/rgb-vendor.mjs   <src>/pages/rgb/rgb.js        # ambient light (B9)
+node test/live-vendor.mjs  <src>                         # battery (D0), CAN debug (C0), BLE host (F0)
+node test/gauge-vendor.mjs <src>/pages/gauge/gauge.js <src>/pages/gaugeMenu/gaugeMenu.js   # gauge stream (B0)
 ```
 
 ## Deploy
 
 ```sh
-# App. Put runtime-nokey.bin (the secured build) next to index.html first.
+# App and flasher. Put runtime-nokey.bin (the secured build) next to flash.html first.
 surge public tsl6-app.surge.sh
 # Redirect for the old recovery address
 surge redirect tsl6-recovery.surge.sh
@@ -131,6 +159,8 @@ surge redirect tsl6-recovery.surge.sh
 
 ## Notes for browsers
 
-- Bluefy does not give characteristic `properties`. The page then uses `FFF1` for both receive and send.
+- Bluefy gives short characteristic UUIDs (`FFF1`, `FFF2`) and lists `FFF2` first. Both pages pick `FFF1` for receive and send.
+- iPhone browsers do not save downloads. **Back up** and **Download** open the share sheet, or show the text with a **Copy** button. **Restore** takes a file or pasted text.
+- iOS shares one BLE link between apps. While one app is logged in, another app on the same phone (also the vendor Mini App) uses that link without the password. Disconnect before you switch apps.
 - The page cannot read the BLE MTU. Bytes per write default to 180 on Apple and 240 elsewhere, and drop to 20 by themselves if large writes fail.
 - iOS rejects self-signed certificates without a bypass. Use a trusted HTTPS host.
