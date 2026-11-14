@@ -335,8 +335,8 @@ async function attach() {
   const server = await device.gatt.connect();
   const svc = await server.getPrimaryService(SVC);
   const chars = await svc.getCharacteristics();
-  const short = c => String(c.uuid).toLowerCase().slice(4, 8);
-  chr = chars.find(c => short(c) === "fff1") || chars[0];
+  const short = c => { const u = String(c.uuid).toLowerCase(); return u.length > 8 ? u.slice(4, 8) : u.padStart(4, "0").slice(-4); }; // Bluefy gives "fff1", others the full UUID
+  chr = chars.find(c => short(c) === "fff1") || chars.find(c => c.properties && c.properties.notify) || chars[0];
   txChr = chr;
   chr.addEventListener("characteristicvaluechanged", onNotify);
   await chr.startNotifications();
