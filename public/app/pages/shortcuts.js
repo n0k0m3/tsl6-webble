@@ -124,9 +124,7 @@ definePage("shortcuts", () => {
     // Grid: "#n When" / "Then" | the two pickers (same width) | delete and try.
     const trig = pill(isDraft ? L(LABELS.triggerNone) : fnLabel(list.btn, r.trigger, LABELS.triggerNone),
       () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令"), split: true, unknown: !isDraft && !!r.trigger && !fnKnown(list.btn, r.trigger) });
-    const delBtn = editing || isDraft
-      ? h("button", { class: "ibtn flat sc-del", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20))
-      : h("span");
+    const delBtn = h("button", { class: "ibtn flat sc-del", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20));
     // View mode: Try sits at the right of both lines. Edit mode: delete on the first line, Try on the second.
     const tryBtn = isDraft ? null : h("button", { class: "ibtn flat sc-try" + (editing ? "" : " span2"), type: "button", disabled: busy || !r.action,
       "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"), onclick: () => tryAction(r.action) }, icon("play", 22));
@@ -146,10 +144,11 @@ definePage("shortcuts", () => {
 
   function render() {
     clear(el);
+    if (!rows.length) editing = false;   // no rows: nothing to edit, and a new row starts in view mode
     const ready = !!table && linkState() === "ok";
     const hasFun = list.fun.length > 0;
     el.append(h("section", { class: "card tbl-toolbar" },
-      h("span", { class: "tbl-count" }, table ? L(`${rows.length} rules, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : "",
+      h("span", { class: "tbl-count" }, table ? L(`${rows.length} ${rows.length === 1 ? "rule" : "rules"}, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : "",
         helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" })),
       h("div", { class: "tools" },
         hasFun && rows.length ? h("button", { class: "btn small", type: "button", "aria-pressed": String(editing), disabled: !ready || busy, onclick: () => { editing = !editing; render(); } },
