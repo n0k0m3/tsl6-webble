@@ -49,7 +49,7 @@ const ALIAS = {
   status: "car", ble: "bluetooth", gear: "settings", me: "cpu", help: "info", back: "chevron-left",
   left: "chevron-left", right: "chevron-right", up: "chevron-up", down: "chevron-down", ok: "check",
   more: "sliders-horizontal", trash: "trash-2", camp: "tent", queen: "crown",
-  doorFL: "door-open", doorFR: "door-open", doorRL: "door-open", doorRR: "door-open",
+  doorFL: "car-door-fl", doorFR: "car-door-fr", doorRL: "car-door-rl", doorRR: "car-door-rr",
   frunk: "package", trunk: "package", glove: "inbox", mirror: "flip-horizontal-2", unlock: "lock-open",
   battery: "battery-medium", log: "file-text", flash: "hard-drive-download",
 };
@@ -196,9 +196,11 @@ const isNumberList = options => options.length >= 6 && options.every(([, t]) => 
 export async function chooseOption({ title, options, value, help }) {
   const helpEntry = help ? (await loadHelp())[help] : null;
   const top = helpEntry ? h("div", { class: "sheet-help" }, helpNode(helpEntry)) : null;
-  if (isNumberList(options)) {
+  const cur = options.findIndex(([v]) => String(v) === String(value));
+  // A value that is not in the list has no slider step; the list sheet shows it with no mark.
+  if (cur >= 0 && isNumberList(options)) {
     const SAVE = {};
-    let i = Math.max(0, options.findIndex(([v]) => String(v) === String(value)));
+    let i = cur;
     const val = h("div", { class: "opt-range-val", "aria-live": "polite" });
     const defIdx = options.findIndex(([, t]) => isDefault(t));
     const def = h("button", { class: "opt-range-def", type: "button", onclick: () => { if (defIdx >= 0) set(defIdx); } });
