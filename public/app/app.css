@@ -448,7 +448,11 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
   .cluster .cl-gauge { order: 9; margin-left: auto; }
 }
 /* phone: the main action of an empty state fills the card */
-@media (max-width: 559px) { .empty-state .btn.primary { align-self: stretch; min-height: 48px; } }
+@media (max-width: 559px) {
+  .empty-state .btn.primary, .es-btns { align-self: stretch; min-height: 48px; }
+  .es-btns { flex-direction: column; }
+  .es-btns .btn { min-height: 48px; }
+}
 /* option sheet: grab handle, fade at the bottom of a long list, a drawn check */
 .opt-list { -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), transparent); mask-image: linear-gradient(#000 calc(100% - 28px), transparent); padding-bottom: 20px; }
 .opt-ok { display: inline-grid; place-items: center; width: 20px; color: var(--accent-text); }

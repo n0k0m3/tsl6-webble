@@ -173,7 +173,7 @@ definePage("status", () => {
     el.className = "page" + (live ? " cols" : " narrow");
     if (!link || !link.connected) return emptyState();
     if (!S.status) return waitingState();
-    if (!S.status || S.blank) return lockedState();
+    if (S.blank) return lockedState();
 
     // Cluster: the vehicle, the three CAN buses and a telltale for each function that is on.
     const vt = ROW_BY_ID.vehicleType;
