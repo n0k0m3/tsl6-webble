@@ -129,7 +129,7 @@ definePage("shortcuts", () => {
       : h("span");
     // View mode: Try sits at the right of both lines. Edit mode: delete on the first line, Try on the second.
     const tryBtn = isDraft ? null : h("button", { class: "ibtn flat sc-try" + (editing ? "" : " span2"), type: "button", disabled: busy || !r.action,
-      "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"), onclick: () => tryAction(r.action) }, icon("play", 18));
+      "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"), onclick: () => tryAction(r.action) }, icon("play", 22));
     const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") },
       h("span", { class: "sc-num" }, String(i + 1)), h("span", { class: "sc-tag" }, L("When", "当")), trig, editing || isDraft ? delBtn : tryBtn);
     if (isDraft) {

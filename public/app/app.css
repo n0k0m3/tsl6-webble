@@ -467,7 +467,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* a number setting: one value, a slider and minus / plus */
 .opt-range { padding: 8px 0 4px; }
 .opt-range-val { text-align: center; font: 700 40px/1.1 var(--font-head); font-variant-numeric: tabular-nums; }
-.opt-range-def { display: block; width: fit-content; margin: 6px auto 0; min-height: 44px; padding: 6px 14px; border: 0; background: none; border-radius: var(--r-sm); font: 600 13.5px var(--font); color: var(--accent-text); cursor: pointer; }
+.opt-range-def { display: block; width: fit-content; margin: 6px auto 0; min-height: 44px; padding: 6px 14px; border: 0; background: none; border-radius: var(--r-sm); font: 600 14px var(--font); color: var(--accent-text); cursor: pointer; }
 .opt-range-def:disabled { color: var(--muted); font-weight: 500; cursor: default; border-color: transparent; }
 .opt-range-def:not(:disabled):hover { background: var(--accent-soft); }
 .opt-range-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
@@ -502,8 +502,8 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .acts.seatgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .acts.seatgrid .mem { grid-column: span 2; display: flex; }
 .mem-cap { font-size: 12.5px; font-weight: 600; color: var(--muted); text-align: center; }
-.mem-seg { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--btn-b); border-radius: var(--r-md); overflow: hidden; }
-.mem-seg .act { border: 0; border-radius: 0; min-height: 0; border-left: 1px solid var(--btn-b); }
+.mem-seg { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--card-2); }
+.mem-seg .act { border: 0; border-radius: 0; min-height: 0; border-left: 1px solid var(--line); }
 .mem-seg .act:first-child { border-left: 0; }
 /* doors: lock and unlock first, then the plan, then glovebox and mirrors */
 .acts.plan { grid-template-areas: "ul ul ul lk lk lk" "fl fl fk fk fr fr" "rl rl tk tk rr rr" "gb gb gb mi mi mi"; }
@@ -575,7 +575,8 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .card.lead.master .li-trail .val { color: var(--fg); font-weight: 600; }
 /* a sub-row whose parent is off: quiet, still there for search */
 .li.sub.off .li-title, .li.sub.off .li-trail { color: var(--faint); }
-.li.sub.off .switch { opacity: .55; }
+.li.sub.off .switch { background: transparent; border-color: var(--line); }
+.li.sub.off .switch::after { background: var(--line); box-shadow: none; }
 /* doors and access: one tile height */
 .acts.plan .act { min-height: 66px; padding: 8px 4px; gap: 4px; }
 /* scroll wheel: a smaller dial on desktop */
@@ -600,5 +601,4 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* the row chevron ends on the switch edge */
 .li-trail .chev { margin-right: -6px; }
 /* scroll wheel card fits its dial on wide screens */
-@media (min-width: 1180px) { .grp > .card:has(> .dpad) { max-width: 260px; } }
 @media (max-width: 559px) { .dlg-btn { min-height: 48px; } }
