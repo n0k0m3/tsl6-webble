@@ -219,7 +219,10 @@ export async function chooseOption({ title, options, value, help }) {
     set(i);
     const r = await dialog({
       title, buttons: [{ label: L("Cancel", "取消"), value: null }, { label: L("Save", "保存"), value: SAVE, kind: "primary" }],
-      body: h("div", null, top, h("div", { class: "opt-range" }, val, def, h("div", { class: "opt-range-row" }, minus, range, plus))),
+      body: h("div", null, top, h("div", { class: "opt-range" }, val,
+        h("div", { class: "opt-range-row" }, minus, range, plus),
+        h("div", { class: "opt-range-ends", "aria-hidden": "true" }, h("span", null, plainLabel(options[0][1])), h("span", null, plainLabel(options[options.length - 1][1]))),
+        def)),
     });
     return r === SAVE ? options[i][0] : null;
   }

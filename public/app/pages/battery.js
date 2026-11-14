@@ -127,7 +127,7 @@ definePage("battery", () => {
       const stat = (id, unit, digits) => {
         const n = num(id);
         return h("div", { class: "bat-stat" },
-          h("div", { class: "bat-stat-v" }, Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—", h("small", null, unit)),
+          h("div", { class: "bat-stat-v" }, Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—", h("small", { class: unit === "%" ? "pct" : null }, unit)),
           h("div", { class: "bat-stat-l" }, by[id] ? by[id].label : ""));
       };
       clear(sum).append(stat(socId, "%", 1), stat("range", "km", 0), stat("power", "kW", 2));

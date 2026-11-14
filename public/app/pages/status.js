@@ -10,10 +10,10 @@ import {
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
-const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" }, vehicleAPState: { en: "Car Autopilot state", zh: "车辆AP状态" } };
+const NAME = { apAutoState: { en: "AP resume", zh: "AP恢复" }, vehicleAPState: { en: "Autopilot engaged", zh: "车辆AP已启用" } };
 
 // Switch rows by section. Icons are Lucide names.
-const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
+const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "steering-wheel"]];
 const LIGHTS = [["pulseHighBeam", "lamp-high-strobe"], ["pulseFrontFog", "fog-front-strobe"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear-strobe"], ["pilotRearFog", "fog-rear"], ["pulseHorn", "megaphone"]];
 const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"]];
 const DRIVING = [["sportMode", "zap"], ["offRearMotor", "power-off"], ["offFrontMotor", "power-off"], ["offESP", "shield-off"]];
@@ -190,8 +190,8 @@ definePage("status", () => {
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
           h("button", { class: "li-text hero-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + apName, onclick: () => showHelp(ap.help, L(ap.en, ap.zh)) },
             h("div", { class: "hero-title" }, h("span", null, apName)), refs.apSub),
-          apSw)),
-      listCard(ASSIST.map(switchItem))));
+          apSw),
+        ...ASSIST.map(switchItem).filter(Boolean))));
 
     const lightsGrp = grp(sec("Lights and horn", "灯光与喇叭", groupHelp("Lights and horn", "灯光与喇叭", LIGHTS)), listCard(LIGHTS.map(switchItem)));
     const comfortGrp = grp(sec("Comfort and charging", "舒适与充电", groupHelp("Comfort and charging", "舒适与充电", COMFORT)), listCard(COMFORT.map(switchItem)));

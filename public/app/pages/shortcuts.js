@@ -144,9 +144,9 @@ definePage("shortcuts", () => {
     const ready = !!table && linkState() === "ok";
     const hasFun = list.fun.length > 0;
     el.append(h("section", { class: "card tbl-toolbar" },
-      h("span", { class: "tbl-count" }, table ? L(`${rows.length} rules, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : ""),
+      h("span", { class: "tbl-count" }, table ? L(`${rows.length} rules, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : "",
+        helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" })),
       h("div", { class: "tools" },
-        helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" }),
         hasFun && rows.length ? h("button", { class: "btn small", type: "button", "aria-pressed": String(editing), disabled: !ready || busy, onclick: () => { editing = !editing; render(); } },
           editing ? L("Done", "完成") : L("Edit", "编辑")) : null,
         hasFun ? h("button", { class: "btn small primary", type: "button", disabled: !ready || busy || draft, onclick: add }, icon("plus", 18), h("span", null, L("Add", "添加"))) : null)));

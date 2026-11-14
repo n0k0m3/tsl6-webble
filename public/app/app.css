@@ -196,7 +196,7 @@ button.li:disabled { cursor: progress; }
 
 /* ---------------------------------------------------------------- car page: the cluster */
 .cluster { background: var(--cl-bg); color: var(--cl-fg); border-color: var(--cl-line); padding: 16px 16px 14px; margin-bottom: 0; }
-.cl-head { display: flex; align-items: flex-start; gap: 10px; }
+.cl-head { display: flex; align-items: center; gap: 10px; }
 .cl-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
 .vehicle-name { font: 700 22px/1.1 var(--font-head); }
 .cluster .help-btn { color: var(--cl-muted); }
@@ -246,7 +246,6 @@ button.li:disabled { cursor: progress; }
 .acts.plan [data-id="tap-9"] { grid-area: tk; }
 .acts.plan [data-id="tap-10"] { grid-area: gb; } .acts.plan [data-id="tap-11"] { grid-area: mi; }
 .acts.plan [data-id="tap-23"] { grid-area: ul; } .acts.plan [data-id="tap-22"] { grid-area: lk; }
-.acts.plan [data-id="tap-10"], .acts.plan [data-id="tap-11"], .acts.plan [data-id="tap-22"], .acts.plan [data-id="tap-23"] { flex-direction: row; min-height: 64px; gap: 8px; }
 .subhead { display: flex; align-items: center; gap: 4px; padding: 12px 16px 0; font-size: 15px; font-weight: 600; color: var(--fg); }
 .seat { padding: 2px 0 2px; }
 .seat + .seat { border-top: 1px solid var(--line-2); }
@@ -269,7 +268,8 @@ button.li:disabled { cursor: progress; }
 .empty-state .check { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--muted); cursor: pointer; }
 .empty-state .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .linkbtn { background: none; border: 0; color: var(--accent-text); font-weight: 600; font-size: 14px; cursor: pointer; padding: 8px; }
-.steps { margin: 0; padding: 0 0 0 20px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+.steps { margin: 0; padding: 0 0 0 20px; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.steps li + li { margin-top: 8px; }
 .steps li::marker { color: var(--fg); font-weight: 600; }
 
 /* ---------------------------------------------------------------- controls */
@@ -466,7 +466,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* a number setting: one value, a slider and minus / plus */
 .opt-range { padding: 8px 0 4px; }
 .opt-range-val { text-align: center; font: 700 40px/1.1 var(--font-head); font-variant-numeric: tabular-nums; }
-.opt-range-def { display: block; margin: 6px auto 0; min-height: 40px; padding: 6px 16px; border: 1px solid var(--line); background: none; border-radius: var(--r-sm); font: 600 13.5px var(--font); color: var(--accent-text); cursor: pointer; }
+.opt-range-def { display: block; width: fit-content; margin: 2px 0 0 auto; min-height: 40px; padding: 6px 8px; border: 0; background: none; border-radius: var(--r-sm); font: 600 13.5px var(--font); color: var(--accent-text); cursor: pointer; }
 .opt-range-def:disabled { color: var(--muted); font-weight: 500; cursor: default; border-color: transparent; }
 .opt-range-def:not(:disabled):hover { background: var(--accent-soft); }
 .opt-range-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
@@ -521,9 +521,9 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* the desktop sidebar shows the brand only; the header chip shows the link */
 .side-brand .mark { display: none !important; }
 /* settings: the master switch is the lead card of the page */
-.card.lead > .li { min-height: 72px; padding: 14px 16px; }
-.card.lead > .li .li-title { font: 700 21px/1.2 var(--font-head); }
-.card.lead > .li .chip { width: 28px; height: 28px; }
+.card.lead.master > .li { min-height: 72px; padding: 14px 16px; }
+.card.lead.master > .li .li-title { font: 700 21px/1.2 var(--font-head); }
+.card.lead.master > .li .chip { width: 28px; height: 28px; }
 /* settings search */
 .set-search { position: relative; margin: 0 0 12px; }
 .set-search svg { position: absolute; left: 12px; top: 50%; margin-top: -9px; color: var(--faint); pointer-events: none; }
@@ -550,7 +550,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
   .set-find .legend { align-self: center; white-space: nowrap; }
   .set-top .card.lead.master > .li { min-height: 46px; padding: 4px 16px; }
   .set-top .card.lead.master .li-sub { display: none; }
-  .page.cols > .set-top { margin-bottom: 18px; }
+  .page.cols > .set-top { margin-bottom: 30px; }
 }
 /* car page: the lead title stays below its section title in size */
 [data-page="car"] .card.lead .hero-title { font-size: 18px; }
@@ -570,9 +570,16 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .li.sub.off .li-title, .li.sub.off .li-trail { color: var(--faint); }
 .li.sub.off .switch { opacity: .55; }
 /* doors and access: one tile height */
-.acts.plan .act { min-height: 64px; padding: 8px 4px; gap: 4px; }
+.acts.plan .act { min-height: 66px; padding: 8px 4px; gap: 4px; }
 /* scroll wheel: a smaller dial on desktop */
 @media (min-width: 960px) {
   .dpad { grid-template-columns: repeat(3, 50px); grid-auto-rows: 50px; padding: 12px; }
   .dpad::before { width: 164px; height: 164px; margin: -82px 0 0 -82px; }
 }
+/* round 7 (council) */
+/* number sheet: end values under the track */
+.opt-range-ends { display: flex; justify-content: space-between; margin: 2px 56px 0; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* a sub-row joins its parent: the line above it starts at the indent */
+[data-page="settings"] .li.sub { border-top-color: transparent; background: linear-gradient(var(--line-2), var(--line-2)) 34px 0 / calc(100% - 34px) 1px no-repeat; }
+[data-page="settings"] button.li.sub:hover { background-color: var(--btn-hover); }
+.li.sub.off .chev { opacity: .4; }
