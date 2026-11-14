@@ -63,9 +63,10 @@ definePage("me", () => {
     return h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip green" }, icon("bluetooth-connected", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, link.name)),
-          h("div", { class: "li-sub" }, link.authed ? L("Connected", "已连接") : L("Connected, password needed", "已连接，需要密码"))),
+          h("div", { class: "li-sub" }, link.boot ? L("Boot mode: flash a runtime in Tools > Firmware", "升级模式：请在「工具 > 固件」刷写运行固件")
+            : link.authed ? L("Connected", "已连接") : L("Connected, password needed", "已连接，需要密码"))),
         h("button", { class: "btn small", type: "button", "data-id": "disconnect", onclick: () => disconnect() }, L("Disconnect", "断开"))),
-      link.authed ? null : h("div", { class: "li" }, h("span", { class: "chip amber" }, icon("key-round", 22)),
+      link.authed || link.boot ? null : h("div", { class: "li" }, h("span", { class: "chip amber" }, icon("key-round", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("BLE password", "蓝牙密码"))),
           h("div", { class: "li-sub" }, L("The module sends data only after the password.", "模块需验证密码后才发送数据。"))),
         h("button", { class: "btn primary small", type: "button", "data-id": "enter-password", onclick: () => askPassword("manual") }, L("Enter password", "输入密码"))),

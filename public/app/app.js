@@ -80,6 +80,8 @@ const READ_ONLY = new Set([0xa0, 0xc1]);
 export async function gate(type, opts = {}) {
   const link = S.link;
   if (!link || !link.connected) { toast(L("Connect to the module first.", "请先连接蓝牙")); return false; }
+  // The bootloader knows only the flash commands. Those go through the Firmware page, not through gate().
+  if (link.boot) { toast(L("The module is in boot mode. Flash a runtime first (Tools > Firmware).", "模块处于升级模式，请先刷写运行固件（工具 > 固件）。"), "warn", 3000); return false; }
   if (opts.danger && !S.prefs.allowDrive) {
     await alertBox({
       en: "This control changes a driving system (motor, ESP, service mode or raw CAN). It is off by default. To use it, turn on Device > Allow driving-system controls.",
