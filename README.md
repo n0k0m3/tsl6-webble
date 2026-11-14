@@ -23,7 +23,7 @@ The app has the functions of the vendor Mini App, in its own layout. The labels 
 | Tools > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
 | Tools | Log and capture, change password, firmware flasher, restore defaults, BLE host pairing, CAN debug, Tesla service mode |
 | **Device** | Connect through the browser's device chooser, BLE password, bytes per write. Module ID, MAC, VIN, versions, restart, preferences |
-| **Flasher** (`flash.html`) | Restarts the module into boot mode and flashes a runtime in one step. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). This is the earlier app page, unchanged |
+| **Flasher** (`flash.html`) | Restarts the module into boot mode and flashes a runtime in one step. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). It is a separate page in the app style. Its flash code is unchanged from the earlier page |
 
 Safety rules in the app:
 - It never sends the vendor server commands `AD`, `AE` and `AF`.
@@ -57,7 +57,7 @@ A settings write changes only the field you edit. It keeps every other bit as th
 
 To test the app without a module, open it with `?mock`. A red **MOCK MODULE** label shows. The mock answers from the same notes as the codecs, so it proves nothing about the real module.
 
-## Firmware images (Flash tab)
+## Firmware images (flasher, step 1)
 
 | Image | How to load | Notes |
 |---|---|---|
@@ -72,8 +72,8 @@ The page checks every image:
 
 ## Flash a working module
 
-1. Open the flasher (**Tools > Firmware**, or `flash.html`). Connect to `TSL6` and read the status on its App tab.
-2. Open the **Flash firmware** tab. Tap **Load secured build**. It must show **Image OK**.
+1. Open the flasher (**Tools > Firmware**, or `flash.html`). Tap **Connect** and pick `TSL6`. The page reads the status.
+2. Tap **Load secured build**. It must show **Image OK**.
 3. Tick the confirm box. Tap **Enter boot mode and flash**.
 
 The page then:
