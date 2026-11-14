@@ -18,8 +18,9 @@ a.top-back { text-decoration: none; }
 .card .form > .row-note { margin: -4px 0 0; }
 .subhead + .form { padding-top: 8px; }
 .btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.btn.danger-fill { background: var(--bad); border-color: var(--bad); color: #fff; }
-.btn.danger-fill:hover { background: var(--bad); filter: brightness(1.08); }
+/* Fixed red, as .dlg-btn.danger: the dark-theme --bad is too light for white text. */
+.btn.danger-fill { background: #c02626; border-color: #c02626; color: #fff; }
+.btn.danger-fill:hover { background: #c02626; filter: brightness(1.08); }
 .out { margin: 0; font: 13px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; word-break: break-all; }
 .out:empty { display: none; }
 /* app.css turns off text selection on body. The hash, UID14 and module ID must stay copyable. */
