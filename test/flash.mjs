@@ -39,14 +39,14 @@ function fakeLink(reply, chunk = 240) {
 const okReply = () => [0];
 
 await test("uid14 follows module_id[4:12] + module_id[0:6]", () => {
-  assert.equal(toHex(F.uid14("535C62E239E339E31475FB10")), "39e339e31475fb10535c62e239e3");
+  assert.equal(toHex(F.uid14("0102030405060708090A0B0C")), "05060708090a0b0c010203040506");
   assert.equal(toHex(F.uid14(" a8a9aaaba0a1a2a3a4a5a6a7 ")), "a0a1a2a3a4a5a6a7a8a9aaaba0a1");
-  assert.equal(F.uid14("535C62E2"), null);
-  assert.equal(F.uid14("zz5C62E239E339E31475FB10"), null);
+  assert.equal(F.uid14("01020304"), null);
+  assert.equal(F.uid14("zz02030405060708090A0B0C"), null);
 });
 
 await test("boot and restart arguments", () => {
-  const uid = F.uid14("535C62E239E339E31475FB10");
+  const uid = F.uid14("0102030405060708090A0B0C");
   assert.equal(toHex(F.bootArg(uid)), "01" + toHex(uid));
   const st = new Uint8Array(76); for (let i = 0; i < 76; i++) st[i] = i;
   assert.equal(toHex(F.restartArg(st)), "01" + toHex(st.slice(4, 18)));
@@ -88,7 +88,7 @@ await test("parseImage: wrong size throws, vendor JSON is read", () => {
 
 await test("flashPages sends 55, 53, every page, 45 with the bootloader argument", async () => {
   const pages = F.parseImage(image(4));
-  const uid = F.uid14("535C62E239E339E31475FB10");
+  const uid = F.uid14("0102030405060708090A0B0C");
   const link = fakeLink(okReply);
   const seen = [];
   await F.flashPages(link, pages, uid, { onPage: (d, t) => seen.push(`${d}/${t}`), now: () => 0 });
@@ -102,7 +102,7 @@ await test("flashPages sends 55, 53, every page, 45 with the bootloader argument
 
 await test("flashPages: 55 refused, 53 refused, 45 silent", async () => {
   const pages = F.parseImage(image(1));
-  const uid = F.uid14("535C62E239E339E31475FB10");
+  const uid = F.uid14("0102030405060708090A0B0C");
   await assert.rejects(F.flashPages(fakeLink(c => (c === 0x55 ? [1] : [0])), pages, uid), /0x55 prepare failed \(reply 01\)/);
   await assert.rejects(F.flashPages(fakeLink(c => (c === 0x53 ? [0xff] : [0])), pages, uid), /0x53 start failed \(reply ff\)/);
   await assert.rejects(F.flashPages(fakeLink(c => (c === 0x45 ? null : [0])), pages, uid), /0x45 finish: no reply/);
@@ -110,7 +110,7 @@ await test("flashPages: 55 refused, 53 refused, 45 silent", async () => {
 
 await test("flashPages: missed page replies drop the write size to 20 and retry", async () => {
   const pages = F.parseImage(image(3));
-  const uid = F.uid14("535C62E239E339E31475FB10");
+  const uid = F.uid14("0102030405060708090A0B0C");
   let misses = 0;
   const link = fakeLink((cmd, p) => (cmd === 0x57 && p[1] === 1 && misses++ === 0 ? null : [0]), 240);
   await F.flashPages(link, pages, uid);
