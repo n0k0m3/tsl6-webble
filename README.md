@@ -9,7 +9,7 @@ A Web Bluetooth app for the TSL6 (Feifan Commander 6th gen) autopilot module. It
 
 ## What the app does
 
-The app copies the layout and the functions of the vendor Mini App. The labels are in English, with a switch to the original Chinese (中).
+The app has the functions of the vendor Mini App, in its own layout. The labels are in English, with a switch to the original Chinese (中).
 
 | Tab or page | Function |
 |---|---|
