@@ -200,7 +200,8 @@ export async function chooseOption({ title, options, value, help }) {
     const SAVE = {};
     let i = Math.max(0, options.findIndex(([v]) => String(v) === String(value)));
     const val = h("div", { class: "opt-range-val", "aria-live": "polite" });
-    const def = h("span", { class: "opt-range-def" });
+    const defIdx = options.findIndex(([, t]) => isDefault(t));
+    const def = h("button", { class: "opt-range-def", type: "button", onclick: () => { if (defIdx >= 0) set(defIdx); } });
     const range = h("input", { type: "range", min: 0, max: options.length - 1, step: 1, value: i, "data-id": "opt-range", "aria-label": title });
     const minus = iconBtn("minus", () => set(i - 1), { label: L("Less", "减少") });
     const plus = iconBtn("plus", () => set(i + 1), { label: L("More", "增加") });
@@ -208,8 +209,8 @@ export async function chooseOption({ title, options, value, help }) {
       i = Math.min(options.length - 1, Math.max(0, n));
       range.value = String(i);
       val.textContent = plainLabel(options[i][1]);
-      const d = options.find(([, t]) => isDefault(t));
-      def.textContent = isDefault(options[i][1]) ? L("Default", "默认") : d ? L(`Default: ${plainLabel(d[1])}`, `默认：${plainLabel(d[1])}`) : "";
+      def.textContent = i === defIdx ? L("Default", "默认") : defIdx >= 0 ? L(`Reset to ${plainLabel(options[defIdx][1])}`, `恢复默认 ${plainLabel(options[defIdx][1])}`) : "";
+      def.disabled = i === defIdx || defIdx < 0;
       range.setAttribute("aria-valuetext", val.textContent);
       range.style.setProperty("--fill", `${(i / (options.length - 1)) * 100}%`);
       minus.disabled = i === 0; plus.disabled = i === options.length - 1;

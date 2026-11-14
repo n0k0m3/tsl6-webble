@@ -10,12 +10,12 @@ import {
 
 const shown = r => r && (!r.types || r.types.includes(S.hwType));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
-const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" } };
+const NAME = { apAutoState: { en: "Resume AP after lane change", zh: "变道后恢复AP" }, vehicleAPState: { en: "Car Autopilot", zh: "车辆AP" } };
 
 // Switch rows by section. Icons are Lucide names.
 const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
-const LIGHTS = [["pulseHighBeam", "lamp-high"], ["pulseFrontFog", "fog-front"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear"], ["pilotRearFog", "fog-rear"]];
-const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"], ["pulseHorn", "megaphone"]];
+const LIGHTS = [["pulseHighBeam", "lamp-high-strobe"], ["pulseFrontFog", "fog-front-strobe"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear-strobe"], ["pilotRearFog", "fog-rear"], ["pulseHorn", "megaphone"]];
+const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"]];
 const DRIVING = [["sportMode", "zap"], ["offRearMotor", "power-off"], ["offFrontMotor", "power-off"], ["offESP", "shield-off"]];
 const DOOR_ICON = { 0: "car-door-fl", 1: "car-door-fr", 2: "car-door-rl", 3: "car-door-rr", 8: "car-frunk", 9: "car-trunk", 10: "inbox", 11: "car-mirrors", 22: "lock", 23: "lock-open" };
 const DOOR_LABEL = {
@@ -193,7 +193,7 @@ definePage("status", () => {
           apSw)),
       listCard(ASSIST.map(switchItem))));
 
-    const lightsGrp = grp(sec("Lights", "灯光", groupHelp("Lights", "灯光", LIGHTS)), listCard(LIGHTS.map(switchItem)));
+    const lightsGrp = grp(sec("Lights and horn", "灯光与喇叭", groupHelp("Lights and horn", "灯光与喇叭", LIGHTS)), listCard(LIGHTS.map(switchItem)));
     const comfortGrp = grp(sec("Comfort and charging", "舒适与充电", groupHelp("Comfort and charging", "舒适与充电", COMFORT)), listCard(COMFORT.map(switchItem)));
 
     // Doors and access
@@ -227,7 +227,7 @@ definePage("status", () => {
             };
             const nums = mem.buttons.filter(b => b.text), modes = mem.buttons.filter(b => !b.text);
             return [...modes.map(memBtn), h("div", { class: "mem", role: "group", "aria-label": L("Memory", "记忆") },
-              h("span", { class: "mem-cap" }, L("Memory", "记忆")), h("div", { class: "mem-seg" }, nums.map(memBtn)))];
+              h("div", { class: "mem-seg" }, nums.map(memBtn)))];
           })() : null));
     };
     const seats = [seatBlock("driverSeat", "driverMemory", "Driver", "主驾"), seatBlock("passengerSeat", "passengerMemory", "Passenger", "副驾")].filter(Boolean);

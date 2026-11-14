@@ -268,7 +268,7 @@ function renderTop() {
   const on = !!(link && link.connected);
   const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name;
   const chip = h("button", { class: "conn-chip" + (sub ? " compact" : ""), type: "button", "data-id": "conn-chip", "aria-label": chipText, title: chipText, onclick: () => { if (current().id !== "me" || stack.length > 1) switchTab("me"); } },
-    h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", null, chipText));
+    h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", null, sub && on && link.authed ? String(chipText).split(/[\s(]/)[0] || chipText : chipText));
   // A tab root shows the tab name as the page title. A sub-page shows its own title and a link lamp.
   const tabDef = TABS.find(t => t.id === tab);
   top.classList.toggle("root", !sub);

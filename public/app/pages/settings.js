@@ -1,6 +1,6 @@
 // Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
-import { h, L, btn, toast, confirmBox, showHelp, clear, icon, chooseOption, toggle, plainLabel } from "../ui.js";
+import { h, L, btn, toast, confirmBox, showHelp, clear, icon, chooseOption, toggle, plainLabel, groupHelpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches } from "../../lib/tsl6-settings.js";
 
@@ -34,7 +34,7 @@ definePage("settings", () => {
   const searchInput = h("input", { type: "search", placeholder: L("Search settings", "搜索设置"), "aria-label": L("Search settings", "搜索设置"), "data-id": "set-search",
     autocomplete: "off", enterkeyhint: "search" });
   searchInput.addEventListener("input", () => { query = searchInput.value.trim().toLowerCase(); render(); });
-  const searchBox = h("div", { class: "set-search span" }, icon("search", 18), searchInput);
+  const searchBox = h("div", { class: "set-search" }, icon("search", 18), searchInput);
   const matches = id => !query || L(label(id)).toLowerCase().includes(query);
 
   const label = id => ({ en: BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
@@ -127,7 +127,9 @@ definePage("settings", () => {
       if (subId) { const s = item(subId, vals, { sub: true }); if (s) items.push(s); }
     }
     if (!items.length) return [];
-    return [h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(title)), h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null)];
+    const help = groupHelpButton(title, rows.map(r => r[0]).filter(id => BY_ID[id] && appliesTo(BY_ID[id], S.hwType) && vals[id] !== undefined).map(id => [L(label(id)), "help_" + id]));
+    return [h("section", { class: "grp" }, h("div", { class: "sec-label" }, h("span", { class: "sec-title" }, h("span", null, L(title)), help)),
+      h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null)];
   }
 
   function render() {
@@ -150,14 +152,15 @@ definePage("settings", () => {
     const moduleOff = vals.mianSwitch === 1;
 
     // Master switch first. While the module is off, the vendor app hides every other row.
-    el.append(h("div", { class: "card lead master span" }, (() => {
+    const master = h("div", { class: "card lead master" }, (() => {
       const f = "mianSwitch";
       return h("button", { class: "li first", type: "button", "data-id": "set-mianSwitch", disabled: busy, onclick: () => pick(f, vals, "help_mianSwitch") },
         h("span", { class: "chip" + (moduleOff ? "" : " on") }, icon("power", 24)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Master switch", ZH && ZH[f] ? ZH[f].zh : "总开关"))),
           h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
-    })()));
+    })());
+    el.append(master);
     if (moduleOff) {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
@@ -165,12 +168,12 @@ definePage("settings", () => {
     // The legend shows only when a row carries the changed dot.
     const shownIds = [...GROUPS.flatMap(g => g.rows.flat().filter(Boolean)), ...(S.prefs.lab ? LAB : [])];
     const anyChanged = shownIds.some(id => BY_ID[id] && vals[id] !== undefined && appliesTo(BY_ID[id], S.hwType) && changed(id, vals));
-    el.insertBefore(searchBox, el.firstChild);
+    // Top row: search (with the legend) and the master switch; one row on desktop, stacked on a phone.
+    const legend = anyChanged ? h("span", { class: "legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置")) : null;
+    el.insertBefore(h("div", { class: "set-top span" }, h("div", { class: "set-find" }, searchBox, legend), master), el.firstChild);
     if (hadFocus) searchInput.focus();
     const groupsBefore = el.childElementCount;
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
-    const firstHead = el.querySelector(".grp .sec-label");
-    if (anyChanged && firstHead) firstHead.append(h("span", { class: "sec-side legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed", "已改动")));
     if (query) {
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;

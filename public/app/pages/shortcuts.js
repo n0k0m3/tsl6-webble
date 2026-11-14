@@ -43,6 +43,7 @@ definePage("shortcuts", () => {
   let rows = [];         // [{trigger, action}] in table order
   let draft = false;     // an unsaved new row at the end (no trigger yet)
   let busy = false, loading = false, failed = false, moving = -1, entered = false;
+  let editing = false;   // Edit mode shows the delete buttons (one rule, or all)
   const offs = [];
 
   async function load() {
@@ -118,7 +119,9 @@ definePage("shortcuts", () => {
     // Grid: "#n When" / "Then" | the two pickers (same width) | delete and try.
     const trig = pill(isDraft ? L(LABELS.triggerNone) : fnLabel(list.btn, r.trigger, LABELS.triggerNone),
       () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令"), unknown: !isDraft && !!r.trigger && !fnKnown(list.btn, r.trigger) });
-    const delBtn = h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20));
+    const delBtn = editing || isDraft
+      ? h("button", { class: "ibtn flat sc-del", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20))
+      : h("span");
     const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") },
       h("span", { class: "sc-num" }, String(i + 1)), h("span", { class: "sc-tag" }, L("When", "当")), trig, delBtn);
     if (isDraft) {
@@ -142,6 +145,8 @@ definePage("shortcuts", () => {
       h("span", { class: "tbl-count" }, table ? L(`${rows.length} rules, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : ""),
       h("div", { class: "tools" },
         helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" }),
+        hasFun && rows.length ? h("button", { class: "btn small", type: "button", "aria-pressed": String(editing), disabled: !ready || busy, onclick: () => { editing = !editing; render(); } },
+          editing ? L("Done", "完成") : L("Edit", "编辑")) : null,
         hasFun ? h("button", { class: "btn small primary", type: "button", disabled: !ready || busy || draft, onclick: add }, icon("plus", 18), h("span", null, L("Add", "添加"))) : null)));
 
     const st = linkState();
@@ -161,7 +166,7 @@ definePage("shortcuts", () => {
       "The module runs every row whose trigger matches, in list order. Long-press a card to move it.",
       "触发条件相同的所有行都会按顺序执行。长按卡片可移动顺序。")));
     // A bulk delete stays at the end of the list, away from Add.
-    if (rows.length && hasFun) el.append(h("div", { class: "tbl-end" },
+    if (editing && rows.length && hasFun) el.append(h("div", { class: "tbl-end" },
       h("button", { class: "btn small danger", type: "button", disabled: !ready || busy, onclick: delAll }, icon("trash", 16), h("span", null, L("Delete all", "删除全部")))));
   }
 
@@ -173,7 +178,7 @@ definePage("shortcuts", () => {
       if (entered) return;
       entered = true;
       offs.push(onBus("status", () => { if (!table && !loading && linkState() === "ok") load(); }));
-      offs.push(onBus("conn", st => { if (!st.connected) { table = null; rows = []; draft = false; moving = -1; busy = false; loading = false; } render(); }));
+      offs.push(onBus("conn", st => { if (!st.connected) { table = null; rows = []; draft = false; moving = -1; busy = false; loading = false; editing = false; } render(); }));
       funlist().then(l => { list = { btn: l.btn || [], fun: l.fun || [] }; render(); load(); });
     },
     leave() { entered = false; offs.splice(0).forEach(f => f()); },
