@@ -43,3 +43,5 @@ button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor:
 @media (max-width: 380px) { .bat-stat-v { font-size: 26px; } }
 .bat-stat-v small.pct { margin-left: 1px; }
 button.bat-val.bat-link { font-weight: 600; }
+.bat-flow { display: block; font-weight: 600; color: var(--muted); }
+.bat-flow.in { color: var(--ok); }

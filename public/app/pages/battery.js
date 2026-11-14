@@ -131,6 +131,10 @@ definePage("battery", () => {
           h("div", { class: "bat-stat-l" }, by[id] ? by[id].label : ""));
       };
       clear(sum).append(stat(socId, "%", 1), stat("range", "km", 0), stat("power", "kW", 2));
+      // Owner car test: a negative pack current means the pack is charging. The numbers stay as the module sends them.
+      const amps = num("current");
+      if (Number.isFinite(amps) && amps !== 0) sum.lastChild.querySelector(".bat-stat-l").append(
+        h("span", { class: "bat-flow" + (amps < 0 ? " in" : "") }, amps < 0 ? L("Charging", "充电中") : L("Discharging", "放电中")));
       syncRows(v.rows.filter(r => ![socId, "range", "power"].includes(r.id)), true);
     } else if (tab === 1) {
       head.className = "bat-head center";
