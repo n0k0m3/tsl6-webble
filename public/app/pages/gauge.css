@@ -1,0 +1,81 @@
+/* Phone gauge (vendor pages/gauge). Positions and colours follow the vendor template.
+   The stage is full screen. gauge.js sets its size, its font size (1em = the vendor page em) and --px. */
+body.gauge-full { overflow: hidden; }
+body.gauge-full #top, body.gauge-full #tabs { display: none; }
+body.gauge-full #page { padding: 0; max-width: none; }
+
+.g-stage { position: fixed; left: 0; top: 0; z-index: 30; overflow: hidden; isolation: isolate; color: #ddd;
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Roboto, sans-serif; line-height: 1.2;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-touch-callout: none; transform-origin: 0 0; }
+.g-stage * { box-sizing: border-box; }
+.g-stage [hidden] { display: none !important; }
+.g-stage svg { display: block; width: 1em; height: 1em; overflow: visible; }
+.g-a { position: absolute; }
+.g-c { position: absolute; left: 50%; top: 0; }          /* placed from the centre line, like the vendor text-align trick */
+.g-font { font-family: Arial, Helvetica, sans-serif; }
+.g-tap { cursor: pointer; }
+.g-nowrap { white-space: nowrap; }
+
+/* stacking order (vendor: negative z-index values; here positive, inside the stage) */
+.g-bg { position: absolute; inset: 0; z-index: 1; }
+.g-bg.img { background: radial-gradient(ellipse at 50% 45%, #2b2d30 0%, #16171a 55%, #0b0b0c 100%); }
+.g-air { z-index: 2; }
+.g-strip { z-index: 4; }
+.g-mid { z-index: 5; }
+.g-hands { z-index: 6; }
+.g-pedal { z-index: 7; }
+.g-gears, .g-power { z-index: 8; }
+.g-top { z-index: 10; }
+
+/* buttons at the top left */
+.g-btn { position: absolute; z-index: 12; padding: .2em; border: 1px solid currentColor; border-radius: 5px; background: none; color: inherit;
+  font-size: inherit; line-height: 1; cursor: pointer; }
+.g-btn svg { stroke-width: 2; }
+
+/* hands-on-wheel warning */
+.g-hands { left: 0; top: 0; width: 100%; height: 8em; animation: g-pulse 1.2s infinite; }
+.g-hands.dark { background: linear-gradient(0deg, rgba(255,255,255,0), rgba(35,35,255,.8)); }
+.g-hands.light { background: linear-gradient(0deg, rgba(255,255,255,0), rgba(10,10,255,.9)); }
+@keyframes g-pulse { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+/* blind-spot and turn-signal edge strips */
+.g-strip { position: absolute; top: 0; height: 100%; width: 15%; }
+
+/* brake light */
+.g-brake.dark { background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,0,0,.5)); }
+.g-brake.light { background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,0,0,.3)); }
+
+/* icon row at the top centre */
+.g-light { position: absolute; width: 100%; font-size: 1.35em; text-align: center; }
+.g-limit { position: absolute; left: 50%; top: 0; width: calc(45 * var(--px)); height: calc(45 * var(--px)); border-radius: 50%;
+  background: #fefefe; border: calc(4 * var(--px)) solid #ea4b3c; margin: -.15em 0 0 6.7em; }
+.g-limit > span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #505050;
+  font-family: Arial, Helvetica, sans-serif; font-weight: 700; }
+
+/* status note (our addition: no link, no password, no data) */
+.g-note { position: absolute; z-index: 12; font-size: .85em; color: #888; white-space: nowrap; }
+
+/* type 2: round dial */
+.g-card { position: absolute; z-index: 5; width: 85%; height: 13.5em; top: 52%; left: 50%; transform: translate(-50%, -50%);
+  border-radius: calc(25 * var(--px)); background: #1e1e1e; text-align: center; }
+.g-cell { position: absolute; height: 4.5em; color: #777; font-size: 1.2em; }
+.g-cell > span { position: absolute; white-space: nowrap; }
+.g-cell .v { color: #fdfdfd; }
+.g-rule { position: absolute; top: 50%; width: 30%; height: 1px; background: #353535; transform: translateY(-50%); }
+.g-dial { position: absolute; left: 50%; top: 52%; width: 15em; height: 15em; border-radius: 50%; overflow: hidden; transform: translate(-50%, -50%);
+  background: #0a0a0a; font-family: Arial, Helvetica, sans-serif; border: calc(4 * var(--px)) solid #78be5e; cursor: pointer; }
+.g-rainbow { --tm2: .8; position: absolute; inset: 0; background-position: 0 0; background-size: 100% 300%;
+  background-image: linear-gradient(to top, rgba(255,80,40,var(--tm2)), rgba(255,255,0,var(--tm2)), rgba(100,250,50,var(--tm2)),
+    rgba(65,118,255,var(--tm2)), rgba(255,0,255,var(--tm2)), rgba(255,80,50,var(--tm2)), rgba(255,255,0,var(--tm2)),
+    rgba(100,250,50,var(--tm2)), rgba(65,118,255,var(--tm2)), rgba(255,0,255,var(--tm2)));
+  animation: g-rainbow 1s linear infinite; }
+@keyframes g-rainbow { 0% { background-position-y: 100%; } 100% { background-position-y: 17%; } }
+.g-bar { position: absolute; z-index: 5; height: .5em; bottom: 1.2em; left: 50%; width: 50%; transform: translateX(-50%); border-radius: 4px; background: #000; }
+.g-bar > div { margin-left: 50%; height: 100%; border-radius: 4px; }
+.g-circle { position: absolute; left: 50%; top: 0; width: calc(50 * var(--px)); height: calc(50 * var(--px)); border-radius: 50%;
+  margin-top: -.15em; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; color: #fefefe; }
+
+@media (prefers-reduced-motion: reduce) {
+  .g-hands { animation-duration: 2.4s; }
+  .g-rainbow { animation: none; }
+}

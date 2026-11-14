@@ -1,0 +1,38 @@
+/* Ambient light page (vendor pages/rgb). Loaded once by pages/rgb.js. */
+.rgb-head { margin: -10px -12px 10px; padding: 6px 12px 2px; }
+.rgb-bar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
+.rgb-bar .seg { margin: 0; gap: 22px; }
+.rgb-bar .seg button { font-size: 17px; white-space: nowrap; }
+.rgb-ib { width: 44px; height: 44px; border: 0; background: none; color: var(--fg); display: grid; place-items: center; cursor: pointer; padding: 0; justify-self: center; }
+.rgb-ib:disabled { opacity: .35; cursor: not-allowed; }
+.rgb-ib.danger { color: var(--muted); }
+.rgb-sub { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; min-height: 40px; }
+.rgb-sub .help-btn { justify-self: center; width: 22px; height: 22px; line-height: 22px; }
+.rgb-sub .sub-note { margin: 0; }
+
+.rgb.busy .rgb-list { opacity: .65; pointer-events: none; }
+.rgb-rule-head { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px; background: var(--btn); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.rgb-rule.moving .rgb-rule-head { background: color-mix(in srgb, var(--mint) 30%, var(--btn)); }
+.rgb-rule.unsaved { border-style: dashed; }
+.rgb-name { display: inline-flex; align-items: center; gap: 4px; max-width: 62%; min-width: 0; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); font-size: 16px; }
+.rgb-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.rgb-name { cursor: pointer; text-align: left; }
+.rgb-head-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.rgb-num { min-width: 22px; text-align: center; font-size: 17px; color: var(--muted); }
+.rgb-mini { width: 36px; height: 36px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; border-radius: 6px; }
+.rgb-mini:disabled { opacity: .3; cursor: not-allowed; }
+.rgb-mini.on { color: var(--mint-d); }
+.rgb-try { margin-right: auto; }
+.rgb-swatch { width: 128px; height: 40px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; padding: 0; box-shadow: var(--shadow); }
+.rgb-state { display: grid; justify-items: center; gap: 10px; padding: 8px 12px 16px; }
+.rgb-state .empty { padding-bottom: 4px; }
+
+/* colour wheel */
+.cw { display: grid; justify-items: center; gap: 12px; }
+.cw-wrap { position: relative; width: 240px; height: 240px; touch-action: none; }
+.cw-wrap canvas { width: 240px; height: 240px; display: block; cursor: crosshair; border-radius: 50%; }
+.cw-dot { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; }
+.cw-row { display: flex; align-items: center; gap: 10px; }
+.cw-prev { width: 44px; height: 32px; border-radius: 6px; border: 1px solid var(--line); }
+.cw-row input.text { width: 120px; font-family: var(--mono); text-transform: uppercase; }
+.cw-note { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
