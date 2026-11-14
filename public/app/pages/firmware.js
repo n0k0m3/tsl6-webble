@@ -8,7 +8,7 @@ import { S, definePage, onBus, connect, go, log } from "../app.js";
 import { decodeStatus } from "../../lib/tsl6-settings.js";
 import { formatVersion } from "../../lib/tsl6-status.js";
 import {
-  inRuntime, inBoot, uid14, lhex, inspectImage, origPassOk, fetchSecured, fetchStock,
+  inRuntime, inBoot, uid14, lhex, inspectImage, origPassOk, fetchSecured, fetchPrompt, fetchStock,
   flashPages, requestRestart, reconnectFast, SAFE_CHUNK,
 } from "../../lib/tsl6-flash.js";
 
@@ -51,6 +51,12 @@ async function loadSecured() {
   F.busy = true; changed();
   try { const { buf } = await fetchSecured(); await accept(buf, "runtime-nokey.bin"); }
   catch (e) { log(`secured build: ${e.message}`, "bad"); imageError(`Secured build failed: ${e.message}`, `安全版加载失败：${e.message}`); }
+  F.busy = false; changed();
+}
+async function loadPrompt() {
+  F.busy = true; changed();
+  try { const { buf } = await fetchPrompt(); await accept(buf, "runtime-prompt.bin"); }
+  catch (e) { log(`prompt build: ${e.message}`, "bad"); imageError(`Prompt build failed: ${e.message}`, `提示版加载失败：${e.message}`); }
   F.busy = false; changed();
 }
 async function loadOriginal() {
@@ -155,6 +161,7 @@ definePage("firmware", () => {
 
   // Image
   const securedBtn = h("button", { class: "btn primary", type: "button", "data-id": "fw-secured", onclick: loadSecured }, L("Load secured build", "加载安全版"));
+  const promptBtn = h("button", { class: "btn", type: "button", "data-id": "fw-prompt", onclick: loadPrompt }, L("Load prompt build (test)", "加载提示版（测试）"));
   const passIn = h("input", { class: "text mono", type: "password", placeholder: L("Passphrase", "口令"), autocomplete: "off", spellcheck: "false", style: { flex: "1", minWidth: "160px" },
     oninput: e => { F.origPass = e.target.value; } });
   const origBtn = h("button", { class: "btn", type: "button", onclick: loadOriginal }, L("Load original (June 2026 dump)", "加载原版（2026 年 6 月）"));
@@ -188,6 +195,10 @@ definePage("firmware", () => {
       h("div", { class: "form" }, h("div", { class: "btns" }, securedBtn),
         rich(L("<b>Use this one.</b> The original June 2026 firmware has a <b>backdoor</b>: a fixed vendor password that opens every TSL6 module over Bluetooth, whatever password you set. The secured build is the same firmware with the backdoor removed. Only your own password opens the module.",
           "<b>请用这个。</b>2026 年 6 月的原版固件有<b>后门</b>：一个固定的厂家密码，无论你设置什么密码，都能通过蓝牙打开每一个 TSL6 模块。安全版是去掉后门的同一固件。只有你自己的密码能打开模块。"))),
+      h("div", { class: "subhead" }, L("Prompt build (test)", "提示版（测试）")),
+      h("div", { class: "form" }, h("div", { class: "btns" }, promptBtn),
+        rich(L("The secured build plus new choices in <b>Settings → Scroll interval → On hands-on prompt</b>. With one of them, the module scrolls only when the car shows the hands-on prompt: one tick pair after the delay you pick (0.3–5 s, random ± 50 %). The gap between the two ticks is your “Up/down tick gap” ± 50 %, random. The Car tab shows the live state. All other Scroll interval choices work as in the secured build. The gauge altitude then shows the prompt count instead. If you save settings in the vendor Mini App, it changes Scroll interval back to every 2–3 s.",
+          "安全版加新选项：<b>设置 → 滚轮操作时间 → 手扶提示时</b>。选其中一个后，只有车机显示手扶方向盘提示时模块才操作滚轮：在你选的延时后（0.3–5 秒，随机 ± 50 %）操作一次减加。减加之间的间隔为“加减时间间隔”± 50 % 随机。车辆页显示实时状态。其他选项与安全版相同。仪表的海拔改为显示提示次数。如果在厂家小程序里保存设置，它会把滚轮操作时间改回每 2–3 秒。"))),
       h("div", { class: "subhead" }, L("Original build", "原版")),
       h("div", { class: "form" }, h("div", { class: "btns" }, passIn, origBtn),
         rich(L("The original build <b>has the backdoor</b>. It needs a passphrase to load. If you want the passphrase for the original (backdoor) build, contact me: <a href=\"https://github.com/n0k0m3\">n0k0m3 on GitHub</a>.",
@@ -252,7 +263,7 @@ definePage("firmware", () => {
     allBox.checked = F.showAll;
     // image
     drawImage();
-    securedBtn.disabled = origBtn.disabled = fileIn.disabled = F.busy;
+    securedBtn.disabled = promptBtn.disabled = origBtn.disabled = fileIn.disabled = F.busy;
     // flash
     confirmBox.checked = F.confirm;
     const pages = !!(F.image && F.image.pages);

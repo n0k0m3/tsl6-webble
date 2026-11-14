@@ -152,7 +152,7 @@ await test("passphrase gate rejects a wrong passphrase", async () => {
   assert.equal(await F.origPassOk("not-the-passphrase"), false);
 });
 
-for (const [file, sha] of [["public/runtime-nokey.bin", F.SECURED_SHA], ["public/runtime.bin", "b1b2a3aa5e71d88336719bccb5da822faffc05acf50b5b482e570f1981dabbd5"]]) {
+for (const [file, sha] of [["public/runtime-nokey.bin", F.SECURED_SHA], ["public/runtime-prompt.bin", F.PROMPT_SHA], ["public/runtime.bin", "b1b2a3aa5e71d88336719bccb5da822faffc05acf50b5b482e570f1981dabbd5"]]) {
   const path = new URL(`../${file}`, import.meta.url);
   if (!fs.existsSync(path)) { console.log(`skip - ${file} is not here`); continue; }
   await test(`${file} is the known image and passes the checks`, async () => {
