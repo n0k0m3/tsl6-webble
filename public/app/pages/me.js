@@ -1,6 +1,6 @@
 // Device tab: connection (was the Bluetooth tab), module info, restart, preferences (was the Me tab).
 import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
-import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword } from "../app.js";
+import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go } from "../app.js";
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
 import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
 
@@ -105,6 +105,11 @@ definePage("me", () => {
       h("button", { class: "li first", type: "button", "data-id": "restart", onclick: restart },
         h("span", { class: "chip" }, icon("refresh-cw", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))), chev()),
+      // Same page as Tools > Firmware: OTA update of the runtime, or recovery of a module in boot mode.
+      h("button", { class: "li", type: "button", "data-id": "firmware", onclick: () => go("firmware") },
+        h("span", { class: "chip" }, icon("hard-drive-download", 22)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Flash firmware", "刷写固件"))),
+          h("div", { class: "li-sub" }, L("Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块"))), chev()),
       h("button", { class: "li", type: "button", "data-id": "clear-cache", onclick: clearCache },
         h("span", { class: "chip" }, icon("trash-2", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
