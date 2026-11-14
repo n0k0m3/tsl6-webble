@@ -15,6 +15,14 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 export const ICONS = {
+// Car plan glyphs (top view, front up) drawn for this app in the Lucide style: the open part is marked.
+"car-door-fl": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"M7 9.5 3.5 12.5\" />",
+"car-door-fr": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"m17 9.5 3.5 3\" />",
+"car-door-rl": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"M7 13 3.5 16\" />",
+"car-door-rr": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"m17 13 3.5 3\" />",
+"car-frunk": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"M8.5 8.5V7a3 3 0 0 1 3-3h1a3 3 0 0 1 3 3v1.5z\" fill=\"currentColor\" stroke=\"none\" />",
+"car-trunk": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"M8.5 16v1a3 3 0 0 0 3 3h1a3 3 0 0 0 3-3v-1z\" fill=\"currentColor\" stroke=\"none\" />",
+"car-mirrors": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"4\" /> <path d=\"M9 8.5h6\" /> <path d=\"M9 16h6\" /> <path d=\"M7 9.5 4 8.5\" /> <path d=\"m17 9.5 3-1\" />",
 // Car lamp glyphs drawn for this app in the Lucide style (24 grid, 2 px stroke), after the ISO 2575 telltales.
 "lamp-high": "<path d=\"M13 7c4.4 0 8 2.2 8 5s-3.6 5-8 5c-.6 0-1-.4-1-1V8c0-.6.4-1 1-1z\" /> <path d=\"M3 8h6\" /> <path d=\"M3 12h6\" /> <path d=\"M3 16h6\" />",
 "fog-front": "<path d=\"M13 7c4.4 0 8 2.2 8 5s-3.6 5-8 5c-.6 0-1-.4-1-1V8c0-.6.4-1 1-1z\" /> <path d=\"m2.5 9.5 7-1.5\" /> <path d=\"m2.5 13.5 7-1.5\" /> <path d=\"m2.5 17.5 7-1.5\" /> <path d=\"M6 6.5c-1 1 1 2 0 3s1 2 0 3 1 2 0 3 1 2 0 3\" />",

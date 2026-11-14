@@ -16,7 +16,7 @@
   --accent: #2563eb; --accent-ui: #2563eb; --accent-text: #1d4ed8; --accent-soft: #e5edfd; --on-accent: #ffffff;
   --ok: #15803d; --ok-soft: #e3f3e8; --warn: #b45309; --warn-soft: #fcf4e8; --bad: #c02626; --bad-soft: #fbe9e9;
   --off: #79849a; --btn: #ffffff; --btn-b: #7f8a9b; --btn-hover: #eef1f5;
-  --sw-knob: #a9b2bf; --tt-off: #7b8698; --tt-green: #15803d; --tt-blue: #1d4ed8; --tt-amber: #b45309;
+  --sw-track: #dde2e9; --sw-knob: #ffffff; --tt-off: #7b8698; --tt-green: #15803d; --tt-blue: #1d4ed8; --tt-amber: #b45309;
   --hl-g: #15803d; --hl-o: #b45309; --hl-r: #c02626;
   /* cluster panel: the car display */
   --cl-bg: #131a23; --cl-fg: #eef2f7; --cl-muted: #a3afbf; --cl-line: #2b3644; --cl-off: #5f6b7b;
@@ -40,7 +40,7 @@
     --accent: #2563eb; --accent-ui: #4d8dff; --accent-text: #8ab4ff; --accent-soft: #172440; --on-accent: #ffffff;
     --ok: #4ade80; --ok-soft: #12291c; --warn: #fbbf24; --warn-soft: #2b2210; --bad: #f87171; --bad-soft: #2d1515;
     --off: #788395; --btn: #1d232b; --btn-b: #667081; --btn-hover: #232a33;
-    --sw-knob: #5d6878; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
+    --sw-track: #343d49; --sw-knob: #c9d0da; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
     --hl-g: #6ee7a0; --hl-o: #fcd34d; --hl-r: #fca5a5;
     --cl-bg: #1f2731; --cl-line: #364354;
     --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
@@ -53,7 +53,7 @@
   --accent: #2563eb; --accent-ui: #4d8dff; --accent-text: #8ab4ff; --accent-soft: #172440; --on-accent: #ffffff;
   --ok: #4ade80; --ok-soft: #12291c; --warn: #fbbf24; --warn-soft: #2b2210; --bad: #f87171; --bad-soft: #2d1515;
   --off: #788395; --btn: #1d232b; --btn-b: #667081; --btn-hover: #232a33;
-  --sw-knob: #5d6878; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
+  --sw-track: #343d49; --sw-knob: #c9d0da; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
   --hl-g: #6ee7a0; --hl-o: #fcd34d; --hl-r: #fca5a5;
   --cl-bg: #1f2731; --cl-line: #364354;
   --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
@@ -81,11 +81,14 @@ input, textarea, pre.log, pre.log * { -webkit-user-select: text; user-select: te
 #top h1 { margin: 0; flex: 1; min-width: 0; font: 700 19px/1.2 var(--font-head); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #top .top-spacer { width: 8px; }
 .top-back, .top-lang { flex: none; background: none; border: 0; color: var(--accent-text); height: 44px; min-width: 44px; cursor: pointer; display: grid; place-items: center; border-radius: var(--r-sm); }
-.top-lang { color: var(--fg); font-size: 15px; font-weight: 600; height: 34px; min-width: 34px; border: 1px solid var(--btn-b); background: var(--card); margin-right: 4px; }
-#top.root h1 { font-size: 26px; padding-left: 4px; }
-#top .dot { margin: 0 8px; }
+.top-lang { color: var(--fg); font-size: 15px; font-weight: 600; height: 40px; min-width: 40px; border: 1px solid var(--btn-b); background: var(--card); }
+#top.root h1 { font-size: 26px; padding-left: 2px; }
+#top.root { padding-left: 16px; padding-right: 16px; }
+#top.root .top-spacer { display: none; }
+#top:not(.root) { padding-right: 16px; }
+#top > .dot { margin: 0 8px; }
 .top-back:hover, .top-lang:hover { background: var(--btn-hover); }
-.conn-chip { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 11px; border-radius: var(--r-sm); border: 1px solid var(--btn-b);
+.conn-chip { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 11px; border-radius: var(--r-sm); border: 1px solid var(--btn-b);
   background: var(--card); color: var(--fg); font-size: 14px; font-weight: 600; cursor: pointer; max-width: 52vw; }
 .conn-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conn-chip:hover { background: var(--btn-hover); }
@@ -120,7 +123,8 @@ input, textarea, pre.log, pre.log * { -webkit-user-select: text; user-select: te
   .tab.on { background: var(--accent-soft); }
   .tab.on::before { top: 9px; bottom: 9px; left: 0; width: 3px; height: auto; margin: 0; border-radius: 0 3px 3px 0; }
   #page { padding: 4px 40px 48px; max-width: 1120px; }
-  #top { padding: 8px 40px 0; }
+  #top, #top.root { max-width: 1120px; margin: 0 auto; padding: 8px 40px 0; }
+  #top:not(.root) { padding-left: 28px; padding-right: 40px; }
   .is-mock #mockBanner { bottom: 12px; }
   .lg-title { font-size: 36px; margin-bottom: 22px; }
   /* groups flow into two columns when there is room (see the 1180 px rule); one group never splits */
@@ -271,8 +275,8 @@ button.li:disabled { cursor: progress; }
 /* ---------------------------------------------------------------- controls */
 /* Switch: a rocker, not a pill. Off = outlined track and a grey knob on the left.
    On = blue track and a white knob on the right. Unknown = dashed track, knob in the middle. */
-.switch { position: relative; width: 50px; height: 30px; border-radius: 9px; border: 1.5px solid var(--btn-b); background: var(--card); cursor: pointer; flex: none; padding: 0; transition: background .15s, border-color .15s; }
-.switch::after { content: ""; position: absolute; top: 3.5px; left: 3.5px; width: 20px; height: 20px; border-radius: 5px; background: var(--sw-knob); transition: left .15s, background .15s; }
+.switch { position: relative; width: 50px; height: 30px; border-radius: 9px; border: 1.5px solid var(--btn-b); background: var(--sw-track); cursor: pointer; flex: none; padding: 0; transition: background .15s, border-color .15s; }
+.switch::after { content: ""; position: absolute; top: 3.5px; left: 3.5px; width: 20px; height: 20px; border-radius: 5px; background: var(--sw-knob); box-shadow: 0 1px 2px rgba(18, 24, 33, .3); transition: left .15s, background .15s; }
 .switch[aria-checked="true"] { background: var(--accent-ui); border-color: var(--accent-ui); }
 .switch[aria-checked="true"]::after { left: 23.5px; background: #fff; }
 .switch.unknown { border-style: dashed; }
@@ -467,3 +471,40 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .opt-range-row input { flex: 1; min-width: 0; height: 32px; accent-color: var(--accent); }
 .opt-range-row .ibtn { touch-action: manipulation; flex: none; }
 .legend { display: flex; align-items: center; margin: -2px 2px 6px; font-size: 14px; color: var(--muted); }
+/* round 2 (council) */
+/* cluster: a lit function is blue, as its switch; green stays for the buses and the link lamp */
+.tt { color: var(--cl-blue); }
+.tt.t-amber { color: var(--cl-amber); }
+/* number slider in the theme: 6 px track, filled part in the accent, square thumb like the switch knob */
+.opt-range-row input { -webkit-appearance: none; appearance: none; height: 32px; background: transparent; cursor: pointer; --fill: 0%; }
+.opt-range-row input::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; border: 0;
+  background: linear-gradient(to right, var(--accent-ui) var(--fill), var(--sw-track) var(--fill)); }
+.opt-range-row input::-moz-range-track { height: 6px; border-radius: 3px; background: var(--sw-track); }
+.opt-range-row input::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--accent-ui); }
+.opt-range-row input::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 6px; background: #fff;
+  border: 1.5px solid var(--btn-b); box-shadow: 0 1px 3px rgba(18, 24, 33, .3); }
+.opt-range-row input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 6px; background: #fff; border: 1.5px solid var(--btn-b); }
+/* the sheet edge shows against the dimmed page in dark */
+.dlg { border-top-color: var(--line); }
+/* checkbox in the palette */
+.empty-state .check input, .check-row input { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; flex: none; margin: 0; border-radius: 5px;
+  border: 1.5px solid var(--btn-b); background: var(--card); display: inline-grid; place-items: center; cursor: pointer; }
+.empty-state .check input:checked, .check-row input:checked { background: var(--accent-ui); border-color: var(--accent-ui); }
+.empty-state .check input:checked::after, .check-row input:checked::after { content: ""; width: 10px; height: 5px; margin-top: -2px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg); }
+/* group help: every row name with its help text */
+.ghelp h4 { margin: 14px 0 4px; font: 700 17px/1.25 var(--font-head); }
+.ghelp h4:first-child { margin-top: 2px; }
+.ghelp .help { font-size: 15px; }
+/* seats: one 4-column grid; memory 1-3 is one segmented control over two columns */
+.acts.seatgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.acts.seatgrid .mem { grid-column: span 2; display: flex; flex-direction: column; gap: 4px; }
+.mem-cap { font-size: 12.5px; font-weight: 600; color: var(--muted); text-align: center; }
+.mem-seg { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--btn-b); border-radius: var(--r-md); overflow: hidden; }
+.mem-seg .act { border: 0; border-radius: 0; min-height: 0; border-left: 1px solid var(--btn-b); }
+.mem-seg .act:first-child { border-left: 0; }
+/* doors: lock and unlock first, then the plan, then glovebox and mirrors */
+.acts.plan { grid-template-areas: "ul ul ul lk lk lk" "fl fl fk fk fr fr" "rl rl tk tk rr rr" "gb gb gb mi mi mi"; }
+.tpick.unknown { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 60%, var(--btn-b)); }
+.tpick.unknown svg:first-child { color: var(--warn); }
+/* sub-pages on a phone: the link chip shows only its lamp, so the page title has room */
+@media (max-width: 559px) { .conn-chip.compact { width: 40px; padding: 0; justify-content: center; } .conn-chip.compact span:last-child { display: none; } }

@@ -37,10 +37,15 @@ definePage("battery", () => {
   const segBtns = BATTERY_TABS.map((t, i) => h("button", { type: "button", onclick: () => selectTab(i) }, L(TAB_EN[t.id], t.zh)));
   const head = h("div", { class: "bat-head" });
   const list = h("div", { class: "bat-list" });
+  // Pack tab: a summary card, then one card per group. Cells and DC-DC tabs: one card.
+  const sum = h("div", { class: "bat-sum" });
+  const groups = h("div", { class: "bat-groups" });
+  const packWrap = h("div", null, h("div", { class: "card pad bat-sum-card" }, sum), groups);
+  const card = h("div", { class: "bat-card" }, head, h("div", { class: "bat-rule" }), list);
   el.append(
     h("div", { class: "seg", role: "tablist" }, segBtns),
     h("p", { class: "sub-note" }, L("For reference only. The car maker's data is the authority.", "本数据仅供参考，以车企官方数据为准")),
-    h("div", { class: "bat-card" }, head, h("div", { class: "bat-rule" }), list),
+    packWrap, card,
   );
 
   // SI unit spelling on screen (the codec keeps the vendor text "KWH", "KW", "KM" for its vendor diff test).
@@ -60,16 +65,20 @@ definePage("battery", () => {
   // Value rows, keyed by id. Texts change in place so that a tap on the capacity value is not lost.
   let rowKey = null;
   const rowEls = new Map();
-  function syncRows(rows) {
-    const key = rows.map(r => r.id).join(",");
+  function syncRows(rows, grouped = false) {
+    const key = (grouped ? "g:" : "") + rows.map(r => r.id).join(",");
     if (key !== rowKey) {
       rowKey = key;
       rowEls.clear();
-      clear(list);
-      if (!rows.length) list.append(h("p", { class: "bat-empty" }, ready() ? L("Waiting for data", "等待数据") : L("Connect to the module first.", "请先连接蓝牙")));
-      let g = null;
+      clear(list); clear(groups);
+      const empty = () => h("p", { class: "bat-empty" }, ready() ? L("Waiting for data", "等待数据") : L("Connect to the module first.", "请先连接蓝牙"));
+      if (!rows.length) (grouped ? groups : list).append(grouped ? h("div", { class: "card pad" }, empty()) : empty());
+      let g = null, box = list;
       for (const r of rows) {
-        if (r.group && r.group !== g) { g = r.group; list.append(h("div", { class: "bat-sub" }, L(...GROUP_NAME[g]))); }
+        if (grouped && r.group !== g) {
+          g = r.group; box = h("div", { class: "card bat-group" });
+          groups.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(...GROUP_NAME[g])), box));
+        }
         const txt = h("span");
         const val = r.tap
           ? h("button", { type: "button", class: "bat-val bat-link", onclick: editCap, "aria-label": r.label + ": " + L("change", "修改") }, txt, icon("chevron-right", 18))
@@ -77,7 +86,7 @@ definePage("battery", () => {
         const lab = h("span", { class: "bat-lab" });
         const e = h("div", { class: "bat-row" }, lab, val);
         rowEls.set(r.id, { e, lab, val, txt });
-        list.append(e);
+        box.append(e);
       }
     }
     for (const r of rows) {
@@ -106,19 +115,23 @@ definePage("battery", () => {
 
   function render() {
     segBtns.forEach((b, i) => { b.classList.toggle("on", i === tab); b.setAttribute("aria-selected", String(i === tab)); });
+    packWrap.hidden = tab !== 0; card.hidden = tab === 0;
     clear(head);
     if (tab === 0) {
       const v = pack ? packRows() : { odo: "0", rows: [] };
       // Summary: state of charge, range and pack power, rounded for reading at a glance.
+      // The summary values leave the list, so that no value shows twice.
       const by = Object.fromEntries(v.rows.map(r => [r.id, r]));
       const num = id => (by[id] ? parseFloat(String(by[id].text).replace(/,/g, "")) : NaN);
-      const soc = Number.isFinite(num("socReal")) ? ["socReal", L("Real SOC", "实际SOC")] : ["socCar", L("Car SOC", "车机SOC")];
-      const stat = (value, unit, label) => h("div", { class: "bat-stat" },
-        h("div", { class: "bat-stat-v" }, Number.isFinite(value) ? value.toLocaleString("en-US", { maximumFractionDigits: unit === "kW" ? 1 : 0 }) : "—", h("small", null, unit)),
-        h("div", { class: "bat-stat-l" }, label));
-      head.className = "bat-head bat-sum";
-      head.append(stat(num(soc[0]), "%", soc[1]), stat(num("range"), "km", L("Range", "剩余里程")), stat(num("power"), "kW", L("Pack power", "总功率")));
-      syncRows(v.rows);
+      const socId = Number.isFinite(num("socReal")) ? "socReal" : "socCar";
+      const stat = (id, unit, digits) => {
+        const n = num(id);
+        return h("div", { class: "bat-stat" },
+          h("div", { class: "bat-stat-v" }, Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—", h("small", null, unit)),
+          h("div", { class: "bat-stat-l" }, by[id] ? by[id].label : ""));
+      };
+      clear(sum).append(stat(socId, "%", 1), stat("range", "km", 0), stat("power", "kW", 2));
+      syncRows(v.rows.filter(r => ![socId, "range", "power"].includes(r.id)), true);
     } else if (tab === 1) {
       head.className = "bat-head center";
       const i = cells.reading;

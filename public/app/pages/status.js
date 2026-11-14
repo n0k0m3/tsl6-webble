@@ -1,6 +1,6 @@
 // Car tab (vendor pages/index): vehicle, AP assist, lights, comfort, doors, seats, scroll wheel, driving systems.
 // The command logic is the same as before the redesign; only the grouping and the look changed.
-import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, clear } from "../ui.js";
+import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab } from "../app.js";
 import { WebLink } from "../ble.js";
 import {
@@ -15,7 +15,7 @@ const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
 const LIGHTS = [["pulseHighBeam", "lamp-high"], ["pulseFrontFog", "fog-front"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear"], ["pilotRearFog", "fog-rear"]];
 const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"], ["pulseHorn", "megaphone"]];
 const DRIVING = [["sportMode", "zap"], ["offRearMotor", "power-off"], ["offFrontMotor", "power-off"], ["offESP", "shield-off"]];
-const DOOR_ICON = { 0: "door-open", 1: "door-open", 2: "door-open", 3: "door-open", 8: "package", 9: "package", 10: "inbox", 11: "flip-horizontal-2", 22: "lock", 23: "lock-open" };
+const DOOR_ICON = { 0: "car-door-fl", 1: "car-door-fr", 2: "car-door-rl", 3: "car-door-rr", 8: "car-frunk", 9: "car-trunk", 10: "inbox", 11: "car-mirrors", 22: "lock", 23: "lock-open" };
 const DOOR_LABEL = {
   0: ["Front left", "左前门"], 1: ["Front right", "右前门"], 2: ["Rear left", "左后门"], 3: ["Rear right", "右后门"],
   8: ["Frunk", "前备箱"], 9: ["Trunk", "后备箱"], 10: ["Glovebox", "储物箱"], 11: ["Mirrors", "后视镜"], 22: ["Lock", "锁车"], 23: ["Unlock", "解锁"],
@@ -117,6 +117,9 @@ definePage("status", () => {
   // The row name is a button that opens the help text of the row.
   const nameButton = (name, help, sub) => h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + name,
     onclick: () => showHelp(help, name) }, h("div", { class: "li-title" }, h("span", null, name)), sub || null);
+  // Help for a switch group: every shown row with its help text.
+  const groupHelp = (en, zh, rows, extra = []) => groupHelpButton({ en, zh },
+    [...extra, ...rows.map(([id]) => ROW_BY_ID[id]).filter(shown).map(r => [L(r.en, r.zh), r.help])]);
   const listCard = (items, cls = "") => h("div", { class: "card " + cls }, items.filter(Boolean));
 
   function emptyState() {
@@ -180,17 +183,16 @@ definePage("status", () => {
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
     switches.apAssist = { sw: apSw, chip: refs.apChip, sub: null, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
-    el.append(grp(sec("Driver assist", "辅助驾驶"),
+    el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help]])),
       h("div", { class: "card lead" },
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
           h("button", { class: "li-text hero-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + apName, onclick: () => showHelp(ap.help, L(ap.en, ap.zh)) },
             h("div", { class: "hero-title" }, h("span", null, apName)), refs.apSub),
           apSw)),
-      listCard(ASSIST.map(switchItem)),
-      h("p", { class: "sec-foot" }, L("Tap a name to see what it does.", "点击名称查看说明。"))));
+      listCard(ASSIST.map(switchItem))));
 
-    el.append(grp(sec("Lights", "灯光"), listCard(LIGHTS.map(switchItem))));
-    el.append(grp(sec("Comfort and charging", "舒适与充电"), listCard(COMFORT.map(switchItem))));
+    el.append(grp(sec("Lights", "灯光", groupHelp("Lights", "灯光", LIGHTS)), listCard(LIGHTS.map(switchItem))));
+    el.append(grp(sec("Comfort and charging", "舒适与充电", groupHelp("Comfort and charging", "舒适与充电", COMFORT)), listCard(COMFORT.map(switchItem))));
 
     // Doors and access
     const doorRow = ROW_BY_ID.openDoor, ctl = ROW_BY_ID.control;
@@ -210,13 +212,19 @@ definePage("status", () => {
       if (!shown(mv) && !shown(mem)) return null;
       return h("div", { class: "seat" },
         h("div", { class: "subhead" }, h("span", null, L(en, zh)), shown(mv) ? helpButton(mv.help, { en: mv.en, zh: mv.zh }) : null),
-        shown(mv) ? h("div", { class: "acts arrows" }, mv.buttons.map(b => hold(0xa7, b.btn, A7_RELEASE, icon(ARROW[b.icon], 22), L(b.en)))) : null,
-        shown(mem) ? h("div", { class: "acts five" }, mem.buttons.map(b => {
-          const lab = MEM_LABEL[b.icon];
-          const e = h("button", { class: "act", type: "button", "data-id": `mem-${b.btn}`, "aria-label": L(b.en) },
-            b.text ? h("b", null, b.text) : icon(MEM_ICON[b.icon], 20), h("span", null, lab ? L(...lab) : L("Memory", "记忆")));
-          return pressable(e, { ontap: () => onMemory(mem, b, false), onlong: () => onMemory(mem, b, true) });
-        })) : null);
+        h("div", { class: "acts seatgrid" },
+          shown(mv) ? mv.buttons.map(b => hold(0xa7, b.btn, A7_RELEASE, icon(ARROW[b.icon], 22), L(b.en))) : null,
+          shown(mem) ? (() => {
+            const memBtn = b => {
+              const lab = MEM_LABEL[b.icon];
+              const e = h("button", { class: "act", type: "button", "data-id": `mem-${b.btn}`, "aria-label": L(b.en) },
+                b.text ? h("b", null, b.text) : icon(MEM_ICON[b.icon], 20), b.text ? null : h("span", null, L(...lab)));
+              return pressable(e, { ontap: () => onMemory(mem, b, false), onlong: () => onMemory(mem, b, true) });
+            };
+            const nums = mem.buttons.filter(b => b.text), modes = mem.buttons.filter(b => !b.text);
+            return [...modes.map(memBtn), h("div", { class: "mem", role: "group", "aria-label": L("Memory", "记忆") },
+              h("span", { class: "mem-cap" }, L("Memory", "记忆")), h("div", { class: "mem-seg" }, nums.map(memBtn)))];
+          })() : null));
     };
     const seats = [seatBlock("driverSeat", "driverMemory", "Driver", "主驾"), seatBlock("passengerSeat", "passengerMemory", "Passenger", "副驾")].filter(Boolean);
     if (seats.length) el.append(grp(sec("Seats", "座椅", helpButton("help_sideMemory", { en: "Seat memory", zh: "座椅记忆" })),

@@ -52,6 +52,9 @@ const findItem = (groups, val) => {
   return found;
 };
 
+// True when the id is in the function list.
+export const fnKnown = (groups, val) => !!findItem(groups, val);
+
 // Label for an id from raw function-list groups. 0 -> `none`. Unknown ids keep the raw number.
 export function fnLabel(groups, val, none = { en: "None", zh: "无" }) {
   const it = findItem(groups, val);

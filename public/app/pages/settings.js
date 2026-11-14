@@ -13,7 +13,7 @@ async function zhLabels() {
 // Topic groups. [id, subId] = a row and its sub-setting (the vendor "..." picker), shown as an indented row.
 const GROUPS = [
   { en: "Autopilot", zh: "Autopilot", rows: [["apAutoOpenType", "apAutoOpenTime"], ["oneClickOpenAP"], ["APSpeedExit"], ["fsd"]] },
-  { en: "AP assist", zh: "AP辅助", foot: { en: "How the module keeps Autopilot from asking for your hands.", zh: "模块如何避免 Autopilot 要求手扶方向盘。" },
+  { en: "AP assist (no-nag)", zh: "AP辅助（免打扰）",
     rows: [["automdr"], ["ModeMDR"], ["lr"], ["time"], ["rand"], ["enable_save"], ["jg"], ["jj"], ["dblclickMDR"]] },
   { en: "Lights", zh: "灯光", rows: [["dynamicBrakeLight"], ["apHighBeam"], ["blinkHighBeam"], ["pluseHighBeam", "pluseHighBeamAndLowBeam"],
     ["pluseFrontFogLight"], ["pluseRearFogLight"], ["turnLightPriority"], ["openDoorHazardLight"], ["backHazardLight"]] },
@@ -149,7 +149,6 @@ definePage("settings", () => {
           h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })()));
-    if (!moduleOff) el.append(h("p", { class: "legend span" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置")));
     if (moduleOff) {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
@@ -173,7 +172,11 @@ definePage("settings", () => {
     h("div", { class: "li-trail" }, h("span", { class: "val" }, S.prefs.lab ? L("On", "开启") : L("Off", "关闭")), h("span", { class: "chev" }, icon("chevron-right", 18))));
     const labRows = S.prefs.lab ? LAB.map(id => item(id, vals)).filter(Boolean) : [];
     el.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L("Lab", "实验室")), h("div", { class: "card" }, labItem, labRows)));
-    el.append(h("p", { class: "foot span" }, L("Each change saves to the module at once.", "每项修改会立即保存到模块。")));
+    // The legend shows only when a row carries the changed dot.
+    const shownIds = [...GROUPS.flatMap(g => g.rows.flat().filter(Boolean)), ...(S.prefs.lab ? LAB : [])];
+    const anyChanged = shownIds.some(id => BY_ID[id] && vals[id] !== undefined && appliesTo(BY_ID[id], S.hwType) && changed(id, vals));
+    el.append(h("p", { class: "foot span" }, anyChanged ? [h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default. ", "已改动的设置。")] : null,
+      L("Each change saves to the module at once.", "每项修改会立即保存到模块。")));
   }
 
   const offs = [];

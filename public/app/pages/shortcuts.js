@@ -3,7 +3,7 @@
 import { h, L, clear, icon, iconBtn, btn, toast, confirmBox, helpButton } from "../ui.js";
 import { definePage, onBus, funlist } from "../app.js";
 import { decodeShortcuts, encodeShortcuts, SHORTCUT_SLOTS, LABELS, CMD } from "../../lib/tsl6-tables.js";
-import { openFnPicker, tryAction, fnLabel } from "../fnpicker.js";
+import { openFnPicker, tryAction, fnLabel, fnKnown } from "../fnpicker.js";
 import { linkState, linkStateText, readTable, writeTable, loadTablesCss } from "../tableio.js";
 
 // Long press on a card (600 ms, no big move) calls onlong. The click after a long press is dropped.
@@ -20,9 +20,10 @@ export function longPress(el, onlong, ms = 600) {
 }
 
 // A pill button that opens a picker (looks like the vendor picker text with a chevron).
-export function pill(text, onclick, { disabled, label } = {}) {
-  return h("button", { class: "tpick", type: "button", onclick, disabled, "aria-label": label ? `${label}: ${text}` : null },
-    h("span", { class: "tpick-t" }, text), icon("chevron-down", 16));
+// unknown: the id is not in the function list; the pill shows a warning colour and icon.
+export function pill(text, onclick, { disabled, label, unknown = false } = {}) {
+  return h("button", { class: "tpick" + (unknown ? " unknown" : ""), type: "button", onclick, disabled, "aria-label": label ? `${label}: ${text}` : null },
+    unknown ? icon("triangle-alert", 16) : null, h("span", { class: "tpick-t" }, text), icon("chevron-down", 16));
 }
 
 // Up / down / done bar for the card in move mode.
@@ -114,19 +115,18 @@ definePage("shortcuts", () => {
   }
 
   function card(r, i, isDraft) {
-    // Grid: number | When and Then pickers (same width) | delete and try.
-    const n = h("span", { class: "sc-num" }, `#${i + 1}`);
+    // Grid: "#n When" / "Then" | the two pickers (same width) | delete and try.
     const trig = pill(isDraft ? L(LABELS.triggerNone) : fnLabel(list.btn, r.trigger, LABELS.triggerNone),
-      () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令") });
+      () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令"), unknown: !isDraft && !!r.trigger && !fnKnown(list.btn, r.trigger) });
     const delBtn = h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20));
     const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") },
-      n, h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("When", "当")), trig), delBtn);
+      h("span", { class: "sc-tag" }, h("span", { class: "sc-num" }, `#${i + 1}`), L("When", "当")), trig, delBtn);
     if (isDraft) {
       c.append(h("p", { class: "sc-draft-note" }, L("Not saved. Select a trigger to save this row.", "未保存。选择快捷指令后保存。")));
       return c;
     }
-    c.append(h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("Then", "则")),
-      pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作") })),
+    c.append(h("span", { class: "sc-tag" }, L("Then", "则")),
+      pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作"), unknown: !!r.action && !fnKnown(list.fun, r.action) }),
       h("button", { class: "ibtn flat sc-try", type: "button", disabled: busy || !r.action, "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"),
         onclick: () => tryAction(r.action) }, icon("play", 18)));
     if (moving === i) c.append(moveBar(i, rows.length, { onmove: move, ondone: () => { moving = -1; render(); }, disabled: busy }));
@@ -139,7 +139,7 @@ definePage("shortcuts", () => {
     const ready = !!table && linkState() === "ok";
     const hasFun = list.fun.length > 0;
     el.append(h("section", { class: "card tbl-toolbar" },
-      hasFun ? h("button", { class: "btn small danger", type: "button", disabled: !ready || busy || !rows.length, onclick: delAll }, L("Delete all", "删除全部")) : h("span"),
+      h("span", { class: "tbl-count" }, table ? L(`${rows.length} of ${SHORTCUT_SLOTS}`, `${rows.length} / ${SHORTCUT_SLOTS}`) : ""),
       h("div", { class: "tools" },
         helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" }),
         hasFun ? h("button", { class: "btn small primary", type: "button", disabled: !ready || busy || draft, onclick: add }, icon("plus", 18), h("span", null, L("Add", "添加"))) : null)));
@@ -160,6 +160,9 @@ definePage("shortcuts", () => {
     if (rows.length) el.append(h("p", { class: "foot" }, L(
       "The module runs every row whose trigger matches, in list order. Long-press a card to move it.",
       "触发条件相同的所有行都会按顺序执行。长按卡片可移动顺序。")));
+    // A bulk delete stays at the end of the list, away from Add.
+    if (rows.length && hasFun) el.append(h("div", { class: "tbl-end" },
+      h("button", { class: "btn small danger", type: "button", disabled: !ready || busy, onclick: delAll }, icon("trash", 16), h("span", null, L("Delete all", "删除全部")))));
   }
 
   render();

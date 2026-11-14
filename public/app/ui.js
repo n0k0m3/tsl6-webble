@@ -140,6 +140,15 @@ export async function showHelp(id, title) {
   const e = d[id];
   return dialog({ title, wide: true, body: e ? helpNode(e) : h("p", { class: "dlg-text" }, L("No help text for this item.", "此项暂无帮助说明。")) });
 }
+// Help for a whole group: each row name with its help text, in one sheet.
+export async function showGroupHelp(title, items) {
+  const d = await loadHelp();
+  return dialog({ title, wide: true, body: h("div", { class: "ghelp" }, items.flatMap(([name, id]) => [h("h4", null, name), d[id] ? helpNode(d[id]) : h("p", { class: "dlg-text" }, "—")])) });
+}
+export function groupHelpButton(title, items) {
+  const t = typeof title === "object" ? L(title) : title;
+  return h("button", { class: "help-btn", type: "button", "aria-label": L("Help", "帮助") + ": " + t, onclick: e => { e.stopPropagation(); showGroupHelp(t, items); } }, icon("info", 18));
+}
 export function helpButton(id, title) {
   return h("button", { class: "help-btn", type: "button", "aria-label": L("Help", "帮助") + ": " + (typeof title === "object" ? L(title) : title),
     onclick: e => { e.stopPropagation(); showHelp(id, typeof title === "object" ? L(title) : title); } }, icon("info", 18));
@@ -201,6 +210,7 @@ export async function chooseOption({ title, options, value, help }) {
       val.textContent = plainLabel(options[i][1]);
       def.textContent = isDefault(options[i][1]) ? L("Default", "默认") : "";
       range.setAttribute("aria-valuetext", val.textContent);
+      range.style.setProperty("--fill", `${(i / (options.length - 1)) * 100}%`);
       minus.disabled = i === 0; plus.disabled = i === options.length - 1;
     }
     range.addEventListener("input", () => set(Number(range.value)));
