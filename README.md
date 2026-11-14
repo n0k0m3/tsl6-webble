@@ -13,21 +13,21 @@ The app copies the layout and the functions of the vendor Mini App. The labels a
 
 | Tab or page | Function |
 |---|---|
-| **Status** | Vehicle type, live switches (AP assist, AP resume, battery preheat, charge port, horn and light strobes, sport mode, seat massage), seat move and memory, doors, frunk, trunk, lock, simulated scroll wheel |
-| **Bluetooth** | Connect through the browser's device chooser. BLE password. Bytes per write |
-| **Settings** | Restore defaults, change password, Tesla service mode, and every settings row of the vendor app. Each change writes one `A3` frame and checks the module's reply |
-| Settings > **Shortcuts** | The trigger → action table (`AB`), with the vendor function names |
-| Settings > **BLE buttons** | Pair BLE buttons and set click and double-click actions (`BA`) |
-| Settings > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
-| Settings > **Battery info** | Pack, cell and DC-DC values (`D0`) |
-| Settings > **Factory ambient light** | Zone rules and whole-car effects (`B9`) |
-| **Me** | Module ID, MAC, VIN, versions, restart, firmware flasher, gauges, BLE host pairing, CAN debug, log and capture, advanced options |
-| **Gauges** | Full-screen dashboard from the `B0` stream, with the vendor gauge menu |
+| **Car** | Vehicle type, live switches (AP assist, AP resume, battery preheat, charge port, horn and light strobes, sport mode, seat massage), seat move and memory, doors, frunk, trunk, lock, simulated scroll wheel |
+| **Settings** | Every settings row of the vendor app, with search. Each change writes one `A3` frame and checks the module's reply |
+| Tools > **Shortcuts** | The trigger → action table (`AB`), with the vendor function names |
+| Tools > **BLE buttons** | Pair BLE buttons and set click and double-click actions (`BA`) |
+| Tools > **Ambient light** | Zone rules and whole-car effects (`B9`) |
+| Tools > **Gauges** | Full-screen dashboard from the `B0` stream, with the vendor gauge menu |
+| Tools > **Battery** | Pack, cell and DC-DC values (`D0`) |
+| Tools > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
+| Tools | Log and capture, change password, firmware flasher, restore defaults, BLE host pairing, CAN debug, Tesla service mode |
+| **Device** | Connect through the browser's device chooser, BLE password, bytes per write. Module ID, MAC, VIN, versions, restart, preferences |
 | **Flasher** (`flash.html`) | Restarts the module into boot mode and flashes a runtime in one step. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). This is the earlier app page, unchanged |
 
 Safety rules in the app:
 - It never sends the vendor server commands `AD`, `AE` and `AF`.
-- Rear motor off, front motor off, ESP off, Tesla service mode and raw CAN send are blocked until you turn on **Me > Advanced > Allow driving-system controls**.
+- Rear motor off, front motor off, ESP off, Tesla service mode and raw CAN send are blocked until you turn on **Device > Allow driving-system controls**.
 - Doors, frunk, trunk, lock, seat memory, restore defaults, restart and password change ask first.
 - Seat and wheel buttons send the release frame when you lift your finger, also if the page loses focus.
 - The first use of a command other than `A0`, `A8` and `A3` in a session shows a warning.
@@ -49,7 +49,7 @@ Before you start:
 
 ## Connect and change settings
 
-1. Open the **Bluetooth** tab. Tap **Search** and pick `TSL6`.
+1. Open the **Device** tab. Tap **Connect** and pick `TSL6`.
 2. Type the BLE password (default `1234`). The app saves it in this browser and sends it on the next connection. The module sends blank settings until it accepts the password.
 3. Open the **Settings** tab and change a row. The app writes the change at once and shows **Saved** when the module confirms it.
 
@@ -72,7 +72,7 @@ The page checks every image:
 
 ## Flash a working module
 
-1. Open the flasher (**Me > Flash firmware**, or `flash.html`). Connect to `TSL6` and read the status on its App tab.
+1. Open the flasher (**Tools > Firmware**, or `flash.html`). Connect to `TSL6` and read the status on its App tab.
 2. Open the **Flash firmware** tab. Tap **Load secured build**. It must show **Image OK**.
 3. Tick the confirm box. Tap **Enter boot mode and flash**.
 
