@@ -3,165 +3,149 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TSL6 Web App</title>
+<title>Firmware | TSL6</title>
+<meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1318" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="app/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="app/app.css">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--fg:#16181d;--muted:#5d6470;--line:#d9dde3;--accent:#2563eb;--accent-fg:#fff;--ok:#15803d;--bad:#b91c1c;--warn:#a16207;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--card:#171a21;--fg:#e8eaee;--muted:#9aa3b0;--line:#2a2f39;--accent:#3b82f6;--ok:#4ade80;--bad:#f87171;--warn:#facc15}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-main{max-width:720px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:4px 0 2px}
-.sub{color:var(--muted);margin:0 0 14px;font-size:13px}
-section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 12px}
-h2{font-size:15px;margin:0 0 10px}
-h3{font-size:13px;margin:14px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:9px 14px;cursor:pointer}
-button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
-button:disabled{opacity:.45;cursor:not-allowed}
-input{font:14px var(--mono);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
-label{font-size:13px;color:var(--muted)}
-.pill{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
-.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td{padding:6px 4px;border-top:1px solid var(--line);vertical-align:top}
-td.k{color:var(--muted);width:46%}
-td.raw{font:12px var(--mono);color:var(--muted);text-align:right;white-space:nowrap;width:1%}
-tr.sub td.k{padding-left:18px}
-tr.changed td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
-select{font:inherit;font-size:14px;max-width:100%;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
-.kv{font:12.5px var(--mono);word-break:break-all;color:var(--muted);white-space:pre-wrap}
-#log{font:12px/1.4 var(--mono);white-space:pre-wrap;word-break:break-all;max-height:280px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin:0}
-.note{font-size:13px;color:var(--muted);margin:6px 0 0}
-a{color:var(--accent)}
-code{font-family:var(--mono);font-size:.92em}
-button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
-progress{width:100%;height:14px}
-input[type=text]{width:100%}
-input[type=file]{font-size:13px;max-width:100%;border:0;padding:0;background:none}
-.tabs{display:flex;gap:6px;margin:0 0 12px;border-bottom:1px solid var(--line)}
-.tab{border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;background:none;color:var(--muted);margin-bottom:-1px}
-.tab.active{background:var(--card);border-color:var(--line);color:var(--fg);font-weight:600}
+/* The flasher is a stand-alone page of the app: the app top bar, no tab bar, no sidebar. */
+body.solo { padding-left: 0; }
+body.solo #top, body.solo #page { max-width: 760px; }
+body.solo #page { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+a.top-back { text-decoration: none; }
+.card .form > .row-note { margin: -4px 0 0; }
+.subhead + .form { padding-top: 8px; }
+.btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn.danger-fill { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.danger-fill:hover { background: var(--bad); filter: brightness(1.08); }
+.out { margin: 0; font: 13px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; word-break: break-all; }
+.out:empty { display: none; }
+.out .ok { color: var(--ok); font-weight: 600; } .out .bad { color: var(--bad); font-weight: 600; }
+.out.ok { color: var(--ok); } .out.bad { color: var(--bad); } .out.warn { color: var(--warn); }
+progress { width: 100%; height: 10px; accent-color: var(--accent-ui); }
+input[type=file] { max-width: 100%; font-size: 15px; }
+.row.check-row { justify-content: flex-start; }
+/* The connect row wraps: a long link state pushes the buttons to the next line. */
+.conn-row { flex-wrap: wrap; }
+.conn-row .row-left { flex: 1 1 180px; }
+.conn-row .pill { white-space: normal; height: auto; min-height: 24px; padding-top: 2px; padding-bottom: 2px; }
+.conn-info { padding: 0 16px 12px; margin-top: -4px; }
+.card a { color: var(--accent-text); }
+.row .picker { max-width: 160px; }
 </style>
 </head>
-<body>
-<main>
-<h1>TSL6 Web App</h1>
-<p class="sub">This page reads and writes the TSL6 settings over Web Bluetooth, and flashes a runtime image in boot mode. It makes no network calls except to load the bundled firmware image. It never sends the vendor server commands (AD, AE, AF), factory reset or car controls.</p>
-<nav class="tabs">
-  <button class="tab active" data-tab="app">App</button>
-  <button class="tab" data-tab="flash">Flash firmware</button>
-</nav>
+<body class="solo">
+<header id="top">
+  <a class="top-back" id="btnBack" href="index.html#tools" aria-label="Back to the app"></a>
+  <h1 data-zh="固件刷写">Firmware</h1>
+  <span class="dot" id="topDot"></span>
+  <button class="top-lang" id="btnLang" type="button" aria-label="Language / 语言">中</button>
+</header>
 
-<section>
-  <h2>Connect</h2>
-  <div class="row">
-    <button class="primary" id="btnConnect">Connect</button>
-    <button id="btnDisconnect" disabled>Disconnect</button>
-    <span class="pill" id="connState">Not connected</span>
+<main id="page">
+<p class="sub-note" data-zh="通过网页蓝牙为 TSL6 刷写运行固件。本页只从网络加载自带的固件镜像。本页从不发送厂家服务器指令（AD、AE、AF）、恢复出厂或车辆控制指令。">Flash a runtime image to the TSL6 over Web Bluetooth. The page loads only the bundled image from the network. It never sends the vendor server commands (AD, AE, AF), a factory reset or car controls.</p>
+
+<div class="sec-label" data-zh="连接">Connect</div>
+<section class="card">
+  <div class="row first conn-row">
+    <div class="row-left"><span class="pill" id="connState">Not connected</span></div>
+    <div class="row-right btns">
+      <button class="btn" id="btnDisconnect" type="button" disabled data-zh="断开">Disconnect</button>
+      <button class="btn primary" id="btnConnect" type="button" data-zh="连接">Connect</button>
+    </div>
   </div>
-  <div class="row">
-    <label><input type="checkbox" id="showAll"> Show all BLE devices</label>
+  <p class="out conn-info" id="modInfo"></p>
+  <label class="row check-row">
+    <input type="checkbox" id="showAll">
+    <span class="row-left"><span class="row-label" data-zh="显示所有蓝牙设备">Show all BLE devices</span></span>
+  </label>
+  <div class="form" id="pwRow" hidden>
+    <span class="row-label" data-zh="模块要求输入蓝牙密码（4 位字符，默认 1234）。">The module asks for its BLE password (4 characters, default 1234).</span>
+    <div class="btns">
+      <input class="text mono" id="pw" value="1234" maxlength="4" autocomplete="off" autocapitalize="none" spellcheck="false" style="width:8em">
+      <button class="btn" id="btnPw" type="button" data-zh="发送密码">Send password</button>
+    </div>
   </div>
-  <p class="note">Turn off Bluetooth on any phone that runs the vendor Mini App first. The module accepts one connection at a time.</p>
-  <p class="note">The module sends blank settings until it accepts the BLE password. The password is the one you set in the vendor app (default 1234).</p>
-  <div class="row" id="pwRow" hidden>
-    <label for="pw">BLE password (4 characters)</label>
-    <input id="pw" value="1234" maxlength="4" size="6" autocomplete="off">
-    <button id="btnPw">Send password</button>
+</section>
+<p class="sec-foot" data-zh="请先关闭运行厂家小程序的手机的蓝牙。模块同一时间只接受一个连接。">Turn off Bluetooth on any phone that runs the vendor Mini App first. The module accepts one connection at a time.</p>
+
+<div class="sec-label" data-zh="1. 固件镜像">1. Firmware image</div>
+<section class="card">
+  <div class="form">
+    <div class="btns"><button class="btn primary" id="btnLoadSecured" type="button" data-zh="加载安全版">Load secured build</button></div>
+    <p class="row-note" data-zh="&lt;b&gt;请用这个。&lt;/b&gt;2026 年 6 月的原版固件有&lt;b&gt;后门&lt;/b&gt;：一个固定的厂家密码，无论你设置什么密码，都能通过蓝牙打开每一个 TSL6 模块。安全版是去掉后门的同一固件。只有你自己的密码能打开模块。"><b>Use this one.</b> The original June 2026 firmware has a <b>backdoor</b>: a fixed vendor password that opens every TSL6 module over Bluetooth, whatever password you set. The secured build is the same firmware with the backdoor removed. Only your own password opens the module.</p>
+  </div>
+  <div class="subhead" data-zh="原版">Original build</div>
+  <div class="form">
+    <div class="btns">
+      <input class="text mono" type="password" id="origPass" placeholder="Passphrase" data-zh-ph="口令" autocomplete="off" spellcheck="false" style="flex:1;min-width:160px">
+      <button class="btn" id="btnLoadDump" type="button" data-zh="加载原版（2026 年 6 月）">Load original (June 2026 dump)</button>
+    </div>
+    <p class="row-note" data-zh="原版&lt;b&gt;有后门&lt;/b&gt;，需要口令才能加载。如需原版（有后门）的口令，请联系我：&lt;a href=&quot;https://github.com/n0k0m3&quot;&gt;GitHub 上的 n0k0m3&lt;/a&gt;。">The original build <b>has the backdoor</b>. It needs a passphrase to load. If you want the passphrase for the original (backdoor) build, contact me: <a href="https://github.com/n0k0m3">n0k0m3 on GitHub</a>.</p>
+  </div>
+  <div class="subhead" data-zh="其他镜像">Other image</div>
+  <div class="form">
+    <input type="file" id="file" accept=".bin,.json,application/octet-stream,application/json">
+    <div class="out" id="imgOut"></div>
   </div>
 </section>
 
-<div id="tabApp">
-<section>
-  <h2>Status</h2>
-  <div class="row">
-    <button id="btnStatus" disabled>Read status (A0)</button>
-    <button id="btnCopy" disabled>Copy capture</button>
+<div class="sec-label" data-zh="2. 刷写">2. Flash</div>
+<section class="card">
+  <div class="form">
+    <p class="row-note" data-zh="重启后，Bootloader 只等待约 10 秒。所以本页一步完成：重启进入升级模式，重新连接，立即开始升级。">The bootloader waits only about 10 s for an update after the restart. So the page does it in one step: restart into boot mode, reconnect, start the update at once.</p>
   </div>
-  <table id="statusTbl"></table>
-  <p class="kv" id="rawOut"></p>
-</section>
-
-<section>
-  <h2>Settings</h2>
-  <p class="note" id="settingsNote">Read the status first.</p>
-  <div class="row"><label><input type="checkbox" id="wEnable"> Enable writes</label></div>
-  <div id="settings"></div>
-  <p class="kv" id="diff"></p>
-  <div class="row">
-    <button id="btnReview" disabled>Review changes</button>
-    <button class="primary" id="btnWrite" disabled>Write to module</button>
-    <button id="btnDiscard" disabled>Discard changes</button>
+  <label class="row check-row">
+    <input type="checkbox" id="confirm">
+    <span class="row-left"><span class="row-label" data-zh="我明白这会写入闪存。车辆已停好且已唤醒。">I understand that this writes flash. The car is parked and awake.</span></span>
+  </label>
+  <div class="form">
+    <div class="btns">
+      <button class="btn danger-fill" id="btnAuto" type="button" disabled data-zh="进入升级模式并刷写">Enter boot mode and flash</button>
+      <span class="pill" id="bootState">No status yet</span>
+    </div>
+    <p class="row-note" data-zh="如果本页无法自动重连，请立即点&lt;b&gt;连接&lt;/b&gt;并选择 &lt;code&gt;TSL6-BOOT&lt;/code&gt;，刷写会自动开始。如果错过 10 秒，模块会回到正常模式。请重新开始。">If the page cannot reconnect by itself, tap <b>Connect</b> at once and pick <code>TSL6-BOOT</code>. The flash then starts by itself. If you miss the 10 s, the module goes back to normal. Start again.</p>
+    <progress id="prog" max="1" value="0"></progress>
+    <div class="out" id="flashOut"></div>
+    <p class="row-note" data-zh="在 Bluefy 中每次写 20 字节，72 页约需 5–6 分钟。升级开始后，模块会一直停在升级模式，直到刷写完成。如果刷写失败，请连接 &lt;code&gt;TSL6-BOOT&lt;/code&gt; 并使用下面的按钮。">72 pages take about 5–6 min in Bluefy at 20 bytes per write. After the update starts, the module stays in boot mode until a flash finishes. If a flash fails, connect to <code>TSL6-BOOT</code> and use the button below.</p>
   </div>
-  <p class="note">A write sends one A3 frame. It changes only the fields you edit and keeps every other bit as the module reported it. The module saves to flash at once. BLE signal strength takes effect after a module restart (unplug it for 10 s).</p>
-</section>
-
-<section>
-  <h2>Firmware update</h2>
-  <p class="note">Flash the secured build (or another runtime) in the Flash tab. It restarts the module into boot mode and flashes in one step.</p>
-  <div class="row"><button id="btnGoFlash">Open the Flash tab</button></div>
-</section>
-</div>
-
-<div id="tabFlash" hidden>
-<section>
-  <h2>1. Firmware image</h2>
-  <div class="row"><button class="primary" id="btnLoadSecured">Load secured build</button></div>
-  <p class="note"><b>Use this one.</b> The original June 2026 firmware has a <b>backdoor</b>: a fixed vendor password that opens every TSL6 module over Bluetooth, whatever password you set. The secured build is the same firmware with the backdoor removed. Only your own password opens the module.</p>
-  <h3>Original build</h3>
-  <div class="row">
-    <input type="password" id="origPass" placeholder="Passphrase" autocomplete="off" spellcheck="false" style="flex:1;min-width:160px">
-    <button id="btnLoadDump">Load original (June 2026 dump)</button>
-  </div>
-  <p class="note">The original build <b>has the backdoor</b>. It needs a passphrase to load. If you want the passphrase for the original (backdoor) build, contact me: <a href="https://github.com/n0k0m3">n0k0m3 on GitHub</a>.</p>
-  <h3>Other image</h3>
-  <div class="row"><input type="file" id="file" accept=".bin,.json,application/octet-stream,application/json"></div>
-  <div id="imgOut" class="kv"></div>
-</section>
-
-<section>
-  <h2>2. Flash</h2>
-  <p class="note">The bootloader waits only about 10 s for an update after the restart. So the page does it in one step: restart into boot mode, reconnect, start the update at once.</p>
-  <div class="row"><label><input type="checkbox" id="confirm"> I understand that this writes flash. The car is parked and awake.</label></div>
-  <div class="row">
-    <button id="btnAuto" class="danger" disabled>Enter boot mode and flash</button>
-    <span class="pill" id="bootState">No status yet</span>
-  </div>
-  <p class="note">If the page cannot reconnect by itself, tap <b>Connect</b> at once and pick <code>TSL6-BOOT</code>. The flash then starts by itself. If you miss the 10 s, the module goes back to normal. Start again.</p>
-  <progress id="prog" max="1" value="0"></progress>
-  <div id="flashOut" class="kv"></div>
-  <p class="note">72 pages take about 5–6 min in Bluefy at 20 bytes per write. After the update starts, the module stays in boot mode until a flash finishes. If a flash fails, connect to <code>TSL6-BOOT</code> and use the button below.</p>
-  <h3>Module already in boot mode</h3>
-  <label for="modId">Module ID (from the boot-mode status)</label>
-  <input type="text" id="modId" maxlength="24" autocomplete="off" spellcheck="false" placeholder="filled in from the boot-mode status">
-  <div id="uidOut" class="kv"></div>
-  <div class="row"><button id="btnFlash" class="danger" disabled>Flash runtime</button></div>
-</section>
-
-<section>
-  <h2>Advanced</h2>
-  <div class="row">
-    <label>Bytes per BLE write
-      <select id="chunk"><option>20</option><option>60</option><option>120</option><option>180</option><option>240</option></select>
-    </label>
-    <span class="note" id="chunkNote"></span>
-    <label>Write type
-      <select id="wtype"><option value="auto">auto</option><option value="resp">with response</option><option value="noresp">without response</option></select>
-    </label>
+  <div class="subhead" data-zh="模块已在升级模式">Module already in boot mode</div>
+  <div class="form">
+    <label class="row-note" for="modId" data-zh="模块 ID（来自升级模式的状态）">Module ID (from the boot-mode status)</label>
+    <input class="text mono" type="text" id="modId" maxlength="24" autocomplete="off" spellcheck="false" placeholder="filled in from the boot-mode status" data-zh-ph="从升级模式的状态自动填入">
+    <div class="out" id="uidOut"></div>
+    <div class="btns"><button class="btn danger-fill" id="btnFlash" type="button" disabled data-zh="刷写运行固件">Flash runtime</button></div>
   </div>
 </section>
-</div>
 
-<section>
-  <h2>Log</h2>
-  <pre id="log"></pre>
-  <div class="row"><button id="btnCopyLog">Copy log</button><button id="btnClearLog">Clear</button></div>
+<div class="sec-label" data-zh="高级">Advanced</div>
+<section class="card">
+  <div class="row first">
+    <div class="row-left"><span class="row-label" data-zh="每次蓝牙写入字节数">Bytes per BLE write</span><span class="row-note" id="chunkNote"></span></div>
+    <div class="row-right"><select class="picker" id="chunk"><option>20</option><option>60</option><option>120</option><option>180</option><option>240</option></select></div>
+  </div>
+  <div class="row">
+    <div class="row-left"><span class="row-label" data-zh="写入方式">Write type</span></div>
+    <div class="row-right"><select class="picker" id="wtype"><option value="auto" data-zh="自动">auto</option><option value="resp" data-zh="有应答">with response</option><option value="noresp" data-zh="无应答">without response</option></select></div>
+  </div>
+</section>
+
+<div class="sec-label" data-zh="日志">Log</div>
+<section class="card">
+  <pre class="log" id="log"></pre>
+  <div class="toolbar"><div class="tools">
+    <button class="btn small" id="btnCopyLog" type="button" data-zh="复制日志">Copy log</button>
+    <button class="btn small" id="btnClearLog" type="button" data-zh="清空">Clear</button>
+  </div></div>
 </section>
 </main>
 
 <script type="module">
-import { FIELDS, decodeStatus, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, hex } from "./lib/tsl6-settings.js";
+import { decodeStatus, hex } from "./lib/tsl6-settings.js";
+import { formatVersion } from "./lib/tsl6-status.js";
+import { L, getLang, setLang, icon } from "./app/ui.js";
 
 const SVC = "0000fff0-0000-1000-8000-00805f9b34fb";
 const CHUNK = 20;
@@ -176,6 +160,33 @@ function log(msg, cls) {
   $("log").appendChild(line);
   $("log").scrollTop = $("log").scrollHeight;
 }
+
+// ---------------------------------------------------------------- language
+// Static text: an element with data-zh shows that text in Chinese. The markup holds the English text.
+// The data-zh strings are constants in this file, so innerHTML is safe here.
+const staticText = [...document.querySelectorAll("[data-zh]")].map(el => ({ el, en: el.innerHTML }));
+const placeholders = [...document.querySelectorAll("[data-zh-ph]")].map(el => ({ el, en: el.placeholder }));
+// Dynamic text: say() remembers the English and the Chinese text, so a language change can draw it again.
+const said = new Map();
+function say(el, en, zh, cls) {
+  said.set(el, { en, zh, cls });
+  el.textContent = L(en, zh);
+  if (cls !== undefined) el.className = cls;
+}
+function applyLang() {
+  const zh = getLang() === "zh";
+  document.documentElement.lang = zh ? "zh-CN" : "en";
+  for (const { el, en } of staticText) el.innerHTML = zh ? el.dataset.zh : en;
+  for (const { el, en } of placeholders) el.placeholder = zh ? el.dataset.zhPh : en;
+  for (const [el, m] of said) el.textContent = L(m.en, m.zh);
+  $("btnLang").textContent = zh ? "EN" : "中";
+  $("btnBack").setAttribute("aria-label", L("Back to the app", "返回应用"));
+  document.title = L("Firmware", "固件刷写") + " | TSL6";
+  drawImage();
+}
+$("btnBack").append(icon("chevron-left", 24));
+$("btnLang").onclick = () => { setLang(getLang() === "zh" ? "en" : "zh"); applyLang(); };
+window.addEventListener("scroll", () => $("top").classList.toggle("scrolled", window.scrollY > 8), { passive: true });
 
 // ---------------------------------------------------------------- framing
 function encode(cmd, payload = new Uint8Array(0)) {
@@ -251,7 +262,7 @@ function fallbackChunk(why) {
   if (+$("chunk").value <= CHUNK) return false;
   log(`${why}: bytes per BLE write ${$("chunk").value} -> ${CHUNK}`, "warn");
   $("chunk").value = String(CHUNK);
-  $("chunkNote").textContent = `Dropped to ${CHUNK} after a failure.`;
+  say($("chunkNote"), `Dropped to ${CHUNK} after a failure.`, `失败后已降到 ${CHUNK}。`);
   return true;
 }
 
@@ -296,23 +307,17 @@ $("btnPw").onclick = async () => {
   catch (e) { log(`password send failed: ${e.message}`, "bad"); }
 };
 
-function setConn(text, cls) {
-  $("connState").textContent = text;
-  $("connState").className = "pill " + (cls || "");
+// Connection pill and the lamp in the top bar.
+function setConn(en, zh, cls) {
+  say($("connState"), en, zh, "pill " + (cls || ""));
+  $("topDot").className = "dot" + (cls === "ok" ? " on" : cls === "warn" ? " warn" : "");
 }
+const devName = () => (device ? device.name || device.id : "?");
 
 function refresh() {
   const c = !!chr;
   $("btnConnect").disabled = c || busy || !navigator.bluetooth;
   $("btnDisconnect").disabled = !c;
-  $("btnStatus").disabled = !c || busy;
-  $("btnCopy").disabled = !lastStatus;
-  const n = Object.keys(pending).length;
-  const canEdit = !!base && $("wEnable").checked && !writeBlocker(base);
-  $("btnReview").disabled = !c || busy || !canEdit || n === 0;
-  $("btnReview").textContent = n ? `Review changes (${n})` : "Review changes";
-  $("btnWrite").disabled = !c || busy || !canEdit || n === 0 || !reviewed;
-  $("btnDiscard").disabled = busy || n === 0;
   $("btnAuto").disabled = !c || busy || armed || !inRuntime() || !pages || !$("confirm").checked;
   $("btnFlash").disabled = !c || busy || armed || !inBoot() || !pages || !uid14($("modId").value) || !$("confirm").checked;
 }
@@ -322,7 +327,8 @@ const watched = new WeakSet();
 function onDisconnected() {
   chr = null; txChr = null; lastStatus = null;
   $("pwRow").hidden = true;
-  setConn(`Disconnected: ${device.name || device.id}`, "warn");
+  say($("modInfo"), "", "");
+  setConn(`Disconnected: ${devName()}`, `已断开：${devName()}`, "warn");
   log("disconnected", "warn");
   if (waiter) { const w = waiter; waiter = null; w.resolve(null); }
   refresh();
@@ -331,7 +337,7 @@ function onDisconnected() {
 // Open GATT on `device`, start notifications, read the status. Runs an armed flash if the module is in boot mode.
 async function attach() {
   if (!watched.has(device)) { device.addEventListener("gattserverdisconnected", onDisconnected); watched.add(device); }
-  setConn("Connecting...");
+  setConn("Connecting...", "正在连接...");
   const server = await device.gatt.connect();
   const svc = await server.getPrimaryService(SVC);
   const chars = await svc.getCharacteristics();
@@ -340,7 +346,7 @@ async function attach() {
   txChr = chr;
   chr.addEventListener("characteristicvaluechanged", onNotify);
   await chr.startNotifications();
-  setConn(`Connected: ${device.name || device.id}`, "ok");
+  setConn(`Connected: ${devName()}`, `已连接：${devName()}`, "ok");
   lastStatus = null;
   log(`connected: ${device.name || "(no name)"}, notifications on`, "ok");
   refresh();
@@ -358,14 +364,13 @@ $("btnConnect").onclick = async () => {
     await attach();
   } catch (e) {
     log(`connect failed: ${e.name}: ${e.message}`, "bad");
-    setConn("Not connected");
+    setConn("Not connected", "未连接");
     chr = null; txChr = null;
   }
   refresh();
 };
 
 $("btnDisconnect").onclick = () => { if (device && device.gatt.connected) device.gatt.disconnect(); };
-$("btnStatus").onclick = () => readStatus();
 
 async function readStatus() {
   busy = true; refresh();
@@ -376,212 +381,36 @@ async function readStatus() {
   busy = false; refresh();
 }
 
-$("btnCopy").onclick = async () => {
-  const s = decodeStatus(lastStatus);
-  const text = JSON.stringify({
-    page: "tsl6-app-preview",
-    time: new Date().toISOString(),
-    device: device ? device.name : null,
-    length: lastStatus.length,
-    a0: hex(lastStatus, " "),
-    settings: decodeSettings(lastStatus),
-    typeHint: s.typeHint, bootVer: s.bootVer, runVer: s.runVer, flags: s.flags,
-  }, null, 1);
-  try { await navigator.clipboard.writeText(text); log("capture copied", "ok"); }
-  catch { $("rawOut").textContent += "\n\n" + text; log("clipboard blocked: capture shown under the status table", "warn"); }
-};
-
-// ---------------------------------------------------------------- views
-function row(tbl, k, v, raw, cls) {
-  const tr = tbl.insertRow();
-  if (cls) tr.className = cls;
-  const a = tr.insertCell(); a.className = "k"; a.textContent = k;
-  const b = tr.insertCell(); b.textContent = v;
-  const c = tr.insertCell(); c.className = "raw"; c.textContent = raw ?? "";
-}
+// ---------------------------------------------------------------- status and mode
+// A status read before the BLE password has bytes 18-39 set to 0 (runtime V1.0.00).
+const isBlank = p => { if (p.length < 40) return false; for (let i = 18; i < 40; i++) if (p[i] !== 0) return false; return true; };
 
 function showStatus(p) {
   lastStatus = p;
   const s = decodeStatus(p);
   showMode(p, s);
-  const t = $("statusTbl");
-  t.innerHTML = "";
-  row(t, "Payload length", `${p.length} bytes`);
-  row(t, "Device type hint (byte 0)", String(s.typeHint), hex([s.typeHint]));
-  row(t, "Bootloader / runtime major", `${s.bootVer} / ${s.runVer}`, hex([s.bootVer, s.runVer]));
-  row(t, "Mode (byte 3 bit 0)", s.runtimeOk ? "Runtime running" : "Update (boot) mode", hex([s.flags]));
-  if (s.moduleId) row(t, "Module ID", s.moduleId);
-  if (s.mac) row(t, "MAC (app view)", s.mac);
-  if ("on" in s) {
-    row(t, "No-nag active (byte 19 bit 0)", s.noNagActive ? "Yes" : "No", hex([s.on]));
-    row(t, "Timer", `${(s.timerMs / 1000).toFixed(1)} s`, `${s.timerMs} ms`);
-    row(t, "CAN1 / CAN2 / CAN3 (byte 23)", s.can.map(x => x ? "on" : "off").join(" / "), hex([s.dat1]));
-    row(t, "fxp / dat0", `${s.fxp} / ${s.dat0}`);
-  }
-  if (s.blePassword !== undefined) row(t, "BLE password (bytes 36-39)", s.blePassword.replace(/[^\x20-\x7e]/g, "?"));
-  if (s.vin !== undefined) row(t, "VIN", s.vin || "(none)");
-  $("rawOut").textContent = `A0 payload (${p.length} bytes):\n${hex(p, " ")}`;
-  showSettings(p, s);
   refresh();
 }
-
-// ---------------------------------------------------------------- settings editor
-let base = null;      // status payload that the editor is based on (authenticated, 76 bytes)
-let pending = {};     // field id -> new raw value
-let reviewed = false;
-
-function currentValues() { return { ...decodeSettings(base), ...pending }; }
-
-function setPending(id, raw) {
-  const orig = decodeSettings(base);
-  const apply = (k, v) => { if (orig[k] === v) delete pending[k]; else pending[k] = v; };
-  apply(id, raw);
-  // Vendor rule: AP resume and EAP assist exclude each other.
-  if (id === "apAutoOpenType" && raw > 0) apply("fsd", 0);
-  if (id === "fsd" && raw > 0) apply("apAutoOpenType", 0);
-  reviewed = false;
-  $("diff").textContent = "";
-  renderSettings();
-}
-
-function showSettings(p, s) {
-  const box = $("settings");
-  box.innerHTML = "";
-  base = null;
-  if (p.length < 25) {
-    $("settingsNote").textContent = `The payload has ${p.length} bytes. Settings start at byte 24. Nothing decoded.`;
-    refresh();
-    return;
-  }
-  const block = writeBlocker(p);
-  if (block && block.startsWith("the status is blank")) {
-    $("settingsNote").textContent = "The module hides the settings until it accepts the BLE password. Send the password in step 1. The page then reads the status again.";
-    refresh();
-    return;
-  }
-  if (Object.keys(pending).length) log(`new status received: ${Object.keys(pending).length} unsaved change(s) discarded`, "warn");
-  pending = {}; reviewed = false; $("diff").textContent = "";
-  base = Uint8Array.from(p);
-  $("settingsNote").innerHTML = `Decoded with the vendor layout for TSL types. The byte-0 type hint is <code>${s.typeHint}</code>. The vendor app gets the real type from its server, so fields marked "type?" may not apply.` +
-    (block ? ` <span class="bad">Writes are off: ${block}.</span>` : "");
-  renderSettings();
-}
-
-function renderSettings() {
-  const box = $("settings");
-  box.innerHTML = "";
-  if (!base) { refresh(); return; }
-  const hw = base[0];
-  const orig = decodeSettings(base);
-  const vals = currentValues();
-  const canEdit = $("wEnable").checked && !writeBlocker(base);
-  const groups = [["scroll", "Scroll (nag)"], ["basic", "Basic"], ["car", "Vehicle functions (change how the car behaves)"], ["lab", "Vendor lab functions (read-only here)"]];
-  for (const [g, title] of groups) {
-    const h = document.createElement("h3"); h.textContent = title; box.appendChild(h);
-    const t = document.createElement("table"); box.appendChild(t);
-    for (const f of FIELDS.filter(f => f.group === g)) {
-      if (!(f.id in vals)) continue;
-      const opts = optionsFor(f, vals, hw).slice();
-      if (!opts.some(o => o[0] === vals[f.id])) opts.push([vals[f.id], `Unknown value ${vals[f.id]}`]);
-      const tr = t.insertRow();
-      if (f.parent) tr.className = "sub";
-      const a = tr.insertCell(); a.className = "k"; a.textContent = f.label + (appliesTo(f, hw) ? "" : " (type?)");
-      const b = tr.insertCell();
-      const c = tr.insertCell(); c.className = "raw"; c.textContent = `B${f.byte}:${vals[f.id]}`;
-      if (canEdit && g !== "lab") {
-        const sel = document.createElement("select");
-        for (const [v, label] of opts) {
-          const o = document.createElement("option");
-          o.value = String(v); o.textContent = label; o.selected = v === vals[f.id];
-          sel.appendChild(o);
-        }
-        sel.onchange = () => setPending(f.id, Number(sel.value));
-        b.appendChild(sel);
-        if (f.id in pending) { tr.className += " changed"; c.textContent = `B${f.byte}:${orig[f.id]}→${vals[f.id]}`; }
-      } else {
-        b.textContent = opts.find(o => o[0] === vals[f.id])[1];
-      }
-    }
-  }
-  refresh();
-}
-
-function describeChanges() {
-  const orig = decodeSettings(base);
-  const vals = currentValues();
-  return Object.keys(pending).map(id => {
-    const f = FIELDS.find(x => x.id === id);
-    const name = v => { const o = optionsFor(f, vals, base[0]).find(x => x[0] === v) || optionsFor(f, orig, base[0]).find(x => x[0] === v); return o ? o[1] : `value ${v}`; };
-    return `${f.label}: ${name(orig[id])} → ${name(vals[id])}`;
-  });
-}
-
-$("wEnable").onchange = () => { reviewed = false; $("diff").textContent = ""; renderSettings(); };
-$("btnDiscard").onclick = () => { pending = {}; reviewed = false; $("diff").textContent = ""; renderSettings(); };
-$("btnReview").onclick = () => {
-  const lines = describeChanges();
-  let out;
-  try { out = encodeSettings(base, currentValues(), base[0]); }
-  catch (e) { $("diff").textContent = `Cannot build the write: ${e.message}`; return; }
-  const block = writeBlocker(out);
-  if (block) { $("diff").textContent = `Cannot write: ${block}`; return; }
-  const bytes = [];
-  for (let i = 24; i < 75; i++) if (i < 40 || i >= 59) if (out[i] !== base[i]) bytes.push(`B${i}: ${hex([base[i]])} → ${hex([out[i]])}`);
-  $("diff").textContent = `Changes:\n${lines.join("\n")}\n\nBytes:\n${bytes.join("\n")}\n\nTap "Write to module" to send them.`;
-  reviewed = true;
-  refresh();
-};
-$("btnWrite").onclick = async () => {
-  if (!reviewed || !base) return;
-  let out;
-  try { out = encodeSettings(base, currentValues(), base[0]); }
-  catch (e) { log(`write not sent: ${e.message}`, "bad"); return; }
-  const block = writeBlocker(out);
-  if (block) { log(`write not sent: ${block}`, "bad"); return; }
-  busy = true; reviewed = false; refresh();
-  try {
-    log(`A3 write: ${describeChanges().join("; ")}`);
-    // The runtime answers a good A3 with a fresh status as an A0 frame.
-    const reply = await request(0xa3, out, 3000, 1, [0xa0, 0xa3]);
-    if (reply === null) log("no reply to the write. Read the status to check what the module has.", "warn");
-    else {
-      const ok = settingsEchoMatches(out, reply.payload);
-      log(ok ? "write confirmed: the module reports the new settings" : "the module reports different settings than sent. The write may have been rejected.", ok ? "ok" : "bad");
-      pending = {};
-      showStatus(reply.payload);
-    }
-  } catch (e) { log(`write failed: ${e.message}`, "bad"); }
-  busy = false; refresh();
-};
-
-// ---------------------------------------------------------------- tabs and mode
-function showTab(name) {
-  for (const b of document.querySelectorAll(".tab")) b.classList.toggle("active", b.dataset.tab === name);
-  $("tabApp").hidden = name !== "app";
-  $("tabFlash").hidden = name !== "flash";
-  try { history.replaceState(null, "", name === "flash" ? "#flash" : location.pathname + location.search); } catch (_) {}
-}
-for (const b of document.querySelectorAll(".tab")) b.onclick = () => showTab(b.dataset.tab);
-if (location.hash === "#flash") showTab("flash"); // the old recovery site redirects here
 
 const inRuntime = () => !!(lastStatus && lastStatus.length >= 18 && (lastStatus[3] & 1));
 const inBoot = () => !!(lastStatus && lastStatus.length >= 16 && !(lastStatus[3] & 1));
 
 function showMode(p, s) {
   if (p.length < 4) return;
+  // In runtime mode, bytes 4-17 are UID14, not the module ID. So show the ID in boot mode only.
+  const id = !s.runtimeOk && s.moduleId ? ` · ID ${s.moduleId}` : "";
+  const boot = formatVersion(s.bootVer << 8), run = formatVersion(s.runVer << 8);
+  say($("modInfo"), s.runtimeOk ? `Bootloader ${boot} · runtime ${run}` : `Bootloader ${boot}${id}`,
+    s.runtimeOk ? `Bootloader ${boot} · 运行固件 ${run}` : `Bootloader ${boot}${id}`);
   if (s.runtimeOk) {
-    $("pwRow").hidden = false;
-    $("bootState").textContent = "Runtime mode: not in boot mode";
-    $("bootState").className = "pill warn";
-    setConn(`Connected: ${device ? device.name || device.id : "?"} (runtime)`, "ok");
+    $("pwRow").hidden = !isBlank(p);
+    say($("bootState"), "Runtime mode: not in boot mode", "运行模式：不在升级模式", "pill warn");
+    setConn(`Connected: ${devName()} (runtime)`, `已连接：${devName()}（运行模式）`, "ok");
   } else {
     $("pwRow").hidden = true;
-    $("bootState").textContent = "Boot mode: ready to flash";
-    $("bootState").className = "pill ok";
-    setConn(`Connected: ${device ? device.name || device.id : "?"} (boot mode)`, "warn");
+    say($("bootState"), "Boot mode: ready to flash", "升级模式：可以刷写", "pill ok");
+    setConn(`Connected: ${devName()} (boot mode)`, `已连接：${devName()}（升级模式）`, "warn");
     if (s.moduleId && !$("modId").value) { $("modId").value = s.moduleId; updUid(); }
-    $("settingsNote").textContent = "The module is in boot mode. Flash a runtime in the Flash tab.";
-    showTab("flash");
   }
 }
 
@@ -592,8 +421,6 @@ function showMode(p, s) {
 // So the page arms the flash, reconnects at once, and starts the update as soon as it sees boot mode.
 let armed = false, armedUntil = 0;
 
-$("btnGoFlash").onclick = () => showTab("flash");
-
 async function runArmedFlash() {
   if (!armed) return;
   if (Date.now() > armedUntil) { armed = false; log("armed flash expired", "warn"); refresh(); return; }
@@ -601,7 +428,7 @@ async function runArmedFlash() {
     if (inRuntime()) {
       armed = false;
       log("the module is back in normal mode (the 10 s boot window passed). Tap \"Enter boot mode and flash\" again", "warn");
-      $("flashOut").textContent = "The module went back to normal mode. Start again.";
+      say($("flashOut"), "The module went back to normal mode. Start again.", "模块已回到正常模式。请重新开始。", "out warn");
       refresh();
     }
     return;
@@ -622,7 +449,7 @@ async function startAuto() {
   try {
     const r = await request(0x55, arg, 1500, 1);
     log(r ? `55 reply ${hex(r.payload, " ")}: the module restarts into boot mode` : "no 55 reply. The module may already be restarting", r ? "ok" : "warn");
-    $("flashOut").textContent = "Restarting into boot mode. Reconnecting...";
+    say($("flashOut"), "Restarting into boot mode. Reconnecting...", "正在重启进入升级模式，正在重新连接...", "out");
     for (let t = 0; chr && t < 30; t++) await sleep(100); // wait for the drop (about 200 ms)
   } catch (e) { log(`enter boot mode: ${e.message}`, "bad"); }
   busy = false; refresh();
@@ -642,7 +469,7 @@ async function startAuto() {
       await sleep(500);
     }
   }
-  if (armed && !chr) $("flashOut").textContent = "Tap Connect now and pick TSL6-BOOT. The flash starts by itself.";
+  if (armed && !chr) say($("flashOut"), "Tap Connect now and pick TSL6-BOOT. The flash starts by itself.", "请立即点“连接”并选择 TSL6-BOOT，刷写会自动开始。", "out warn");
   refresh();
 }
 
@@ -717,8 +544,23 @@ function contains(p, text) {
   return false;
 }
 
-async function acceptImage(buf, source) {
+// Image report. The technical lines stay in English (as in the log). The verdict follows the language.
+let image = null; // {lines, problems} | {error: {en, zh}} | null
+function drawImage() {
   const out = $("imgOut");
+  out.textContent = "";
+  out.className = "out";
+  if (!image) return;
+  if (image.error) { out.textContent = L(image.error.en, image.error.zh); out.className = "out bad"; return; }
+  out.textContent = image.lines.join("\n") + "\n";
+  const st = document.createElement("span");
+  if (image.problems.length) { st.className = "bad"; st.textContent = L("REJECTED: ", "已拒绝：") + image.problems.join("; "); }
+  else { st.className = "ok"; st.textContent = L("Image OK", "镜像正常"); }
+  out.appendChild(st);
+}
+function imageError(en, zh) { image = { error: { en, zh } }; drawImage(); }
+
+async function acceptImage(buf, source) {
   pages = null;
   try {
     const p = parseImage(buf);
@@ -731,19 +573,16 @@ async function acceptImage(buf, source) {
       KNOWN_IMAGES[sha] ? `known image: ${KNOWN_IMAGES[sha]}` : "unknown image (not a build this page knows)",
       `contains "TSL6": ${contains(p, "TSL6")}   contains "CH32V20x_BLE_LIB": ${contains(p, "CH32V20x_BLE_LIB")}`,
     ];
-    out.textContent = lines.join("\n") + "\n";
-    const st = document.createElement("span");
+    image = { lines, problems };
     if (problems.length) {
-      st.className = "bad"; st.textContent = "REJECTED: " + problems.join("; ");
       log(`image rejected: ${problems.join("; ")}`, "bad");
     } else {
       pages = p;
-      st.className = "ok"; st.textContent = "Image OK";
       log(`image loaded: ${source}, ${p.length} pages, sha256 ${sha.slice(0, 16)}...`, "ok");
     }
-    out.appendChild(st);
+    drawImage();
   } catch (e) {
-    out.textContent = `error: ${e.message}`;
+    imageError(`error: ${e.message}`, `错误：${e.message}`);
     log(`image error: ${e.message}`, "bad");
   }
   refresh();
@@ -776,7 +615,7 @@ $("btnLoadDump").onclick = async () => {
     if (!(await origPassOk($("origPass").value))) throw new Error("wrong passphrase");
     const { buf, url } = await fetchStock();
     await acceptImage(buf, url);
-  } catch (e) { log(`original build: ${e.message}`, "bad"); $("imgOut").textContent = `Original build not loaded: ${e.message}`; pages = null; }
+  } catch (e) { log(`original build: ${e.message}`, "bad"); imageError(`Original build not loaded: ${e.message}`, `原版未加载：${e.message}`); pages = null; }
   busy = false; refresh();
 };
 
@@ -792,7 +631,7 @@ $("btnLoadSecured").onclick = async () => {
     const sha = lhex(new Uint8Array(await crypto.subtle.digest("SHA-256", buf)));
     if (sha !== SECURED_SHA) throw new Error(`hash ${sha.slice(0, 16)}... is not the secured build`);
     await acceptImage(buf, SECURED_URL);
-  } catch (e) { log(`secured build: ${e.message}`, "bad"); $("imgOut").textContent = `Secured build failed: ${e.message}`; pages = null; }
+  } catch (e) { log(`secured build: ${e.message}`, "bad"); imageError(`Secured build failed: ${e.message}`, `安全版加载失败：${e.message}`); pages = null; }
   busy = false; refresh();
 };
 $("file").onchange = async e => {
@@ -802,7 +641,9 @@ $("file").onchange = async e => {
 
 function updUid() {
   const u = uid14($("modId").value);
-  $("uidOut").textContent = u ? `UID14: ${lhex(u)}` : ($("modId").value ? "Need 24 hex characters." : "");
+  if (u) say($("uidOut"), `UID14: ${lhex(u)}`, `UID14：${lhex(u)}`, "out");
+  else if ($("modId").value) say($("uidOut"), "Need 24 hex characters.", "需要 24 个十六进制字符。", "out bad");
+  else say($("uidOut"), "", "", "out");
   refresh();
 }
 $("modId").oninput = updUid;
@@ -832,14 +673,16 @@ async function flash() {
     if (r === null && fallbackChunk(`page ${i}: no reply 3 times`)) r = await request(0x57, pages[i], 1200, 10);
     if (r === null) throw new Error(`page ${i} failed 10 times. The module stays in the bootloader. Retry the flash`);
     prog.value = i + 1;
-    out.textContent = `page ${i + 1}/${pages.length}  (${((performance.now() - t0) / 1000).toFixed(1)} s)`;
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    say(out, `page ${i + 1}/${pages.length}  (${secs} s)`, `第 ${i + 1}/${pages.length} 页（${secs} 秒）`, "out");
   }
   log(`all ${pages.length} pages written`, "ok");
 
   r = await request(0x45, arg, 3000, 3);
   if (r === null) throw new Error("0x45 finish: no reply. Power-cycle the module and read status");
   log("0x45 finish: OK. The module now jumps to the new runtime and drops the connection", "ok");
-  out.textContent = "Done. Unplug the module for 10 s, plug it in, connect again in the App tab, and read the status.";
+  say(out, "Done. Unplug the module for 10 s and plug it in. Then go back to the app and connect again.",
+    "完成。请拔下模块 10 秒后再插上，然后返回应用重新连接。", "out ok");
 }
 
 async function runFlash() {
@@ -847,7 +690,7 @@ async function runFlash() {
   let lock = null;
   try { lock = await navigator.wakeLock?.request("screen"); } catch (_) {}
   try { await flash(); }
-  catch (e) { log(e.message, "bad"); $("flashOut").textContent = e.message; }
+  catch (e) { log(e.message, "bad"); say($("flashOut"), e.message, "", "out bad"); }
   try { await lock?.release(); } catch (_) {}
   busy = false; refresh();
 }
@@ -862,14 +705,18 @@ $("btnClearLog").onclick = () => { $("log").textContent = ""; };
 (function initChunk() {
   const { size, name } = platformChunk();
   $("chunk").value = String(size);
-  $("chunkNote").textContent = `Default for ${name}: ${size}. Drops to ${CHUNK} by itself if large writes fail.`;
+  say($("chunkNote"), `Default for ${name}: ${size}. Drops to ${CHUNK} by itself if large writes fail.`,
+    `${name} 的默认值：${size}。大块写入失败时自动降到 ${CHUNK}。`);
 })();
 
 (function env() {
+  setConn("Not connected", "未连接");
+  say($("bootState"), "No status yet", "尚无状态", "pill");
   if (!navigator.bluetooth) {
-    setConn("No Web Bluetooth in this browser", "bad");
+    setConn("No Web Bluetooth in this browser", "此浏览器不支持网页蓝牙", "bad");
     log("Use Chrome or Edge on Android or desktop, or Bluefy on iPhone.", "warn");
   }
+  applyLang();
   refresh();
 })();
 </script>
