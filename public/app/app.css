@@ -263,7 +263,7 @@ button.li:disabled { cursor: progress; }
 .empty-state { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 22px 20px 22px; gap: 6px; }
 .empty-state .chip { width: 44px; height: 44px; margin-bottom: 6px; border-radius: 50%; border: 1.5px solid currentColor; }
 .empty-state h2 { margin: 0; font: 700 23px/1.2 var(--font-head); }
-.empty-state p { margin: 0 0 12px; color: var(--muted); font-size: 15px; max-width: 46ch; }
+.empty-state p { margin: 0 0 12px; color: var(--muted); font-size: 15px; max-width: 46ch; text-wrap: pretty; }
 .empty-state .btn { min-width: 180px; }
 .empty-state .check { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--muted); cursor: pointer; }
 .empty-state .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
@@ -443,7 +443,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .cluster .cl-gauge { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--cl-line);
   background: transparent; color: var(--cl-fg); font: 600 14px var(--font); cursor: pointer; }
 .cluster .cl-gauge:hover { background: rgba(255, 255, 255, .08); }
-.tt { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; }
+.tt { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 500; }
 .tt span { color: var(--cl-fg); }
 @media (min-width: 1180px) {
   .cluster { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 14px 18px; }
@@ -513,7 +513,7 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 @media (max-width: 559px) {
   .conn-chip.compact { position: relative; width: 40px; padding: 0; justify-content: center; }
   .conn-chip.compact .chip-name { display: none; }
-  .conn-chip.compact .dot { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; box-shadow: 0 0 0 2px var(--card); }
+  .conn-chip.compact .dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; box-shadow: 0 0 0 2px var(--card); }
 }
 .conn-chip:not(.compact) .chip-bt { display: none; }
 @media (min-width: 560px) { .conn-chip.compact .chip-bt { display: none; } }
@@ -572,11 +572,10 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* settings: search and master switch share one height on desktop; the master card states the value once */
 .set-search input { min-height: 48px; }
 .card.lead.master .li-sub { display: none; }
-.card.lead.master .li-trail .val { color: var(--fg); font-weight: 600; }
+.card.lead.master .li-trail .val { color: var(--fg); font-weight: 500; }
 /* a sub-row whose parent is off: quiet, still there for search */
 .li.sub.off .li-title, .li.sub.off .li-trail { color: var(--faint); }
-.li.sub.off .switch { background: transparent; border-color: var(--line); }
-.li.sub.off .switch::after { background: var(--line); box-shadow: none; }
+.li.sub.off .switch { opacity: .45; }
 /* doors and access: one tile height */
 .acts.plan .act { min-height: 66px; padding: 8px 4px; gap: 4px; }
 /* scroll wheel: a smaller dial on desktop */
@@ -602,3 +601,6 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .li-trail .chev { margin-right: -6px; }
 /* scroll wheel card fits its dial on wide screens */
 @media (max-width: 559px) { .dlg-btn { min-height: 48px; } }
+/* round 10 (council) */
+/* small tile labels at weight 500: at 1x, 600 closes the dot of the "i" */
+.act { font-weight: 500; }

@@ -31,7 +31,7 @@ button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor:
 .bat-cell.max .bat-cell-n, .bat-cell.min .bat-cell-n { color: inherit; }
 .bat-dlg-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 /* summary card at the top of the pack tab: three values, large */
-.bat-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font: 400 16px/1.3 var(--font); }
+.bat-sum { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.3fr); gap: 8px; font: 400 16px/1.3 var(--font); }
 .bat-stat-v { font: 700 30px/1.1 var(--font-head); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bat-stat-v small { margin-left: 3px; font: 600 15px var(--font); color: var(--muted); }
 .bat-stat-l { margin-top: 2px; font-size: 13.5px; color: var(--muted); }
