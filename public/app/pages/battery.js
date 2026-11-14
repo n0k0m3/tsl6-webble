@@ -124,13 +124,14 @@ definePage("battery", () => {
       const by = Object.fromEntries(v.rows.map(r => [r.id, r]));
       const num = id => (by[id] ? parseFloat(String(by[id].text).replace(/,/g, "")) : NaN);
       const socId = Number.isFinite(num("socReal")) ? "socReal" : "socCar";
-      const stat = (id, unit, digits) => {
+      const stat = (id, unit) => {
         const n = num(id);
+        const digits = by[id] ? ((String(by[id].text).match(/\.(\d+)/) || [, ""])[1].length) : 0; // as the module sends it
         return h("div", { class: "bat-stat" },
           h("div", { class: "bat-stat-v" }, Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—", h("small", { class: unit === "%" ? "pct" : null }, unit)),
           h("div", { class: "bat-stat-l" }, by[id] ? by[id].label : ""));
       };
-      clear(sum).append(stat(socId, "%", 1), stat("range", "km", 0), stat("power", "kW", 2));
+      clear(sum).append(stat(socId, "%"), stat("range", "km"), stat("power", "kW"));
       // Owner car test: a negative pack current means the pack is charging. The numbers stay as the module sends them.
       const amps = num("current");
       if (Number.isFinite(amps) && amps !== 0) sum.lastChild.querySelector(".bat-stat-l").append(

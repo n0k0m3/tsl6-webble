@@ -31,7 +31,7 @@ const GROUPS = [
   ] },
   { en: "Module", zh: "模块", items: [
     ["password", "key-round", "", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
-    ["firmware", "hard-drive-download", "", "Firmware", "固件", "Opens the flasher", "打开刷写页面", () => { location.href = "flash.html"; }],
+    ["firmware", "hard-drive-download", "", "Firmware", "固件", "Opens the flasher", "打开刷写页面", () => { location.href = "flash.html#flash"; }],
     ["reset", "rotate-ccw", "red", "Restore defaults", "恢复默认", "Resets every module setting", "重置模块所有设置", restoreDefaults],
   ] },
   { en: "Advanced", zh: "高级", items: [
@@ -48,7 +48,7 @@ definePage("tools", () => {
     // Like the vendor app: while the module is off, only restore defaults and change password stay.
     const moduleOff = S.status && !S.blank && S.status.length > 28 && ((S.status[28] >> 3) & 1) === 1;
     for (const g of GROUPS) {
-      const items = g.items.filter(([id]) => !moduleOff || ["password", "reset", "firmware", "log"].includes(id));
+      const items = g.items.filter(([id]) => !moduleOff || ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"].includes(id));
       if (!items.length) continue;
       el.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(g.en, g.zh)),
         h("div", { class: "card" }, items.map(([id, ico, color, en, zh, sen, szh, fn], i) =>

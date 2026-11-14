@@ -132,7 +132,7 @@ definePage("status", () => {
     el.append(
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("bluetooth", 24)),
-        h("h2", null, L("Connect to your TSL6", "连接您的 TSL6")),
+        h("h2", { class: "sec-title" }, h("span", null, L("Connect to your TSL6", "连接您的 TSL6")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
         h("p", null, supported
           ? L("Pick TSL6 in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6。")
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
@@ -142,7 +142,7 @@ definePage("status", () => {
       sec("Before you connect", "连接前"),
       h("div", { class: "card pad" }, h("ol", { class: "steps" },
         h("li", null, L("Keep the car awake (climate or Camp mode on).", "保持车辆唤醒（打开空调或露营模式）。")),
-        h("li", null, L("Close the vendor Mini App. The module takes one phone at a time.", "关闭原厂小程序，模块一次只连接一部手机。")),
+        h("li", null, L("Close the vendor Mini App, or turn off Bluetooth on that phone. The module takes one phone at a time.", "关闭原厂小程序，或关闭那部手机的蓝牙。模块一次只连接一部手机。")),
         h("li", null, L("The default BLE password is 1234.", "默认蓝牙密码为 1234。")))));
     el.querySelector(".btn.primary")?.setAttribute("data-id", "connect");
   }
@@ -255,10 +255,11 @@ definePage("status", () => {
       el.append(grp(sec("Driving systems", "驾驶系统"),
         h("div", { class: "card caution" },
           S.prefs.allowDrive ? null : h("div", { class: "notice" }, icon("shield-alert", 18),
-            h("span", null, L("Locked. To unlock, turn on ", "已锁定。如需解锁，请打开"),
+            h("span", null, L("Motor off and ESP off are locked. To unlock, turn on ", "关闭电机和关闭ESP已锁定。如需解锁，请打开"),
               h("button", { class: "linkish", type: "button", onclick: () => switchTab("me") }, L("Device > Allow driving-system controls", "设备 > 允许驾驶系统控制")), ".")),
           drive)));
     }
+    el.append(h("p", { class: "foot span" }, L("Switches show the module state after the next status read.", "开关在下次读取状态后显示模块的实际状态。")));
   }
 
   function update(p) {
@@ -272,6 +273,7 @@ definePage("status", () => {
     }
     if (refs.vehicleName) {
       refs.vehicleName.textContent = L(live.vehicle.en, live.vehicle.zh);
+      refs.vehicleName.classList.toggle("warn", !live.vehicle.detected); // vendor: orange when not detected
       clear(refs.pills);
       // A bus with data is a solid lit lane; a bus without data is a dashed dark lane.
       live.can.forEach((on, i) => {
@@ -290,7 +292,7 @@ definePage("status", () => {
       const draw = () => {
         clear(refs.apSub);
         if (live.assistActive) refs.apSub.append(L("On, next tick in ", "开启，"), h("b", null, L(`${countdown.toFixed(1)} s`, `${countdown.toFixed(1)} 秒后拨动`)));
-        else refs.apSub.append(L("Off", "关闭"));
+        else refs.apSub.append("\u00a0");
       };
       draw();
       if (live.assistActive) timer = setInterval(() => { countdown = Math.max(0, countdown - 0.1); draw(); if (!countdown) clearInterval(timer); }, 100);

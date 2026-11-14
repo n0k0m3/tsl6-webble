@@ -575,7 +575,6 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .card.lead.master .li-trail .val { color: var(--fg); font-weight: 500; }
 /* a sub-row whose parent is off: quiet, still there for search */
 .li.sub.off .li-title, .li.sub.off .li-trail { color: var(--faint); }
-.li.sub.off .switch { opacity: .45; }
 /* doors and access: one tile height */
 .acts.plan .act { min-height: 66px; padding: 8px 4px; gap: 4px; }
 /* scroll wheel: a smaller dial on desktop */
@@ -589,7 +588,6 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* a sub-row joins its parent: the line above it starts at the indent */
 [data-page="settings"] .li.sub { border-top-color: transparent; background: linear-gradient(var(--line-2), var(--line-2)) 34px 0 / calc(100% - 34px) 1px no-repeat; }
 [data-page="settings"] button.li.sub:hover { background-color: var(--btn-hover); }
-.li.sub.off .chev { opacity: .4; }
 /* round 8 (council) */
 /* action tiles: a light edge on a filled tile; the pressed state keeps the accent edge */
 .acts .act { border-color: var(--line); }
@@ -604,3 +602,4 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 /* round 10 (council) */
 /* small tile labels at weight 500: at 1x, 600 closes the dot of the "i" */
 .act { font-weight: 500; }
+.vehicle-name.warn { color: var(--cl-amber); }

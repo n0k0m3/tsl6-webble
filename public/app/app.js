@@ -267,7 +267,7 @@ function renderTop() {
   const link = S.link;
   const on = !!(link && link.connected);
   const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name;
-  const chip = h("button", { class: "conn-chip" + (sub ? " compact" : ""), type: "button", "data-id": "conn-chip", "aria-label": chipText, title: chipText, onclick: () => { if (current().id !== "me" || stack.length > 1) switchTab("me"); } },
+  const chip = h("button", { class: "conn-chip" + (sub ? " compact" : ""), type: "button", "data-id": "conn-chip", "aria-label": chipText, title: chipText, onclick: () => { if (sub) { alertBox(chipText, L("Connection", "连接")); return; } if (current().id !== "me") switchTab("me"); } },
     sub ? h("span", { class: "chip-bt", "aria-hidden": "true" }, icon("bluetooth", 22)) : null,
     h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", { class: "chip-name" }, chipText));
   // A tab root shows the tab name as the page title. A sub-page shows its own title and a link lamp.
