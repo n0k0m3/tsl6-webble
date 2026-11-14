@@ -45,7 +45,6 @@ definePage("tools", () => {
   const el = h("div", { class: "page cols", "data-page": "tools" });
   function render() {
     clear(el);
-    el.append(h("h1", { class: "lg-title" }, L("Tools", "工具")));
     // Like the vendor app: while the module is off, only restore defaults and change password stay.
     const moduleOff = S.status && !S.blank && S.status.length > 28 && ((S.status[28] >> 3) & 1) === 1;
     for (const g of GROUPS) {

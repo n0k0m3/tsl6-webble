@@ -15,6 +15,10 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 export const ICONS = {
+// Car lamp glyphs drawn for this app in the Lucide style (24 grid, 2 px stroke), after the ISO 2575 telltales.
+"lamp-high": "<path d=\"M13 7c4.4 0 8 2.2 8 5s-3.6 5-8 5c-.6 0-1-.4-1-1V8c0-.6.4-1 1-1z\" /> <path d=\"M3 8h6\" /> <path d=\"M3 12h6\" /> <path d=\"M3 16h6\" />",
+"fog-front": "<path d=\"M13 7c4.4 0 8 2.2 8 5s-3.6 5-8 5c-.6 0-1-.4-1-1V8c0-.6.4-1 1-1z\" /> <path d=\"m2.5 9.5 7-1.5\" /> <path d=\"m2.5 13.5 7-1.5\" /> <path d=\"m2.5 17.5 7-1.5\" /> <path d=\"M6 6.5c-1 1 1 2 0 3s1 2 0 3 1 2 0 3 1 2 0 3\" />",
+"fog-rear": "<path d=\"M11 7c-4.4 0-8 2.2-8 5s3.6 5 8 5c.6 0 1-.4 1-1V8c0-.6-.4-1-1-1z\" /> <path d=\"M15 8h6.5\" /> <path d=\"M15 12h6.5\" /> <path d=\"M15 16h6.5\" /> <path d=\"M18.2 6.5c-1 1 1 2 0 3s1 2 0 3 1 2 0 3 1 2 0 3\" />",
 "car": "<path d=\"M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2\" /> <circle cx=\"7\" cy=\"17\" r=\"2\" /> <path d=\"M9 17h6\" /> <circle cx=\"17\" cy=\"17\" r=\"2\" />",
 "car-front": "<path d=\"m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8\" /> <path d=\"M7 14h.01\" /> <path d=\"M17 14h.01\" /> <rect width=\"18\" height=\"8\" x=\"3\" y=\"10\" rx=\"2\" /> <path d=\"M5 18v2\" /> <path d=\"M19 18v2\" />",
 "bluetooth": "<path d=\"m7 7 10 10-5 5V2l5 5L7 17\" />",
@@ -63,6 +67,8 @@ export const ICONS = {
 "power": "<path d=\"M12 2v10\" /> <path d=\"M18.4 6.6a9 9 0 1 1-12.77.04\" />",
 "power-off": "<path d=\"M18.36 6.64A9 9 0 0 1 20.77 15\" /> <path d=\"M6.16 6.16a9 9 0 1 0 12.68 12.68\" /> <path d=\"M12 2v4\" /> <path d=\"m2 2 20 20\" />",
 "trash-2": "<path d=\"M3 6h18\" /> <path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\" /> <path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\" /> <line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\" /> <line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\" />",
+"play": "<polygon points=\"6 3 20 12 6 21 6 3\" />",
+"minus": "<path d=\"M5 12h14\" />",
 "plus": "<path d=\"M5 12h14\" /> <path d=\"M12 5v14\" />",
 "link": "<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\" /> <path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\" />",
 "refresh-cw": "<path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\" /> <path d=\"M21 3v5h-5\" /> <path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\" /> <path d=\"M8 16H3v5\" />",

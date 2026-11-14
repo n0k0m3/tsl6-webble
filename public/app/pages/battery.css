@@ -19,7 +19,8 @@
 .bat-row.avg { color: var(--bat-avg); } .bat-row.delta { color: var(--bat-dim); }
 .bat-val { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
-.bat-link { color: var(--accent-text); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 4px; }
+.bat-link { display: inline-flex; align-items: center; gap: 2px; margin-right: -4px; color: var(--accent-text); font-weight: 600; min-height: 32px; }
+.bat-link svg { color: var(--faint); }
 .bat-empty { color: var(--muted); text-align: center; margin: 14px 0 4px; font-size: 14px; }
 .bat-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
 .bat-cell { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: var(--r-xs); background: var(--card-2); font-variant-numeric: tabular-nums; }
@@ -29,3 +30,13 @@ button.bat-val { background: none; border: 0; padding: 0; font: inherit; cursor:
 .bat-cell.min { background: color-mix(in srgb, var(--bat-min) 16%, var(--card)); color: var(--bat-min); }
 .bat-cell.max .bat-cell-n, .bat-cell.min .bat-cell-n { color: inherit; }
 .bat-dlg-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+/* summary at the top of the pack tab: three values, large */
+.bat-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 0 2px; font: 400 16px/1.3 var(--font); }
+.bat-stat-v { font: 700 30px/1.1 var(--font-head); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bat-stat-v small { margin-left: 3px; font: 600 15px var(--font); color: var(--muted); }
+.bat-stat-l { margin-top: 2px; font-size: 13.5px; color: var(--muted); }
+/* group names inside the card */
+.bat-sub { margin: 14px 0 2px; font: 700 16px/1.2 var(--font-head); color: var(--fg); }
+.bat-list > .bat-sub:first-child { margin-top: 2px; }
+.bat-sub + .bat-row { border-top: 0; }
+@media (max-width: 380px) { .bat-stat-v { font-size: 26px; } }

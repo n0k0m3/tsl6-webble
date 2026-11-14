@@ -50,7 +50,7 @@ const ALIAS = {
   left: "chevron-left", right: "chevron-right", up: "chevron-up", down: "chevron-down", ok: "check",
   more: "sliders-horizontal", trash: "trash-2", camp: "tent", queen: "crown",
   doorFL: "door-open", doorFR: "door-open", doorRL: "door-open", doorRR: "door-open",
-  frunk: "package-open", trunk: "package", glove: "inbox", mirror: "flip-horizontal-2", unlock: "lock-open",
+  frunk: "package", trunk: "package", glove: "inbox", mirror: "flip-horizontal-2", unlock: "lock-open",
   battery: "battery-medium", log: "file-text", flash: "hard-drive-download",
 };
 export function icon(name, size = 20, stroke = 2) {
@@ -176,8 +176,41 @@ export function toggle({ checked, disabled, label, onchange }) {
 // Option sheet, as in the vendor app: a button shows the value; a tap opens a list titled with the row name.
 // (A native <select> kept focus on iPhone while the page rebuilt, and the save stalled until the next tap.)
 // options: [[value, label]]. text: fixed button text (for the "..." sub picker). Returns the button; .value is a string.
+// A label without the "(default)" mark, and a test for that mark (English and Chinese option texts).
+const DEF_RE = /\s*\((default)\)|\s*[（(]默认[)）]/g;
+export const plainLabel = t => String(t).replace(DEF_RE, "");
+const isDefault = t => { DEF_RE.lastIndex = 0; const r = DEF_RE.test(String(t)); DEF_RE.lastIndex = 0; return r; };
+// A list of numbers with one unit ("5%", "0.3 s"): the sheet shows a slider, not a long list.
+const NUM_RE = /^\d+(\.\d+)?\s?(%|s|秒)$/;
+const isNumberList = options => options.length >= 6 && options.every(([, t]) => NUM_RE.test(plainLabel(t).trim()));
+
 export async function chooseOption({ title, options, value, help }) {
   const helpEntry = help ? (await loadHelp())[help] : null;
+  const top = helpEntry ? h("div", { class: "sheet-help" }, helpNode(helpEntry)) : null;
+  if (isNumberList(options)) {
+    const SAVE = {};
+    let i = Math.max(0, options.findIndex(([v]) => String(v) === String(value)));
+    const val = h("div", { class: "opt-range-val", "aria-live": "polite" });
+    const def = h("span", { class: "opt-range-def" });
+    const range = h("input", { type: "range", min: 0, max: options.length - 1, step: 1, value: i, "data-id": "opt-range", "aria-label": title });
+    const minus = iconBtn("minus", () => set(i - 1), { label: L("Less", "减少") });
+    const plus = iconBtn("plus", () => set(i + 1), { label: L("More", "增加") });
+    function set(n) {
+      i = Math.min(options.length - 1, Math.max(0, n));
+      range.value = String(i);
+      val.textContent = plainLabel(options[i][1]);
+      def.textContent = isDefault(options[i][1]) ? L("Default", "默认") : "";
+      range.setAttribute("aria-valuetext", val.textContent);
+      minus.disabled = i === 0; plus.disabled = i === options.length - 1;
+    }
+    range.addEventListener("input", () => set(Number(range.value)));
+    set(i);
+    const r = await dialog({
+      title, buttons: [{ label: L("Cancel", "取消"), value: null }, { label: L("Save", "保存"), value: SAVE, kind: "primary" }],
+      body: h("div", null, top, h("div", { class: "opt-range" }, val, def, h("div", { class: "opt-range-row" }, minus, range, plus))),
+    });
+    return r === SAVE ? options[i][0] : null;
+  }
   return dialog({
     title, wide: false,
     buttons: [{ label: L("Cancel", "取消"), value: null }],
@@ -185,10 +218,10 @@ export async function chooseOption({ title, options, value, help }) {
       const list = h("div", { class: "opt-list", role: "listbox" }, options.map(([v, t]) => {
         const on = String(v) === String(value);
         return h("button", { class: "opt" + (on ? " on" : ""), type: "button", role: "option", "data-v": String(v), "aria-selected": String(on), onclick: () => close(v) },
-          h("span", null, t), h("span", { class: "opt-ok", "aria-hidden": "true" }, on ? "✓" : ""));
+          h("span", null, t), h("span", { class: "opt-ok", "aria-hidden": "true" }, on ? icon("check", 20, 2.5) : null));
       }));
       setTimeout(() => { const c = list.querySelector(".opt.on"); if (c) c.scrollIntoView({ block: "center" }); }, 0);
-      return helpEntry ? h("div", null, h("div", { class: "sheet-help" }, helpNode(helpEntry)), list) : list;
+      return top ? h("div", null, top, list) : list;
     },
   });
 }

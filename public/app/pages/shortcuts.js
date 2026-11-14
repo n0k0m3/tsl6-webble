@@ -114,19 +114,21 @@ definePage("shortcuts", () => {
   }
 
   function card(r, i, isDraft) {
+    // Grid: number | When and Then pickers (same width) | delete and try.
     const n = h("span", { class: "sc-num" }, `#${i + 1}`);
     const trig = pill(isDraft ? L(LABELS.triggerNone) : fnLabel(list.btn, r.trigger, LABELS.triggerNone),
       () => pickTrigger(i), { disabled: busy || !table, label: L("Trigger", "快捷指令") });
-    const head = h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("When", "当")), trig, h("span", { class: "sc-right" }, n,
-      h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), onclick: () => del(i) }, icon("trash", 20))));
-    const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") }, head);
+    const delBtn = h("button", { class: "ibtn flat", type: "button", disabled: busy, "aria-label": L(`Delete shortcut ${i + 1}`, `删除第 ${i + 1} 条`), title: L("Delete", "删除"), onclick: () => del(i) }, icon("trash", 20));
+    const c = h("section", { class: "card sc-card" + (isDraft ? " draft" : "") + (moving === i ? " moving" : "") },
+      n, h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("When", "当")), trig), delBtn);
     if (isDraft) {
       c.append(h("p", { class: "sc-draft-note" }, L("Not saved. Select a trigger to save this row.", "未保存。选择快捷指令后保存。")));
       return c;
     }
     c.append(h("div", { class: "sc-line" }, h("span", { class: "sc-tag" }, L("Then", "则")),
-      pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作") }),
-      h("button", { class: "link-btn", type: "button", disabled: busy || !r.action, onclick: () => tryAction(r.action) }, L("Try", "尝试"))));
+      pill(fnLabel(list.fun, r.action, LABELS.actionNone), () => pickAction(i), { disabled: busy, label: L("Action", "执行动作") })),
+      h("button", { class: "ibtn flat sc-try", type: "button", disabled: busy || !r.action, "aria-label": L(`Try shortcut ${i + 1}`, `尝试第 ${i + 1} 条`), title: L("Try", "尝试"),
+        onclick: () => tryAction(r.action) }, icon("play", 18)));
     if (moving === i) c.append(moveBar(i, rows.length, { onmove: move, ondone: () => { moving = -1; render(); }, disabled: busy }));
     longPress(c, () => { if (!busy) { moving = i; render(); } });
     return c;
@@ -137,11 +139,10 @@ definePage("shortcuts", () => {
     const ready = !!table && linkState() === "ok";
     const hasFun = list.fun.length > 0;
     el.append(h("section", { class: "card tbl-toolbar" },
-      helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" }),
-      h("div", { class: "tools" }, hasFun ? [
-        iconBtn("trash", delAll, { label: L("Delete all", "删除全部"), disabled: !ready || busy || !rows.length }),
-        iconBtn("plus", add, { label: L("Add", "添加"), disabled: !ready || busy || draft }),
-      ] : null)));
+      hasFun ? h("button", { class: "btn small danger", type: "button", disabled: !ready || busy || !rows.length, onclick: delAll }, L("Delete all", "删除全部")) : h("span"),
+      h("div", { class: "tools" },
+        helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" }),
+        hasFun ? h("button", { class: "btn small primary", type: "button", disabled: !ready || busy || draft, onclick: add }, icon("plus", 18), h("span", null, L("Add", "添加"))) : null)));
 
     const st = linkState();
     if (st !== "ok") { el.append(h("section", { class: "card" }, h("p", { class: "empty" }, linkStateText(st)))); return; }

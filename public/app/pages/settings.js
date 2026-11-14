@@ -1,6 +1,6 @@
 // Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
-import { h, L, btn, toast, confirmBox, showHelp, clear, icon, chooseOption } from "../ui.js";
+import { h, L, btn, toast, confirmBox, showHelp, clear, icon, chooseOption, toggle, plainLabel } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches } from "../../lib/tsl6-settings.js";
 
@@ -79,9 +79,29 @@ definePage("settings", () => {
     setTimeout(() => save(id, Number(v)), 0); // run the save after the sheet is gone
   }
 
+  // A setting with exactly the options "Off" and "On" shows a switch. Returns [offValue, onValue] or null.
+  function onOff(id, vals) {
+    const o = optionsFor(BY_ID[id], vals, S.hwType);
+    if (o.length !== 2) return null;
+    const off = o.find(([, t]) => plainLabel(t) === "Off"), on = o.find(([, t]) => plainLabel(t) === "On");
+    return off && on ? [off[0], on[0]] : null;
+  }
+
   function item(id, vals, { sub = false, first = false } = {}) {
     const f = BY_ID[id];
     if (!f || !appliesTo(f, S.hwType) || vals[id] === undefined) return null;
+    const bin = onOff(id, vals);
+    if (bin) {
+      // The switch writes at once. The name opens the help text (sub-rows have none).
+      const sw = toggle({ checked: vals[id] === bin[1], disabled: busy, label: L(label(id)), onchange: v => save(id, v ? bin[1] : bin[0]) });
+      sw.dataset.id = `set-${id}`;
+      const name = h("div", { class: "li-title" }, h("span", null, L(label(id))));
+      return h("div", { class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), "data-row": id },
+        sub ? h("div", { class: "li-text" }, name)
+          : h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + L(label(id)), onclick: () => showHelp("help_" + id, L(label(id))) }, name),
+        changed(id, vals) ? h("span", { class: "legend-dot", role: "img", "aria-label": L("Changed from default", "已改动") }) : null,
+        sw);
+    }
     return h("button", {
       class: "li" + (sub ? " sub" : "") + (first ? " first" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
       onclick: () => pick(id, vals, sub ? null : "help_" + id),
@@ -104,7 +124,6 @@ definePage("settings", () => {
 
   function render() {
     clear(el);
-    el.append(h("h1", { class: "lg-title" }, L("Settings", "设置")));
     const link = S.link, p = S.status;
     el.className = "page" + (link && link.connected && p && !S.blank ? " cols" : " narrow");
     if (!link || !link.connected || !p || S.blank) {
@@ -130,6 +149,7 @@ definePage("settings", () => {
           h("div", { class: "li-sub" }, moduleOff ? L("All functions are off", "所有功能已停用") : L("All functions are active", "所有功能已启用"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })()));
+    if (!moduleOff) el.append(h("p", { class: "legend span" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置")));
     if (moduleOff) {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;

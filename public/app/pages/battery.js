@@ -1,7 +1,7 @@
 // Battery info page (vendor pages/batteryInfo, 电池信息): HV pack, cell voltages, DC-DC converter.
 // The page sends D0 01 on enter, polls D0 02/03/04 for the open tab, and sends D0 00 when it stops.
 // The factory-capacity override stays in this browser. Nothing goes to the module.
-import { h, L, clear, dialog, toast } from "../ui.js";
+import { h, L, clear, dialog, toast, icon } from "../ui.js";
 import { S, definePage, onBus, send, log } from "../app.js";
 import {
   TYPE, BATTERY_TABS, BATTERY_START, BATTERY_STOP, BATTERY_FIRST_POLL_MS, batteryPoll, batteryPollMs,
@@ -44,7 +44,18 @@ definePage("battery", () => {
   );
 
   // SI unit spelling on screen (the codec keeps the vendor text "KWH", "KW", "KM" for its vendor diff test).
-  const units = t => String(t).replace(/ KWH\b/g, " kWh").replace(/ KW\b/g, " kW").replace(/ KM\b/g, " km");
+  // Large numbers get a thousands separator; "℃" becomes "°C" (the Barlow font has no ℃ glyph).
+  const units = t => String(t).replace(/ KWH\b/g, " kWh").replace(/ KW\b/g, " kW").replace(/ KM\b/g, " km")
+    .replace(/\s*℃/g, " °C").replace(/(^|[^.\d])(\d{4,})(?=[.\s]|$)/g, (m, p, d) => p + d.replace(/\B(?=(\d{3})+$)/g, ",")); // no lookbehind: older iOS
+  // Pack tab groups (presentation only; every row of the module stays).
+  const GROUP = {
+    voltage: "pack", current: "pack", power: "pack", temp: "pack", heating: "pack",
+    socCar: "energy", socReal: "energy", range: "energy", energyRemain: "energy", energyReserve: "energy", factoryCap: "energy",
+    cellMax: "cells", cellMin: "cells", cellDelta: "cells",
+    charged: "life", discharged: "life", odo: "life",
+  };
+  const GROUP_NAME = { pack: ["Pack", "电池包"], energy: ["Charge and range", "电量与里程"], cells: ["Cells", "单体"], life: ["Lifetime", "累计"] };
+  const ORDER = ["energy", "pack", "cells", "life"];
 
   // Value rows, keyed by id. Texts change in place so that a tap on the capacity value is not lost.
   let rowKey = null;
@@ -56,20 +67,23 @@ definePage("battery", () => {
       rowEls.clear();
       clear(list);
       if (!rows.length) list.append(h("p", { class: "bat-empty" }, ready() ? L("Waiting for data", "等待数据") : L("Connect to the module first.", "请先连接蓝牙")));
+      let g = null;
       for (const r of rows) {
+        if (r.group && r.group !== g) { g = r.group; list.append(h("div", { class: "bat-sub" }, L(...GROUP_NAME[g]))); }
+        const txt = h("span");
         const val = r.tap
-          ? h("button", { type: "button", class: "bat-val bat-link", onclick: editCap, "aria-label": r.label + ": " + L("change", "修改") })
-          : h("span", { class: "bat-val" });
+          ? h("button", { type: "button", class: "bat-val bat-link", onclick: editCap, "aria-label": r.label + ": " + L("change", "修改") }, txt, icon("chevron-right", 18))
+          : h("span", { class: "bat-val" }, txt);
         const lab = h("span", { class: "bat-lab" });
         const e = h("div", { class: "bat-row" }, lab, val);
-        rowEls.set(r.id, { e, lab, val });
+        rowEls.set(r.id, { e, lab, val, txt });
         list.append(e);
       }
     }
     for (const r of rows) {
       const x = rowEls.get(r.id);
       x.lab.textContent = r.label;
-      x.val.textContent = units(r.text);
+      x.txt.textContent = units(r.text);
       x.e.className = "bat-row" + (r.cls ? " " + r.cls : "");
     }
   }
@@ -83,9 +97,11 @@ definePage("battery", () => {
       if (r.id === "factoryCap" && text === "设置") text = L("Set", "设置");
       if (r.id === "heating") text = L(r.en, r.text);
       if (r.id === "factoryCap" && userCap) text += L(" (local)", "（本机）");
-      return { id: r.id, label: L(r.label, r.zh), text, tap: r.tappable, cls: r.max ? "max" : r.min ? "min" : "" };
+      return { id: r.id, label: L(r.label, r.zh), text, tap: r.tappable, cls: r.max ? "max" : r.min ? "min" : "", group: GROUP[r.id] };
     });
-    return { odo: v.odometerText, rows };
+    rows.push({ id: "odo", label: L("Odometer", "总里程"), text: v.odometerText + " km", group: "life" });
+    rows.sort((a, b) => ORDER.indexOf(a.group) - ORDER.indexOf(b.group)); // stable: module order inside a group
+    return { odo: v.odometerText, rows, view: v };
   }
 
   function render() {
@@ -93,8 +109,15 @@ definePage("battery", () => {
     clear(head);
     if (tab === 0) {
       const v = pack ? packRows() : { odo: "0", rows: [] };
-      head.className = "bat-head bat-row strong";
-      head.append(h("span", null, L("Odometer", "总里程")), h("span", { class: "bat-val" }, v.odo + " km"));
+      // Summary: state of charge, range and pack power, rounded for reading at a glance.
+      const by = Object.fromEntries(v.rows.map(r => [r.id, r]));
+      const num = id => (by[id] ? parseFloat(String(by[id].text).replace(/,/g, "")) : NaN);
+      const soc = Number.isFinite(num("socReal")) ? ["socReal", L("Real SOC", "实际SOC")] : ["socCar", L("Car SOC", "车机SOC")];
+      const stat = (value, unit, label) => h("div", { class: "bat-stat" },
+        h("div", { class: "bat-stat-v" }, Number.isFinite(value) ? value.toLocaleString("en-US", { maximumFractionDigits: unit === "kW" ? 1 : 0 }) : "—", h("small", null, unit)),
+        h("div", { class: "bat-stat-l" }, label));
+      head.className = "bat-head bat-sum";
+      head.append(stat(num(soc[0]), "%", soc[1]), stat(num("range"), "km", L("Range", "剩余里程")), stat(num("power"), "kW", L("Pack power", "总功率")));
       syncRows(v.rows);
     } else if (tab === 1) {
       head.className = "bat-head center";

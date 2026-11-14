@@ -16,7 +16,7 @@
   --accent: #2563eb; --accent-ui: #2563eb; --accent-text: #1d4ed8; --accent-soft: #e5edfd; --on-accent: #ffffff;
   --ok: #15803d; --ok-soft: #e3f3e8; --warn: #b45309; --warn-soft: #fcf4e8; --bad: #c02626; --bad-soft: #fbe9e9;
   --off: #79849a; --btn: #ffffff; --btn-b: #7f8a9b; --btn-hover: #eef1f5;
-  --tt-off: #7b8698; --tt-green: #15803d; --tt-blue: #1d4ed8; --tt-amber: #b45309;
+  --sw-knob: #a9b2bf; --tt-off: #7b8698; --tt-green: #15803d; --tt-blue: #1d4ed8; --tt-amber: #b45309;
   --hl-g: #15803d; --hl-o: #b45309; --hl-r: #c02626;
   /* cluster panel: the car display */
   --cl-bg: #131a23; --cl-fg: #eef2f7; --cl-muted: #a3afbf; --cl-line: #2b3644; --cl-off: #5f6b7b;
@@ -40,9 +40,9 @@
     --accent: #2563eb; --accent-ui: #4d8dff; --accent-text: #8ab4ff; --accent-soft: #172440; --on-accent: #ffffff;
     --ok: #4ade80; --ok-soft: #12291c; --warn: #fbbf24; --warn-soft: #2b2210; --bad: #f87171; --bad-soft: #2d1515;
     --off: #788395; --btn: #1d232b; --btn-b: #667081; --btn-hover: #232a33;
-    --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
+    --sw-knob: #5d6878; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
     --hl-g: #6ee7a0; --hl-o: #fcd34d; --hl-r: #fca5a5;
-    --cl-bg: #0a0d11; --cl-line: #262e38;
+    --cl-bg: #1f2731; --cl-line: #364354;
     --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
     color-scheme: dark;
   }
@@ -53,9 +53,9 @@
   --accent: #2563eb; --accent-ui: #4d8dff; --accent-text: #8ab4ff; --accent-soft: #172440; --on-accent: #ffffff;
   --ok: #4ade80; --ok-soft: #12291c; --warn: #fbbf24; --warn-soft: #2b2210; --bad: #f87171; --bad-soft: #2d1515;
   --off: #788395; --btn: #1d232b; --btn-b: #667081; --btn-hover: #232a33;
-  --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
+  --sw-knob: #5d6878; --tt-off: #7a8596; --tt-green: #4ade80; --tt-blue: #7aa7ff; --tt-amber: #fbbf24;
   --hl-g: #6ee7a0; --hl-o: #fcd34d; --hl-r: #fca5a5;
-  --cl-bg: #0a0d11; --cl-line: #262e38;
+  --cl-bg: #1f2731; --cl-line: #364354;
   --shadow-lg: 0 18px 48px rgba(0, 0, 0, .55);
   color-scheme: dark;
 }
@@ -81,7 +81,9 @@ input, textarea, pre.log, pre.log * { -webkit-user-select: text; user-select: te
 #top h1 { margin: 0; flex: 1; min-width: 0; font: 700 19px/1.2 var(--font-head); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #top .top-spacer { width: 8px; }
 .top-back, .top-lang { flex: none; background: none; border: 0; color: var(--accent-text); height: 44px; min-width: 44px; cursor: pointer; display: grid; place-items: center; border-radius: var(--r-sm); }
-.top-lang { color: var(--muted); font-size: 15px; font-weight: 600; }
+.top-lang { color: var(--fg); font-size: 15px; font-weight: 600; height: 34px; min-width: 34px; border: 1px solid var(--btn-b); background: var(--card); margin-right: 4px; }
+#top.root h1 { font-size: 26px; padding-left: 4px; }
+#top .dot { margin: 0 8px; }
 .top-back:hover, .top-lang:hover { background: var(--btn-hover); }
 .conn-chip { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 11px; border-radius: var(--r-sm); border: 1px solid var(--btn-b);
   background: var(--card); color: var(--fg); font-size: 14px; font-weight: 600; cursor: pointer; max-width: 52vw; }
@@ -154,7 +156,7 @@ button.row.navrow:hover { background: var(--btn-hover); }
 .help-btn svg { width: 17px; height: 17px; }
 
 /* list item: telltale icon, title + state, trailing control */
-.li { display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 9px 16px; border-top: 1px solid var(--line-2); width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; color: inherit; text-align: left; font: inherit; }
+.li { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 9px 16px; border-top: 1px solid var(--line-2); width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; color: inherit; text-align: left; font: inherit; }
 .card > .li:first-child, .card > .li.first { border-top: 0; }
 button.li { cursor: pointer; }
 button.li:hover { background: var(--btn-hover); }
@@ -168,7 +170,7 @@ button.li:disabled { cursor: progress; }
 .li-trail .val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* a value that differs from the factory default: ink, semibold, with a blue mark */
 .li-trail .val.changed { color: var(--fg); font-weight: 600; }
-.li-trail .val.changed::before { content: ""; display: inline-block; width: 3px; height: 14px; margin: 0 8px -1px 0; border-radius: 2px; background: var(--accent-ui); }
+.li-trail .val.changed::before, .legend-dot { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 8px 2px 0; border-radius: 50%; background: var(--accent-ui); vertical-align: middle; }
 .chev { color: var(--faint); display: inline-grid; }
 .li.sub { padding-left: 46px; min-height: 48px; }
 .li.sub .li-title { font-size: 15px; color: var(--muted); }
@@ -176,7 +178,7 @@ button.li:disabled { cursor: progress; }
 
 /* Telltale: a bare icon. Dark when off, lit in its colour when on. No box around it. */
 .chip { flex: none; width: 24px; height: 24px; display: grid; place-items: center; color: var(--tt-off); background: none; border: 0; }
-.chip.on { color: var(--tt, var(--tt-green)); }
+.chip.on { color: var(--tt, var(--accent-ui)); }
 .chip.blue { color: var(--accent-text); }
 .chip.green { color: var(--tt-green); }
 .chip.amber { color: var(--tt-amber); }
@@ -236,8 +238,8 @@ button.li:disabled { cursor: progress; }
 .acts.plan .act { grid-column: span 2; }
 .acts.plan [data-id="tap-0"] { grid-area: fl; } .acts.plan [data-id="tap-1"] { grid-area: fr; }
 .acts.plan [data-id="tap-2"] { grid-area: rl; } .acts.plan [data-id="tap-3"] { grid-area: rr; }
-.acts.plan [data-id="tap-8"] { grid-area: fk; border-radius: 22px 22px var(--r-md) var(--r-md); }
-.acts.plan [data-id="tap-9"] { grid-area: tk; border-radius: var(--r-md) var(--r-md) 22px 22px; }
+.acts.plan [data-id="tap-8"] { grid-area: fk; }
+.acts.plan [data-id="tap-9"] { grid-area: tk; }
 .acts.plan [data-id="tap-10"] { grid-area: gb; } .acts.plan [data-id="tap-11"] { grid-area: mi; }
 .acts.plan [data-id="tap-23"] { grid-area: ul; } .acts.plan [data-id="tap-22"] { grid-area: lk; }
 .acts.plan [data-id="tap-10"], .acts.plan [data-id="tap-11"], .acts.plan [data-id="tap-22"], .acts.plan [data-id="tap-23"] { flex-direction: row; min-height: 50px; gap: 8px; }
@@ -269,12 +271,12 @@ button.li:disabled { cursor: progress; }
 /* ---------------------------------------------------------------- controls */
 /* Switch: a rocker, not a pill. Off = outlined track and a grey knob on the left.
    On = blue track and a white knob on the right. Unknown = dashed track, knob in the middle. */
-.switch { position: relative; width: 50px; height: 30px; border-radius: 8px; border: 2px solid var(--off); background: transparent; cursor: pointer; flex: none; padding: 0; transition: background .15s, border-color .15s; }
-.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 4px; background: var(--off); transition: left .15s, background .15s; }
+.switch { position: relative; width: 50px; height: 30px; border-radius: 9px; border: 1.5px solid var(--btn-b); background: var(--card); cursor: pointer; flex: none; padding: 0; transition: background .15s, border-color .15s; }
+.switch::after { content: ""; position: absolute; top: 3.5px; left: 3.5px; width: 20px; height: 20px; border-radius: 5px; background: var(--sw-knob); transition: left .15s, background .15s; }
 .switch[aria-checked="true"] { background: var(--accent-ui); border-color: var(--accent-ui); }
-.switch[aria-checked="true"]::after { left: 23px; background: #fff; }
+.switch[aria-checked="true"]::after { left: 23.5px; background: #fff; }
 .switch.unknown { border-style: dashed; }
-.switch.unknown::after { left: 13px; opacity: .45; }
+.switch.unknown::after { left: 13.5px; opacity: .6; }
 .switch.busy::after { animation: pulse .8s infinite alternate; }
 .switch:disabled { opacity: .4; cursor: not-allowed; }
 @keyframes pulse { from { opacity: 1; } to { opacity: .3; } }
@@ -377,9 +379,6 @@ input.text:focus { outline: 2px solid var(--accent-ui); outline-offset: 0; borde
 @media (max-width: 559px) {
   /* phone: an option list rises from the bottom edge, in reach of the thumb.
      Dialogs with a text field stay centred, so the iPhone keyboard cannot cover them. */
-  .dlg-back:has(.opt-list) { place-items: end center; padding: 0; }
-  .dlg-back:has(.opt-list) .dlg { width: 100%; max-height: 88vh; border-radius: 16px 16px 0 0; border-bottom: 0; }
-  .dlg-back:has(.opt-list) .dlg-btns { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
   .dlg-btn { flex: 1; }
 }
 pre.log { margin: 0; padding: 12px 14px; font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-all; max-height: 60vh; overflow: auto; }
@@ -423,3 +422,48 @@ input.mono::placeholder { font-family: var(--font); }
 /* live numbers keep their width while they change (after any font shorthand) */
 .hero-sub b, .li-trail .val, .kv, .cd, .lane, .vehicle-name, .sc-num, .rgb-num, .bat-val, .bat-cell-v, .bh-dbm, .bh-batt, .dbg-state, .opt { font-variant-numeric: tabular-nums; }
 ::placeholder { color: var(--faint); opacity: 1; }
+
+/* ---------------------------------------------------------------- round 2 (council) */
+/* the first group on a page starts at the top bar */
+.page > .grp:first-child > .sec-label:first-child { margin-top: 4px; }
+/* a row name that opens its help: it looks like plain text */
+button.li-text { background: none; border: 0; padding: 4px 0; margin: -4px 0; text-align: left; color: inherit; font: inherit; cursor: pointer; border-radius: var(--r-xs); }
+button.li-text:hover .li-title > span:first-child { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+/* AP assist: the lead card of the car page */
+.card.lead .hero { padding: 16px; min-height: 76px; }
+.card.lead .hero .chip { width: 28px; height: 28px; }
+.card.lead .hero-title { font: 700 21px/1.2 var(--font-head); }
+.card.lead + .card { margin-top: 0; }
+/* cluster: gauge button with a label; lit functions as named chips */
+.cluster .cl-gauge { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--cl-line);
+  background: transparent; color: var(--cl-fg); font: 600 14px var(--font); cursor: pointer; }
+.cluster .cl-gauge:hover { background: rgba(255, 255, 255, .08); }
+.tt { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; }
+.tt span { color: var(--cl-fg); }
+@media (min-width: 1180px) {
+  .cluster { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 14px 18px; }
+  .cluster .cl-head { display: contents; }
+  .cluster .cl-name { flex: none; }
+  .cluster .cl-bus { margin: 0; }
+  .cluster .cl-tt { flex: 1; margin: 0; padding: 0 0 0 28px; border-top: 0; border-left: 1px solid var(--cl-line); }
+  .cluster .cl-gauge { order: 9; margin-left: auto; }
+}
+/* phone: the main action of an empty state fills the card */
+@media (max-width: 559px) { .empty-state .btn.primary { align-self: stretch; min-height: 48px; } }
+/* option sheet: grab handle, fade at the bottom of a long list, a drawn check */
+.opt-list { -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), transparent); mask-image: linear-gradient(#000 calc(100% - 28px), transparent); padding-bottom: 20px; }
+.opt-ok { display: inline-grid; place-items: center; width: 20px; color: var(--accent-text); }
+@media (max-width: 559px) {
+  .dlg-back:has(.opt-list, .opt-range) { place-items: end center; padding: 0; }
+  .dlg-back:has(.opt-list, .opt-range) .dlg { width: 100%; max-height: 88vh; border-radius: 16px 16px 0 0; border-bottom: 0; }
+  .dlg-back:has(.opt-list, .opt-range) .dlg::before { content: ""; display: block; width: 36px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--line); }
+  .dlg-back:has(.opt-list, .opt-range) .dlg-btns { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+}
+/* a number setting: one value, a slider and minus / plus */
+.opt-range { padding: 8px 0 4px; }
+.opt-range-val { text-align: center; font: 700 40px/1.1 var(--font-head); font-variant-numeric: tabular-nums; }
+.opt-range-def { display: block; min-height: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+.opt-range-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.opt-range-row input { flex: 1; min-width: 0; height: 32px; accent-color: var(--accent); }
+.opt-range-row .ibtn { touch-action: manipulation; flex: none; }
+.legend { display: flex; align-items: center; margin: -2px 2px 6px; font-size: 14px; color: var(--muted); }

@@ -12,10 +12,10 @@ const shown = r => r && (!r.types || r.types.includes(S.hwType));
 
 // Switch rows by section. Icons are Lucide names.
 const ASSIST = [["apAutoState", "rotate-cw"], ["vehicleAPState", "navigation"]];
-const LIGHTS = [["pulseHighBeam", "siren"], ["pulseFrontFog", "cloud-fog"], ["pilotFrontFog", "lamp"], ["pulseRearFog", "cloud-fog"], ["pilotRearFog", "lamp"]];
+const LIGHTS = [["pulseHighBeam", "lamp-high"], ["pulseFrontFog", "fog-front"], ["pilotFrontFog", "fog-front"], ["pulseRearFog", "fog-rear"], ["pilotRearFog", "fog-rear"]];
 const COMFORT = [["batteryHeat", "thermometer-sun"], ["chargeDoor", "plug-zap"], ["driverMassage", "waves"], ["passengerMassage", "waves"], ["pulseHorn", "megaphone"]];
 const DRIVING = [["sportMode", "zap"], ["offRearMotor", "power-off"], ["offFrontMotor", "power-off"], ["offESP", "shield-off"]];
-const DOOR_ICON = { 0: "door-open", 1: "door-open", 2: "door-open", 3: "door-open", 8: "package-open", 9: "package", 10: "inbox", 11: "flip-horizontal-2", 22: "lock", 23: "lock-open" };
+const DOOR_ICON = { 0: "door-open", 1: "door-open", 2: "door-open", 3: "door-open", 8: "package", 9: "package", 10: "inbox", 11: "flip-horizontal-2", 22: "lock", 23: "lock-open" };
 const DOOR_LABEL = {
   0: ["Front left", "左前门"], 1: ["Front right", "右前门"], 2: ["Rear left", "左后门"], 3: ["Rear right", "右后门"],
   8: ["Frunk", "前备箱"], 9: ["Trunk", "后备箱"], 10: ["Glovebox", "储物箱"], 11: ["Mirrors", "后视镜"], 22: ["Lock", "锁车"], 23: ["Unlock", "解锁"],
@@ -99,7 +99,7 @@ definePage("status", () => {
   }
 
   // ---- building blocks
-  const sec = (en, zh, side) => h("div", { class: "sec-label" }, h("span", null, L(en, zh)), side || null);
+  const sec = (en, zh, help) => h("div", { class: "sec-label" }, h("span", { class: "sec-title" }, h("span", null, L(en, zh)), help || null));
   const grp = (...kids) => h("section", { class: "grp" }, kids);
   function switchItem([id, ico]) {
     const r = ROW_BY_ID[id];
@@ -109,13 +109,14 @@ definePage("status", () => {
     sw.dataset.id = `sw-${id}`;
     const tone = TONE[id] || "";
     const chip = h("span", { class: "chip " + tone }, icon(ico, 22));
-    const sub = h("span", { class: "li-sub" }, "—");
-    switches[id] = { sw, chip, sub, ico, tone, name: L(label) };
+    switches[id] = { sw, chip, sub: null, ico, tone, name: L(label) };
     return h("div", { class: "li", "data-row": id },
-      chip,
-      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label)), helpButton(r.help, label)), sub),
+      chip, nameButton(L(label), r.help),
       sw);
   }
+  // The row name is a button that opens the help text of the row.
+  const nameButton = (name, help, sub) => h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + name,
+    onclick: () => showHelp(help, name) }, h("div", { class: "li-title" }, h("span", null, name)), sub || null);
   const listCard = (items, cls = "") => h("div", { class: "card " + cls }, items.filter(Boolean));
 
   function emptyState() {
@@ -124,7 +125,6 @@ definePage("status", () => {
     const allBox = h("input", { type: "checkbox", id: "allDev" });
     allBox.addEventListener("change", () => { all = allBox.checked; });
     el.append(
-      h("h1", { class: "lg-title" }, L("Car", "车辆")),
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("bluetooth", 24)),
         h("h2", null, L("Connect to your TSL6", "连接您的 TSL6")),
@@ -144,7 +144,6 @@ definePage("status", () => {
 
   function lockedState() {
     el.append(
-      h("h1", { class: "lg-title" }, L("Car", "车辆")),
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip amber" }, icon("key-round", 24)),
         h("h2", null, L("Enter the BLE password", "请输入蓝牙密码")),
@@ -168,24 +167,27 @@ definePage("status", () => {
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
         h("div", { class: "cl-name" }, refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })),
-        h("button", { class: "ibtn", type: "button", "data-id": "open-gauges", "aria-label": L("Gauges", "仪表盘"), title: L("Gauges", "仪表盘"), onclick: () => go("gauge") }, icon("gauge", 20))),
+        h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
       refs.pills, refs.tt);
     pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
-    el.append(h("h1", { class: "lg-title" }, L("Car", "车辆")), vcard);
+    el.append(vcard);
 
     // AP assist
     const ap = ROW_BY_ID.apAssist;
     const apSw = toggle({ checked: null, label: L(ap.en, ap.zh), onchange: v => onSwitch(ap, v) });
     apSw.dataset.id = "sw-apAssist";
     refs.apSub = h("div", { class: "hero-sub" }, "—");
-    refs.apChip = h("span", { class: "chip" }, icon("hand", 24));
+    refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
     switches.apAssist = { sw: apSw, chip: refs.apChip, sub: null, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
+    const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
     el.append(grp(sec("Driver assist", "辅助驾驶"),
-      listCard([
+      h("div", { class: "card lead" },
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
-          h("div", { class: "hero-text" }, h("div", { class: "hero-title" }, h("span", null, L("AP assist (no-nag)", "AP辅助（免打扰）")), helpButton(ap.help, { en: ap.en, zh: ap.zh })), refs.apSub),
-          apSw),
-        ...ASSIST.map(switchItem)])));
+          h("button", { class: "li-text hero-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + apName, onclick: () => showHelp(ap.help, L(ap.en, ap.zh)) },
+            h("div", { class: "hero-title" }, h("span", null, apName)), refs.apSub),
+          apSw)),
+      listCard(ASSIST.map(switchItem)),
+      h("p", { class: "sec-foot" }, L("Tap a name to see what it does.", "点击名称查看说明。"))));
 
     el.append(grp(sec("Lights", "灯光"), listCard(LIGHTS.map(switchItem))));
     el.append(grp(sec("Comfort and charging", "舒适与充电"), listCard(COMFORT.map(switchItem))));
@@ -265,7 +267,7 @@ definePage("status", () => {
       clear(refs.tt);
       const lit = live.blank ? [] : Object.entries(switches).filter(([id]) => live.toggles[id] === true);
       if (!lit.length) refs.tt.append(h("span", { class: "cl-none" }, L("No function is on", "没有开启的功能")));
-      for (const [, s] of lit) refs.tt.append(h("span", { class: "tt " + s.tone, role: "img", "aria-label": s.name, title: s.name }, icon(s.ico, 22)));
+      for (const [, s] of lit) refs.tt.append(h("span", { class: "tt " + s.tone }, icon(s.ico, 20), h("span", null, s.name)));
     }
     clearInterval(timer);
     if (refs.apSub) {

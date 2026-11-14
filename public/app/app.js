@@ -269,10 +269,14 @@ function renderTop() {
   const chipText = !on ? L("Not connected", "未连接") : !link.authed ? L("Password needed", "需要密码") : link.name;
   const chip = h("button", { class: "conn-chip", type: "button", "data-id": "conn-chip", onclick: () => { if (current().id !== "me" || stack.length > 1) switchTab("me"); } },
     h("span", { class: "dot" + (on ? (link.authed ? " on" : " warn") : "") }), h("span", null, chipText));
+  // A tab root shows the tab name as the page title. A sub-page shows its own title and a link lamp.
+  const tabDef = TABS.find(t => t.id === tab);
+  top.classList.toggle("root", !sub);
+  const dotCls = "dot" + (on ? (link.authed ? " on" : " warn") : "");
   clear(top).append(...[
     sub ? h("button", { class: "top-back", "aria-label": L("Back", "返回"), onclick: () => history.back() }, icon("chevron-left", 24)) : h("span", { class: "top-spacer" }),
-    h("h1", null, sub && c.page.title ? L(c.page.title) : ""),
-    sub ? null : chip,
+    h("h1", null, sub ? (c.page.title ? L(c.page.title) : "") : tabDef ? L(tabDef) : ""),
+    sub ? h("span", { class: dotCls, role: "img", "aria-label": chipText, title: chipText }) : chip,
     h("button", { class: "top-lang", onclick: () => setLang(getLang() === "zh" ? "en" : "zh"), "aria-label": "Language / 语言" }, getLang() === "zh" ? "EN" : "中"),
   ].filter(Boolean));
   document.title = (sub && c.page.title ? L(c.page.title) + " | " : "") + "TSL6";

@@ -88,7 +88,6 @@ definePage("me", () => {
   function render() {
     clear(el);
     const m = S.status ? meInfo(S.status) : null;
-    el.append(h("h1", { class: "lg-title" }, L("Device", "设备")));
     el.append(grp(h("div", { class: "sec-label" }, L("Connection", "连接")), connectionCard()));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
