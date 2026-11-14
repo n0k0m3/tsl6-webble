@@ -59,7 +59,8 @@ function vendorField(page, id) {
 
 // ---------------------------------------------------------------- helpers
 let seed = 12345;
-const rnd = n => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+// Math.imul keeps the 32-bit product exact. A plain * loses the low bits above 2^53 and gives mostly 0.
+const rnd = n => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (seed >>> 8) % n; };
 const pick = a => a[rnd(a.length)];
 const UNMAPPED = { 32: 0x10, 33: 0x30 }; // bits the vendor clears on save
 
