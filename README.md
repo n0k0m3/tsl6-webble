@@ -3,7 +3,7 @@
 A Web Bluetooth app for the TSL6 (Feifan Commander 6th gen) autopilot module. It replaces the vendor WeChat Mini App, makes no network calls, and can flash or recover the module firmware.
 
 **Live app:** https://tsl6-app.surge.sh/
-(The old recovery address, https://tsl6-recovery.surge.sh/, redirects to `/#flash`, which opens the Firmware page. Old `flash.html` links also land there.)
+(The old recovery address, https://tsl6-recovery.surge.sh/, redirects to `/#firmware`, the Firmware page. Old `#flash` and `flash.html` links also land there.)
 
 > Use at your own risk. This project is not affiliated with the module maker, its resellers, or Tesla. Work only while the car is parked.
 

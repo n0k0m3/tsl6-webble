@@ -333,7 +333,7 @@ export async function start({ mock = false, MockLink } = {}) {
     document.body.classList.add("is-mock");
   }
   if (!S.mock && !WebLink.available()) log("Web Bluetooth is not available in this browser", "warn");
-  // #firmware opens the firmware page over Tools. #flash is the old recovery link (tsl6-recovery.surge.sh redirects to it).
+  // #firmware opens the firmware page over Tools (tsl6-recovery.surge.sh redirects to it). #flash is the older recovery link.
   if ((location.hash === "#firmware" || location.hash === "#flash") && PAGES.firmware) { switchTab("tools"); go("firmware"); return; }
   switchTab({ "#settings": "settings", "#tools": "tools", "#me": "me", "#device": "me" }[location.hash] || "status");
 }
