@@ -35,7 +35,9 @@ definePage("settings", () => {
     autocomplete: "off", enterkeyhint: "search" });
   searchInput.addEventListener("input", () => { query = searchInput.value.trim().toLowerCase(); render(); });
   const searchBox = h("div", { class: "set-search" }, icon("search", 18), searchInput);
-  const matches = id => !query || L(label(id)).toLowerCase().includes(query);
+  // Case-insensitive; matches the English and the Chinese name, so either language finds a row.
+  const hit = (...names) => names.some(n => n && String(n).toLowerCase().includes(query));
+  const matches = id => !query || hit(label(id).en, label(id).zh);
 
   // Display names that differ from the codec label (the Car tab uses "AP resume" for the live switch).
   const EN_NAME = { apAutoOpenType: "AP resume mode" };
@@ -121,8 +123,9 @@ definePage("settings", () => {
 
   function group(title, rows, vals, foot) {
     const items = [];
+    const groupHit = !!query && hit(title.en, title.zh); // a group title match shows the whole group
     for (const [id, subId] of rows) {
-      if (!matches(id) && !(subId && matches(subId))) continue;
+      if (!groupHit && !matches(id) && !(subId && matches(subId))) continue;
       const it = item(id, vals);
       if (!it) continue;
       items.push(it);
