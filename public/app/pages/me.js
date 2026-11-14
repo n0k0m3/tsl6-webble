@@ -1,5 +1,5 @@
 // Device tab: connection (was the Bluetooth tab), module info, restart, preferences (was the Me tab).
-import { h, L, btn, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
+import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword } from "../app.js";
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
 import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
@@ -153,6 +153,7 @@ definePage("me", () => {
   return {
     el,
     enter() { offs.push(onBus("status", render)); offs.push(onBus("conn", render)); },
+    refresh: render, // Back from a sub-page (auto gauges) must not show a stale link card
     leave() { offs.splice(0).forEach(f => f()); },
   };
 });

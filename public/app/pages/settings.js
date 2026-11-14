@@ -1,6 +1,6 @@
 // Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
-import { h, L, btn, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton } from "../ui.js";
+import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches } from "../../lib/tsl6-settings.js";
 
@@ -107,7 +107,7 @@ definePage("settings", () => {
     return off && on ? [off[0], on[0]] : null;
   }
 
-  function item(id, vals, { sub = false, first = false, off = false } = {}) {
+  function item(id, vals, { sub = false, off = false } = {}) {
     const f = BY_ID[id];
     if (!f || !appliesTo(f, S.hwType) || vals[id] === undefined) return null;
     const bin = onOff(id, vals);
@@ -116,13 +116,13 @@ definePage("settings", () => {
       const sw = toggle({ checked: vals[id] === bin[1], disabled: busy, label: L(label(id)), onchange: v => save(id, v ? bin[1] : bin[0]) });
       sw.dataset.id = `set-${id}`;
       const name = h("div", { class: "li-title" }, h("span", null, L(label(id))), changed(id, vals) ? h("span", { class: "legend-dot", role: "img", "aria-label": L("Changed from default", "已改动") }) : null);
-      return h("div", { class: "li" + (sub ? " sub" : "") + (off ? " off" : "") + (first ? " first" : ""), "data-row": id },
+      return h("div", { class: "li" + (sub ? " sub" : "") + (off ? " off" : ""), "data-row": id },
         sub ? h("div", { class: "li-text" }, name)
           : h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + L(label(id)), onclick: () => showHelp("help_" + id, L(label(id))) }, name),
         sw);
     }
     return h("button", {
-      class: "li" + (sub ? " sub" : "") + (off ? " off" : "") + (first ? " first" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
+      class: "li" + (sub ? " sub" : "") + (off ? " off" : ""), type: "button", "data-id": `set-${id}`, disabled: busy,
       onclick: () => pick(id, vals, sub ? null : "help_" + id),
     },
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(label(id))),
@@ -155,13 +155,15 @@ definePage("settings", () => {
     if (!link || !link.connected || !p || S.blank) {
       topRow.remove();
       const on = link && link.connected;
-      // Authed but no status yet: the module has not answered, so do not ask for the password again.
-      if (on && link.authed && !p) {
+      // Connected, no status yet: the module has not answered. A blank status means "password needed".
+      if (on && !p) {
         el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
           h("span", { class: "chip blue" }, icon("refresh-cw", 24)),
           h("h2", null, L("Waiting for the module", "等待模块应答")),
           h("p", null, L("The module has not sent its settings yet.", "模块尚未发送设置。")),
-          h("button", { class: "btn primary", type: "button", onclick: () => link.readStatus().catch(() => {}) }, L("Read again", "重新读取")))));
+          h("div", { class: "es-btns" },
+            h("button", { class: "btn primary", type: "button", onclick: () => link.readStatus().catch(() => {}) }, L("Read again", "重新读取")),
+            link.authed ? null : h("button", { class: "btn", type: "button", onclick: () => askPassword("manual") }, L("Enter password", "输入密码"))))));
         return;
       }
       el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
@@ -207,8 +209,13 @@ definePage("settings", () => {
 
     // Lab: a local switch. The vendor app asks for a code from its server here.
     const labItem = h("button", { class: "li first", type: "button", "data-id": "set-lab", onclick: async () => {
-      const v = await chooseOption({ title: L("Lab functions", "实验室功能"), help: "help_test", value: S.prefs.lab ? 1 : 0,
-        options: [[0, L("Off (default)", "关闭(默认)")], [1, L("On", "开启")]] });
+      if (picking) return;
+      picking = true;
+      let v;
+      try {
+        v = await chooseOption({ title: L("Lab functions", "实验室功能"), help: "help_test", value: S.prefs.lab ? 1 : 0,
+          options: [[0, L("Off (default)", "关闭(默认)")], [1, L("On", "开启")]] });
+      } finally { picking = false; }
       if (v == null || (v === 1) === S.prefs.lab) return;
       if (v === 1 && !(await confirmBox({
         en: "Lab functions may be unstable. Use them with care. (The vendor app asks for a code from its server here. This app has no server, so it asks only for this confirmation.)",

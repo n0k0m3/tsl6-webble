@@ -110,14 +110,14 @@ definePage("status", () => {
     sw.dataset.id = `sw-${id}`;
     const tone = TONE[id] || "";
     const chip = h("span", { class: "chip " + tone }, icon(ico, 22));
-    switches[id] = { sw, chip, sub: null, ico, tone, name: L(label) };
+    switches[id] = { sw, chip, ico, tone, name: L(label) };
     return h("div", { class: "li", "data-row": id },
       chip, nameButton(L(label), r.help),
       sw);
   }
   // The row name is a button that opens the help text of the row.
-  const nameButton = (name, help, sub) => h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + name,
-    onclick: () => showHelp(help, name) }, h("div", { class: "li-title" }, h("span", null, name)), sub || null);
+  const nameButton = (name, help) => h("button", { class: "li-text", type: "button", "aria-haspopup": "dialog", "aria-label": L("Help", "帮助") + ": " + name,
+    onclick: () => showHelp(help, name) }, h("div", { class: "li-title" }, h("span", null, name)));
   // Help for a switch group: every shown row with its help text.
   const groupHelp = (en, zh, rows, extra = []) => groupHelpButton({ en, zh },
     [...extra, ...rows.map(([id]) => ROW_BY_ID[id]).filter(shown).map(r => [L(NAME[r.id] || { en: r.en, zh: r.zh }), r.help])]);
@@ -155,13 +155,15 @@ definePage("status", () => {
         h("button", { class: "btn primary", type: "button", "data-id": "enter-password", onclick: () => askPassword("manual") }, L("Enter password", "输入密码")))));
   }
 
-  // Authed, but the module has not answered yet: do not ask for the password again.
+  // Connected, but the module has not sent a status yet (a blank status means "password needed").
   function waitingState() {
     el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
       h("span", { class: "chip blue" }, icon("refresh-cw", 24)),
       h("h2", null, L("Waiting for the module", "等待模块应答")),
       h("p", null, L("The module has not sent car data yet.", "模块尚未发送车辆数据。")),
-      h("button", { class: "btn primary", type: "button", onclick: () => S.link.readStatus().catch(() => {}) }, L("Read again", "重新读取")))));
+      h("div", { class: "es-btns" },
+        h("button", { class: "btn primary", type: "button", onclick: () => S.link.readStatus().catch(() => {}) }, L("Read again", "重新读取")),
+        S.link.authed ? null : h("button", { class: "btn", type: "button", onclick: () => askPassword("manual") }, L("Enter password", "输入密码"))))));
   }
 
   function build() {
@@ -170,7 +172,7 @@ definePage("status", () => {
     const live = !!(link && link.connected && S.status && !S.blank);
     el.className = "page" + (live ? " cols" : " narrow");
     if (!link || !link.connected) return emptyState();
-    if (!S.status && link.authed) return waitingState();
+    if (!S.status) return waitingState();
     if (!S.status || S.blank) return lockedState();
 
     // Cluster: the vehicle, the three CAN buses and a telltale for each function that is on.
@@ -192,7 +194,7 @@ definePage("status", () => {
     apSw.dataset.id = "sw-apAssist";
     refs.apSub = h("div", { class: "hero-sub" }, "—");
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
-    switches.apAssist = { sw: apSw, chip: refs.apChip, sub: null, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
+    switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
     el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),
       h("div", { class: "card lead" },
@@ -287,11 +289,12 @@ definePage("status", () => {
       refs.vehicleName.classList.toggle("warn", !live.vehicle.detected); // vendor: orange when not detected
       clear(refs.pills);
       // A bus with data is a solid lit lane; a bus without data is a dashed dark lane.
-      live.can.forEach((on, i) => {
+      // As in the vendor app: CAN state only for types 6, 7, 8, 19; the harness warning only where the vehicle row shows.
+      if ([6, 7, 8, 19].includes(S.hwType)) live.can.forEach((on, i) => {
         const name = on ? L(`CAN${i + 1} connected`, `CAN${i + 1} 已连接`) : L(`CAN${i + 1} not connected`, `CAN${i + 1} 未连接`);
         refs.pills.append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, `CAN${i + 1}`, h("i")));
       });
-      if (live.harnessUnplugged) refs.pills.append(h("span", { class: "pill bad" }, L("Harness not plugged in", "线束未插好")));
+      if (live.harnessUnplugged && shown(ROW_BY_ID.vehicleType)) refs.pills.append(h("span", { class: "pill bad" }, L("Harness not plugged in", "线束未插好")));
       clear(refs.tt);
       const lit = live.blank ? [] : Object.entries(switches).filter(([id]) => live.toggles[id] === true);
       if (!lit.length) refs.tt.append(h("span", { class: "cl-none" }, L("No function is on", "没有开启的功能")));

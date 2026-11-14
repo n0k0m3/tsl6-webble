@@ -264,6 +264,7 @@ button.li:disabled { cursor: progress; }
 .empty-state h2 { margin: 0; font: 700 23px/1.2 var(--font-head); }
 .empty-state p { margin: 0 0 12px; color: var(--muted); font-size: 15px; max-width: 46ch; text-wrap: pretty; }
 .empty-state .btn { min-width: 180px; }
+.es-btns { display: flex; flex-wrap: wrap; gap: 10px; }
 .empty-state .check { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--muted); cursor: pointer; }
 .empty-state .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .linkbtn { background: none; border: 0; color: var(--accent-text); font-weight: 600; font-size: 14px; cursor: pointer; padding: 8px; }
