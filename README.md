@@ -98,6 +98,15 @@ To recover:
 
 **Do not run an update from the vendor Mini App.** The server can send the filler image again.
 
+## Rescue a module with a safe-boot build
+
+A runtime that sets boot flag mode 1 at start (a "safe-boot" test build) keeps the bootloader in `TSL6-BOOT` for about 10 s at every power-on, then starts the runtime. If that runtime does not work, flash another one in the 10 s:
+1. On the Firmware page, load an image and tick the confirm box.
+2. Tap **Arm flash for TSL6-BOOT** (under "Rescue"). It stays armed for 3 min. Tap it again to cancel.
+3. Power-cycle the module. Tap **Connect** at once and pick `TSL6-BOOT`. The flash starts by itself.
+
+A runtime that sets mode 0 (all normal builds) gives no such window.
+
 ## Bootloader update commands
 
 | Command | Payload | Bootloader action |

@@ -14,6 +14,7 @@ import {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ARMED_MS = 60000;
+const RESCUE_MS = 180000; // rescue arm: time to power-cycle the module and pick TSL6-BOOT
 
 // ---------------------------------------------------------------- session
 const F = {
@@ -121,6 +122,22 @@ async function startAuto() {
   changed();
 }
 
+// Rescue: arm the flash with no runtime link. A runtime that stores boot mode 1 (safe-boot build)
+// makes the bootloader wait 10 s in TSL6-BOOT at every power-on. The user power-cycles the module and
+// picks TSL6-BOOT; its status starts the flash at once (runArmedFlash), inside the 10 s.
+function toggleRescue() {
+  if (F.armed) {
+    F.armed = false; F.restarting = false;
+    log("armed flash cancelled", "warn"); say("Cancelled.", "已取消。"); return;
+  }
+  if (!F.image || !F.image.pages || !F.confirm) return;
+  F.armed = true; F.armedUntil = Date.now() + RESCUE_MS; F.restarting = false;
+  setTimeout(() => { if (F.armed && Date.now() > F.armedUntil) { F.armed = false; log("armed flash expired", "warn"); changed(); } }, RESCUE_MS + 100);
+  log("rescue: flash armed for 3 min", "ok");
+  say("Armed for 3 min. Power-cycle the module. Then tap Connect at once and pick TSL6-BOOT. The flash starts by itself.",
+    "已准备 3 分钟。请给模块断电再上电，然后立即点“连接”并选择 TSL6-BOOT，刷写会自动开始。", "warn");
+}
+
 onBus("boot", ({ link, payload }) => {
   const s = decodeStatus(payload);
   if (s.moduleId && !F.modId) F.modId = s.moduleId;
@@ -179,6 +196,7 @@ definePage("firmware", () => {
     placeholder: L("filled in from the boot-mode status", "从升级模式的状态自动填入"), oninput: e => { F.modId = e.target.value; changed(); } });
   const uidOut = h("div", { class: "out" });
   const flashBtn = h("button", { class: "btn danger-fill", type: "button", "data-id": "fw-flash", onclick: () => runFlash(S.link) }, L("Flash runtime", "刷写运行固件"));
+  const rescueBtn = h("button", { class: "btn", type: "button", "data-id": "fw-rescue", onclick: toggleRescue });
   const chunkVal = h("span", { class: "val" });
 
   const el = h("div", { class: "page narrow", "data-page": "firmware" },
@@ -222,7 +240,12 @@ definePage("firmware", () => {
       h("div", { class: "subhead" }, L("Module already in boot mode", "模块已在升级模式")),
       h("div", { class: "form" },
         h("span", { class: "row-note" }, L("Module ID (from the boot-mode status)", "模块 ID（来自升级模式的状态）")),
-        modIn, uidOut, h("div", { class: "btns" }, flashBtn))),
+        modIn, uidOut, h("div", { class: "btns" }, flashBtn)),
+      h("div", { class: "subhead" }, L("Rescue (safe-boot builds)", "救援（安全启动版）")),
+      h("div", { class: "form" },
+        rich(L("A safe-boot build keeps the module in <code>TSL6-BOOT</code> for about 10 s at every power-on, then starts the runtime. If that runtime does not work, arm the flash here, power-cycle the module, then tap <b>Connect</b> at once and pick <code>TSL6-BOOT</code>. The flash starts by itself.",
+          "安全启动版在每次上电时让模块停在 <code>TSL6-BOOT</code> 约 10 秒，然后启动运行固件。如果该运行固件不工作，请在此准备刷写，给模块断电再上电，然后立即点<b>连接</b>并选择 <code>TSL6-BOOT</code>，刷写会自动开始。")),
+        h("div", { class: "btns" }, rescueBtn))),
 
     h("div", { class: "sec-label" }, L("More", "更多")),
     h("div", { class: "card" },
@@ -269,6 +292,8 @@ definePage("firmware", () => {
     const pages = !!(F.image && F.image.pages);
     autoBtn.disabled = !on || F.busy || F.armed || !inRuntime(st) || !pages || !F.confirm;
     flashBtn.disabled = !on || F.busy || F.armed || !inBoot(boot) || !pages || !uid14(F.modId) || !F.confirm;
+    rescueBtn.textContent = F.armed ? L("Cancel armed flash", "取消已准备的刷写") : L("Arm flash for TSL6-BOOT", "为 TSL6-BOOT 准备刷写");
+    rescueBtn.disabled = F.busy || !F.armed && (!pages || !F.confirm);
     if (boot) { modePill.textContent = L("Boot mode: ready to flash", "升级模式：可以刷写"); modePill.className = "pill ok"; }
     else if (st) { modePill.textContent = L("Runtime mode: not in boot mode", "运行模式：不在升级模式"); modePill.className = "pill warn"; }
     else { modePill.textContent = L("No status yet", "尚无状态"); modePill.className = "pill"; }
