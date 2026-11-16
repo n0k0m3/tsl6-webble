@@ -5,6 +5,7 @@
 //   ?mock=h2&cut=N    writes longer than N bytes are cut         ?mock=h2&lo   Scroll Ack off, Listen-Only
 //   ?mock=h2&nopair   the pairing never works: the board drops the link
 //   ?mock=h2&board=ID the board type (default nanoh2-minican)    ?mock=h2&can=mcp2515   its CAN controller (default twai)
+//   ?mock=h2&bad=settings   the Settings JSON has a number for "enabled"   ?mock=h2&bad=log   the Log subscribe fails
 import * as SC from "../lib/scrl.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -94,12 +95,14 @@ export class MockH2Transport {
     if (this.authFails > 0) { this.authFails--; throw new Error("GATT Error: insufficient authentication"); }
     if (name === "status") return enc.encode(this.statusText());
     if (name === "live") return this.liveBytes();
+    if (name === "settings" && this.q.get("bad") === "settings") return enc.encode('{"enabled":1,"mode":0,"pattern":0,"delay_ms":600,"gap_ms":100,"interval_ms":2500,"op_mode":0}');
     if (name === "settings") { const s = this.settings; return enc.encode(JSON.stringify({ enabled: s.enabled, mode: s.mode, pattern: s.pattern, delay_ms: s.delay_ms, gap_ms: s.gap_ms, interval_ms: s.interval_ms, op_mode: s.op_mode })); }
     throw new Error("read not permitted");
   }
   async subscribe(name, cb) {
     await sleep(20);
     if (!this.up) throw new Error("GATT Server is disconnected");
+    if (name === "log" && this.q.get("bad") === "log") throw new Error("GATT Error: Not supported.");
     this.subs[name] = cb;
     if (name === "log") for (const l of this.lines) cb(enc.encode(l));
   }

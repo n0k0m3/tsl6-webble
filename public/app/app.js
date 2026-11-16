@@ -252,6 +252,17 @@ export async function connect({ all = false } = {}) {
       }, L("Pairing", "配对"));
       return;
     }
+    if (link && link.kind === "h2") {
+      // A step of the board session failed. A toast goes away too fast to read the reason. Close the link: the app
+      // shows "Not connected", so the board must not stay connected behind it.
+      if (e.bytes) log(`board sent ${e.bytes}`, "bad");
+      if (link.close) link.close();
+      alertBox({
+        en: `The connection to the board stopped at this step: ${e.message}. Copy the log in Tools > Log and capture and send it to the developer.`,
+        zh: `与模块的连接在此步骤停止：${e.message}。请在「工具 > 日志与抓包」复制日志并发给开发者。`,
+      }, L("Connect failed", "连接失败"));
+      return;
+    }
     toast(L("Connect failed: ", "连接失败：") + e.message, "bad", 3500);
   }
 }
