@@ -1,7 +1,8 @@
 // Settings tab (vendor pages/set): every settings row, grouped by topic. A tap opens an option sheet with the
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
 import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton, extendHelp } from "../ui.js";
-import { S, definePage, onBus, ask, savePref, log, connect, askPassword } from "../app.js";
+import { S, definePage, onBus, ask, savePref, log, connect, askPassword, isH2, go } from "../app.js";
+import { h2Options } from "../../lib/h2-menus.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, TIME_PROMPT_ZH } from "../../lib/tsl6-settings.js";
 
 let ZH = null;
@@ -76,6 +77,8 @@ definePage("settings", () => {
   const EN_NAME = { apAutoOpenType: "AP resume mode" };
   const label = id => ({ en: EN_NAME[id] || BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
   function options(id, vals) {
+    // The H2 board has its own menus, with their own Chinese text (lib/h2-menus.js).
+    if (isH2()) return h2Options(id, vals[id]).map(([v, en, zh]) => [v, L(en, zh)]);
     const en = optionsFor(BY_ID[id], vals, S.hwType, EXTRA);
     let zh = ZH && ZH[id] && ZH[id].options;
     if (id === "lr" && [6, 8, 19].includes(S.hwType) && ZH) zh = ZH._lr68.options;
@@ -121,7 +124,8 @@ definePage("settings", () => {
     if (picking) return;
     picking = true;
     let v;
-    try { v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help }); } finally { picking = false; }
+    // The help texts describe the TSL6. They are not shown for the H2 board.
+    try { v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help: isH2() ? null : help }); } finally { picking = false; }
     if (v == null || v === vals[id]) return;
     setTimeout(() => save(id, Number(v)), 0); // run the save after the sheet is gone
   }
@@ -170,7 +174,7 @@ definePage("settings", () => {
       if (subId) { const s = item(subId, vals, { sub: true, off: parentOff }); if (s) items.push(s); }
     }
     if (!items.length) return [];
-    const help = groupHelpButton(title, rows.map(r => r[0]).filter(id => BY_ID[id] && appliesTo(BY_ID[id], S.hwType) && vals[id] !== undefined).map(id => [L(label(id)), "help_" + id]));
+    const help = isH2() ? null : groupHelpButton(title, rows.map(r => r[0]).filter(id => BY_ID[id] && appliesTo(BY_ID[id], S.hwType) && vals[id] !== undefined).map(id => [L(label(id)), "help_" + id]));
     return [h("section", { class: "grp" }, h("div", { class: "sec-label" }, h("span", { class: "sec-title" }, h("span", null, L(title)), help)),
       h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null)];
   }
@@ -215,7 +219,15 @@ definePage("settings", () => {
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })());
     if (topRow.parentNode !== el) el.prepend(topRow);
-    masterSlot.replaceChildren(master);
+    // The H2 board has no master switch. Its op mode (Active or Listen-Only) is on the Board page, with a confirm.
+    const B = isH2() ? S.link.board : null;
+    const opCard = B && B.status ? h("div", { class: "card lead master" },
+      h("button", { class: "li first", type: "button", "data-id": "set-opmode", onclick: () => go("board") },
+        h("span", { class: "chip" + (B.status.opMode === 1 ? " on" : "") }, icon("radio", 24)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Op mode", "运行模式"))),
+          h("div", { class: "li-sub" }, B.status.opMode === 1 ? L("The board sends scroll ticks on Vehicle CAN", "模块向车辆CAN发送滚轮操作") : L("The board never sends", "模块从不发送"))),
+        h("div", { class: "li-trail" }, h("span", { class: "val" }, B.status.opMode === 1 ? L("Active", "主动") : L("Listen-Only", "只听")), h("span", { class: "chev" }, icon("chevron-right", 18))))) : null;
+    masterSlot.replaceChildren(opCard || master);
     findBox.hidden = moduleOff;
     if (moduleOff) {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
@@ -227,13 +239,18 @@ definePage("settings", () => {
     // Top row: search (with the legend) and the master switch; one row on desktop, stacked on a phone.
     legendSlot.replaceChildren(...(anyChanged ? [h("span", { class: "legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置"))] : []));
     const groupsBefore = el.childElementCount;
-    for (const g of GROUPS) el.append(...group(g, g.rows, vals, g.foot));
+    const H2_FOOT = { en: "The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %. Exact values: Tools > Board.", zh: "模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%。精确值：工具 > 模块。" };
+    for (const g of GROUPS) el.append(...group(g, g.rows, vals, isH2() ? H2_FOOT : g.foot));
     if (query) {
       if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;
     }
 
+    if (isH2()) { // no Lab rows for the board
+      el.append(h("p", { class: "foot span" }, L("Each change saves to the board at once.", "每项修改会立即保存到模块。")));
+      return;
+    }
     // Lab: a local switch. The vendor app asks for a code from its server here.
     const labItem = h("button", { class: "li first", type: "button", "data-id": "set-lab", onclick: async () => {
       if (picking) return;
@@ -267,7 +284,7 @@ definePage("settings", () => {
       zhLabels().then(() => render());
       offs.push(onBus("status", () => { if (!busy) render(); }));
       offs.push(onBus("conn", () => render()));
-      if (S.link && S.link.connected && S.link.authed) S.link.readStatus().catch(() => {});
+      if (S.link && S.link.connected && S.link.authed) Promise.resolve(S.link.readStatus()).catch(() => {});
     },
     leave() { offs.splice(0).forEach(f => f()); },
   };
