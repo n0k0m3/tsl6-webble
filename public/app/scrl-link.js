@@ -11,6 +11,17 @@ import * as SC from "../lib/scrl.js";
 import { h2Status, h2SettingsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Run one step of the session. On an error: log the bytes that the board sent (Status and Settings hold no secret),
+// then throw an Error that starts with the step name. e.step holds the name.
+async function step(name, fn, bytes) {
+  try { return await fn(); } catch (e) {
+    const err = new Error(`${name}: ${e && e.message ? e.message : e}`);
+    err.step = name;
+    if (bytes) err.bytes = `${bytes.length} bytes: ${dec.decode(bytes).slice(0, 600)}`;
+    throw err;
+  }
+}
 const enc = new TextEncoder(), dec = new TextDecoder();
 const O = SC.OTA;
 
@@ -90,7 +101,7 @@ export class ScrlLink extends LinkBase {
   // ---- connection
   async open() {
     this.emit("state", { connecting: true });
-    await this.t.open();
+    await step("GATT connect", () => this.t.open());
     if (this.retired) throw new Error("this link was replaced by a new connection");
     await this.session();
   }
@@ -117,12 +128,15 @@ export class ScrlLink extends LinkBase {
       e.pairing = true;
       throw e;
     }
-    this.takeStatus(first);
-    B.settings = SC.parseSettings(dec.decode(await t.read("settings")));
+    // Each later step names itself in its error: the connect dialog and the log then show the step that failed.
+    await step("Status data", () => this.takeStatus(first), first);
+    let raw = null;
+    await step("Settings read", async () => { raw = await t.read("settings"); });
+    await step("Settings data", () => { B.settings = SC.parseSettings(dec.decode(raw)); }, raw);
     // The subscriptions need the authenticated link, so they come after the first good read.
-    await t.subscribe("live", b => { try { this.takeLive(SC.parseLive(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } });
-    await t.subscribe("log", b => this.log(`board: ${dec.decode(b)}`));
-    await t.subscribe("otaCtrl", b => { try { this.onOtaEvent(SC.parseOtaEvent(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } });
+    await step("Live subscribe", () => t.subscribe("live", b => { try { this.takeLive(SC.parseLive(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } }));
+    await step("Log subscribe", () => t.subscribe("log", b => this.log(`board: ${dec.decode(b)}`)));
+    await step("Update subscribe", () => t.subscribe("otaCtrl", b => { try { this.onOtaEvent(SC.parseOtaEvent(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } }));
     this.connected = true;
     this.authed = true;
     this.log(`connected: ${this.name} (${SC.boardName(B.info)}${B.info && B.info.fw ? `, firmware ${B.info.fw}` : ""})`, "ok");

@@ -368,6 +368,22 @@ await scenario("pairing-fails-with-the-reasons", "mock=h2&nopair", {}, async pag
   assert.equal(await page.isVisible("[data-id=connect]"), true);
 });
 
+for (const [bad, re] of [["settings", /Settings data: Settings JSON: bad enabled/], ["log", /Log subscribe: GATT Error: Not supported/]]) {
+  await scenario(`connect-step-failure-${bad}`, `mock=h2&bad=${bad}`, {}, async page => {
+    // A step after the pairing fails: the dialog names the step, and the app does not stay half connected.
+    await page.click("[data-id=connect]");
+    await page.waitForSelector(".dlg", { timeout: 20000 });
+    assert.match(await text(page, ".dlg"), re);
+    assert.match(await text(page, ".dlg"), /Tools > Log and capture/);
+    await dlgOk(page);
+    assert.equal(await page.isVisible("[data-id=connect]"), true);
+    assert.equal(await page.evaluate(async () => (await import("/app/app.js")).S.link.t.connected), false, "the link is closed");
+    await tab(page, "tools");
+    await page.click("[data-id=tool-log]");
+    if (bad === "settings") await page.waitForFunction(() => /board sent \d+ bytes: \{"enabled":1/.test(document.querySelector("#page").textContent));
+  });
+}
+
 // ---------------------------------------------------------------- groups 2 and 3: a fake navigator.bluetooth
 // kind "h2": a board (the mock board transport of the app). kind "tsl6": a TSL6 (the mock module of the app).
 function fakeBluetooth(opts) {
