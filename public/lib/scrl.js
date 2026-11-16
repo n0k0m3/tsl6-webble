@@ -1,4 +1,5 @@
-// Protocol codec of the H2 board (M5Stack NanoH2 + Unit Mini CAN, firmware "scrl-ble-board").
+// Protocol codec of the BLE board (firmware "scrl-ble-board"): the M5Stack NanoH2 + Unit Mini CAN, and every
+// hypery ESP32 board since firmware 0.2.0. The app calls the device type "H2" inside; the user sees the board name.
 // Pure functions: no BLE, no DOM. Works in the browser and in Node.
 // The firmware defines the protocol: ble-board/main/scrl_ble.h (service, commands), scrl_status.h (Status, Live),
 // scrl_settings.h, scrl_ota.h. test/scrl.mjs checks this file against test/fixtures/scrl-protocol.json, which
@@ -27,7 +28,7 @@ const OTA_ERR = { OK: 0, REQUEST: 1, STATE: 2, NOT_PARKED: 3, SIZE: 4, FLASH: 5,
   LINK: 9, ABORTED: 10, PENDING: 11 };
 const OTA_ERR_TEXT = ["OK", "the board did not understand the request", "wrong moment: an update runs, or none runs",
   "the car moves or AP is engaged", "the image does not fit, or the byte count is wrong", "a flash write failed",
-  "the SHA-256 does not match", "this is not a valid ESP32-H2 app image", "the board got no data for 30 s",
+  "the SHA-256 does not match", "this is not a valid app image for this chip and board", "the board got no data for 30 s",
   "the phone disconnected", "the update was aborted", "the running image is not confirmed yet"];
 const otaErrText = n => OTA_ERR_TEXT[n] || `status ${n}`;
 
@@ -148,18 +149,64 @@ const nextChunk = c => CHUNK_STEPS.find(x => x < c) || 0;
 // The page cannot read the MTU. iOS and macOS use 185 (182 per write). Others reach 247 or more.
 const platformChunk = ua => (/iPhone|iPad|iPod|Macintosh|Mac OS X/.test(ua || "") ? 180 : 240);
 
-const IMG = { MAGIC: 0xE9, CHIP_ID_H2: 0x0010, DESC_MAGIC: 0xABCD5432, DESC_AT: 32, PROJECT: "scrl-ble-board" };
+// The boards of the firmware: Kconfig SCRL_BOARD_ID and the IDF target of each (test/scrl.mjs checks this table
+// against the fixture). A T-2CAN build for can0 or can1 has the same board ID: the hardware is the same.
+// All boards are one device type in the app (H2_TYPE): same firmware, same rows. listenOnly: a build that never
+// transmits (Kconfig SCRL_NEVER_TX), so the op mode cannot be Active.
+const BOARDS = {
+  "nanoh2-minican": { chip: "esp32h2", name: "M5Stack NanoH2", zh: "M5Stack NanoH2" },
+  "m5stack-atom": { chip: "esp32", name: "M5Stack ATOM Lite", zh: "M5Stack ATOM Lite" },
+  "m5stack-atom-matrix": { chip: "esp32", name: "M5Stack ATOM Matrix", zh: "M5Stack ATOM Matrix" },
+  "m5stack-atom-swap-pins": { chip: "esp32", name: "M5Stack ATOM Lite (TX/RX swapped)", zh: "M5Stack ATOM Lite（TX/RX 互换）" },
+  "esp32-generic-twai": { chip: "esp32", name: "ESP32 DevKit", zh: "ESP32 开发板" },
+  "esp32-generic-twai-sniffer": { chip: "esp32", name: "ESP32 DevKit (listen only)", zh: "ESP32 开发板（只听）", listenOnly: true },
+  "esp32-mcp2515": { chip: "esp32", name: "ESP32 + MCP2515", zh: "ESP32 + MCP2515" },
+  "esp32-lilygo": { chip: "esp32", name: "LilyGO T-CAN485", zh: "LilyGO T-CAN485" },
+  "ttgo-tdisplay": { chip: "esp32", name: "TTGO T-Display", zh: "TTGO T-Display" },
+  "lilygo-t2can": { chip: "esp32s3", name: "LilyGO T-2CAN", zh: "LilyGO T-2CAN" },
+  "lilygo-t2can-fd": { chip: "esp32s3", name: "LilyGO T-2CAN FD", zh: "LilyGO T-2CAN FD" },
+  "waveshare-s3-can": { chip: "esp32s3", name: "Waveshare S3-CAN", zh: "Waveshare S3-CAN" },
+};
+// esp_chip_id_t in ESP-IDF esp_app_format.h.
+const CHIP_IDS = { esp32: 0x0000, esp32s3: 0x0009, esp32h2: 0x0010 };
+const CAN_NAMES = { twai: "TWAI", mcp2515: "MCP2515", mcp2518fd: "MCP2518FD" };
+// The board of an Info JSON. Firmware 0.1.0 had no "can" field and ran only on the NanoH2 with TWAI.
+function boardOf(info) {
+  if (!info) return null;
+  return { id: info.board || "nanoh2-minican", chip: info.chip || "esp32h2", can: info.can || "twai" };
+}
+// True for a build that never transmits.
+const boardListenOnly = info => !!(info && (BOARDS[boardOf(info).id] || {}).listenOnly);
+// Name for the user. Without Info yet: "BLE board".
+function boardName(info, zh = false) {
+  const b = info && BOARDS[boardOf(info).id];
+  return b ? (zh ? b.zh : b.name) : info && info.board ? info.board : zh ? "BLE模块" : "BLE board";
+}
+
+// MAGIC/DESC_*: ESP-IDF image and esp_app_desc_t. BOARD_*: the board descriptor of the firmware
+// (ble-board/main/scrl_board_desc.h), right after esp_app_desc_t: magic, version, board[32], can[16].
+const IMG = { MAGIC: 0xE9, DESC_MAGIC: 0xABCD5432, DESC_AT: 32, PROJECT: "scrl-ble-board",
+  BOARD_MAGIC: 0x4C524353, BOARD_VERSION: 1, BOARD_AT: 288, BOARD_LEN: 56 };
 const cstr = (b, o, n) => { let s = ""; for (let i = o; i < o + n && b[i]; i++) s += String.fromCharCode(b[i]); return s; };
+const chipName = id => Object.keys(CHIP_IDS).find(k => CHIP_IDS[k] === id);
 // Checks of an ESP-IDF app image that need no hash. Offsets: image header 24 bytes (chip ID at 12, "hash
 // appended" at 23), first segment header 8 bytes, then esp_app_desc_t (magic, version at +16, project at +48,
-// time at +80, date at +96, IDF version at +112).
-function checkImage(b) {
-  const errors = [];
-  const info = { size: b.length, version: "", project: "", built: "", idf: "", hashAppended: false };
-  if (b.length < IMG.DESC_AT + 256) { errors.push("The file is too small for an app image."); return { errors, info }; }
+// time at +80, date at +96, IDF version at +112), then the board descriptor.
+// target = boardOf(Info) of the connected board, or null. With a target the chip and the board ID must match it,
+// as the firmware checks them. warnings: the image is good for the board, but the user must know something.
+function checkImage(b, target = null) {
+  const errors = [], warnings = [];
+  const info = { size: b.length, version: "", project: "", built: "", idf: "", hashAppended: false, chip: "", board: "", can: "" };
+  if (b.length < IMG.BOARD_AT + IMG.BOARD_LEN) { errors.push("The file is too small for an app image."); return { errors, warnings, info }; }
   if (b.length > OTA.SLOT_SIZE) errors.push(`The image has ${b.length} bytes. The app slot holds ${OTA.SLOT_SIZE}.`);
   if (b[0] !== IMG.MAGIC) errors.push("The first byte is not 0xE9. This is not an ESP app image.");
-  if (u16(b, 12) !== IMG.CHIP_ID_H2) errors.push(`The chip ID is 0x${u16(b, 12).toString(16)}. The board needs 0x10 (ESP32-H2).`);
+  info.chip = chipName(u16(b, 12)) || "";
+  if (target) {
+    const want = CHIP_IDS[target.chip];
+    if (u16(b, 12) !== want) errors.push(`The chip ID is 0x${u16(b, 12).toString(16)}${info.chip ? ` (${info.chip})` : ""}. This board needs 0x${(want ?? 0).toString(16)} (${target.chip}).`);
+  } else if (!info.chip) {
+    errors.push(`The chip ID is 0x${u16(b, 12).toString(16)}. No board of this firmware has that chip.`);
+  }
   if (u32(b, IMG.DESC_AT) !== IMG.DESC_MAGIC) {
     errors.push("The image has no app description.");
   } else {
@@ -170,9 +217,21 @@ function checkImage(b) {
     info.idf = cstr(b, d + 112, 32);
     if (info.project !== IMG.PROJECT) errors.push(`The project name is "${info.project}". The board needs "${IMG.PROJECT}".`);
   }
+  const d = IMG.BOARD_AT;
+  if (u32(b, d) !== IMG.BOARD_MAGIC || u32(b, d + 4) !== IMG.BOARD_VERSION) {
+    errors.push("The image has no board ID (firmware before 0.2.0). The board refuses it.");
+  } else {
+    info.board = cstr(b, d + 8, 32);
+    info.can = cstr(b, d + 40, 16);
+    if (target && info.board !== target.id) {
+      errors.push(`The image is for the board "${info.board}"${BOARDS[info.board] ? ` (${BOARDS[info.board].name})` : ""}. This board is "${target.id}". The board refuses it.`);
+    } else if (target && info.can && info.can !== target.can) {
+      warnings.push(`The image uses the CAN controller ${CAN_NAMES[info.can] || info.can}. The board now uses ${CAN_NAMES[target.can] || target.can}. On a T-2CAN that is the other channel: move the Vehicle CAN wires to that terminal before the update.`);
+    }
+  }
   info.hashAppended = b[23] === 1;
   if (!info.hashAppended) errors.push("The image has no SHA-256 at its end.");
-  return { errors, info };
+  return { errors, warnings, info };
 }
 async function sha256(b) { return new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", b)); }
 // An ESP-IDF image ends with the SHA-256 of all bytes before it. A damaged download fails here.
@@ -192,5 +251,5 @@ export {
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
   SETTING_KEYS, LIMITS, parseSettings, settingsErrors, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
   creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, IMG, checkImage, sha256, appendedHashOk, hex,
-  uptimeText,
+  uptimeText, BOARDS, CHIP_IDS, CAN_NAMES, boardOf, boardName, boardListenOnly,
 };
