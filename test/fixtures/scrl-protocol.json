@@ -1,0 +1,1273 @@
+{
+ "about": "Protocol of the H2 board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
+ "firmware_commit": "3c463d0",
+ "flags": {
+  "TX_ALLOWED": 1,
+  "TIMER_ARMED": 2,
+  "ACTIVE": 4,
+  "WRONG_BUS": 8,
+  "OTA_BLIND": 16,
+  "ENABLED": 32,
+  "BUS_OFF_LOCK": 64,
+  "BLE_OTA": 128,
+  "AUTOPARK": 256,
+  "TESLA_OTA": 512,
+  "HW4_SEEN": 1024,
+  "IMAGE_PENDING": 2048,
+  "PINS_CHECKED": 4096,
+  "PAIRING_OPEN": 8192,
+  "CAN_RUNNING": 16384
+ },
+ "cmd": {
+  "RESET_COUNTERS": 1,
+  "REBOOT": 2,
+  "FORGET_BONDS": 3,
+  "FACTORY_RESET": 4,
+  "CONFIRM_IMAGE": 5,
+  "SET_PASSKEY": 6
+ },
+ "ota": {
+  "OP_BEGIN": 1,
+  "OP_END": 2,
+  "OP_ABORT": 3,
+  "EVT_BEGIN": 1,
+  "EVT_CREDIT": 2,
+  "EVT_END": 3,
+  "EVT_STOPPED": 4,
+  "WINDOW": 4096,
+  "CREDIT_STEP": 2048,
+  "IDLE_MS": 30000,
+  "CONFIRM_MS": 600000,
+  "EVENT_LEN": 6
+ },
+ "ota_err": {
+  "OK": 0,
+  "REQUEST": 1,
+  "STATE": 2,
+  "NOT_PARKED": 3,
+  "SIZE": 4,
+  "FLASH": 5,
+  "SHA": 6,
+  "IMAGE": 7,
+  "TIMEOUT": 8,
+  "LINK": 9,
+  "ABORTED": 10,
+  "PENDING": 11
+ },
+ "uuids": {
+  "service": "e5910001-51ba-4d0b-8422-5cb9dc778552",
+  "info": "e5910002-51ba-4d0b-8422-5cb9dc778552",
+  "status": "e5910003-51ba-4d0b-8422-5cb9dc778552",
+  "live": "e5910004-51ba-4d0b-8422-5cb9dc778552",
+  "settings": "e5910005-51ba-4d0b-8422-5cb9dc778552",
+  "command": "e5910006-51ba-4d0b-8422-5cb9dc778552",
+  "log": "e5910007-51ba-4d0b-8422-5cb9dc778552",
+  "otaCtrl": "e5910008-51ba-4d0b-8422-5cb9dc778552",
+  "otaData": "e5910009-51ba-4d0b-8422-5cb9dc778552"
+ },
+ "slot_size": 1966080,
+ "vectors": {
+  "status_json": "{\"scroll_ack_sent_count\":16909060,\"scroll_ack_diag\":{\"phase\":\"SecondPending\",\"block\":\"gap\",\"native_age_ms\":2,\"das_age_ms\":40,\"das_ap_state\":6,\"das_hands_on\":3,\"vehicle_bus\":\"can0\",\"tx_allowed\":true,\"pairs_aborted\":7,\"timer_armed\":true},\"op\":1,\"flags\":1061,\"rx\":[1000,10,20,0,30,40,50,1],\"tx\":[8,2,3],\"boff\":1,\"rst\":1,\"pwr\":42,\"up\":3600,\"rxpin\":2}",
+  "live_hex": "020e0603250403020107000200280000000000",
+  "big_status_json": "{\"scroll_ack_sent_count\":4294967295,\"scroll_ack_diag\":{\"phase\":\"EpisodeDone\",\"block\":\"das_hands_on\",\"native_age_ms\":4294967295,\"das_age_ms\":4294967295,\"das_ap_state\":255,\"das_hands_on\":255,\"vehicle_bus\":null,\"tx_allowed\":false,\"pairs_aborted\":4294967295,\"timer_armed\":false},\"op\":0,\"flags\":65535,\"rx\":[4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,4294967295],\"tx\":[4294967295,4294967295,4294967295],\"boff\":4294967295,\"rst\":15,\"pwr\":4294967295,\"up\":4294967295,\"rxpin\":-1}",
+  "big_live_hex": "0308ffffffffffffffffffffffffff00000000",
+  "phases": [
+   "Armed",
+   "Delay",
+   "SecondPending",
+   "EpisodeDone"
+  ],
+  "blocks": [
+   "none",
+   "disabled",
+   "tx_denied",
+   "wrong_bus",
+   "stale_native",
+   "not_hw4",
+   "stale_das",
+   "das_ap_state",
+   "das_hands_on",
+   "native_idle",
+   "episode_done",
+   "pair_aborted",
+   "timer",
+   "delay",
+   "gap"
+  ],
+  "default_settings_json": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+  "limits": {
+   "delay_max": 5000,
+   "gap_max": 2000,
+   "interval_min": 1000,
+   "interval_max": 10000,
+   "mode_max": 1,
+   "pattern_max": 3
+  },
+  "status_max": 512,
+  "live_len": 19
+ },
+ "writes": [
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":300}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 300,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":600}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":1000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 1000,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":1500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 1500,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":2000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 2000,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":3000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 3000,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":0,\"delay_ms\":5000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 5000,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":1,\"interval_ms\":2500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 1,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":1,\"interval_ms\":5000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 1,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 5000,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":1,\"interval_ms\":7500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 1,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 7500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"mode\":1,\"interval_ms\":10000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 1,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 10000,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":100}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":200}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 200,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":300}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 300,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":400}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 400,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 500,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":600}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 600,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":700}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 700,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":800}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 800,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":900}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 900,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":1000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 1000,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":1500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 1500,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":2000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 2000,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"pattern\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"pattern\":1}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 1,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"pattern\":2}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"pattern\":3}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 3,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"enabled\":true}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"enabled\":false}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"op_mode\":1}",
+   "result": 0,
+   "op_mode_named": true,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"op_mode\":0}",
+   "result": 0,
+   "op_mode_named": true,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"delay_ms\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 0,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"delay_ms\":5000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 5000,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 0,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"gap_ms\":2000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 2000,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"interval_ms\":1000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 1000,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"interval_ms\":10000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 10000,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "write": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "result": 0,
+   "op_mode_named": true,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":300}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 300,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":600}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 600,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":1000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 1000,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":1500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 1500,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":2000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 2000,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":3000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 3000,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":0,\"delay_ms\":5000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 0,
+    "pattern": 2,
+    "delay_ms": 5000,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":1,\"interval_ms\":2500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 2500,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":1,\"interval_ms\":5000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 5000,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":1,\"interval_ms\":7500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 7500,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"mode\":1,\"interval_ms\":10000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 10000,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":100}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 100,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":200}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 200,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":300}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 300,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":400}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 400,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 500,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":600}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 600,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":700}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 700,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":800}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 800,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":900}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 900,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":1000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 1000,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":1500}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 1500,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":2000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 2000,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"pattern\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 0,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"pattern\":1}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 1,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"pattern\":2}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"pattern\":3}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 3,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"enabled\":true}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"enabled\":false}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"op_mode\":1}",
+   "result": 0,
+   "op_mode_named": true,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"op_mode\":0}",
+   "result": 0,
+   "op_mode_named": true,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"delay_ms\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 0,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"delay_ms\":5000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 5000,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 0,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"gap_ms\":2000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 2000,
+    "interval_ms": 3333,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"interval_ms\":1000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 1000,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"interval_ms\":10000}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 10000,
+    "op_mode": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "write": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "result": 0,
+   "op_mode_named": true,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0
+   }
+  }
+ ],
+ "passkeys": [
+  {
+   "text": "123456",
+   "ok": true,
+   "passkey": 123456
+  },
+  {
+   "text": "000042",
+   "ok": true,
+   "passkey": 42
+  },
+  {
+   "text": "000000",
+   "ok": true,
+   "passkey": 0
+  },
+  {
+   "text": "999999",
+   "ok": true,
+   "passkey": 999999
+  }
+ ]
+}
