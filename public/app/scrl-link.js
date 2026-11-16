@@ -111,18 +111,23 @@ export class ScrlLink extends LinkBase {
   // ---- connection
   async open() {
     this.emit("state", { connecting: true });
+    this.t0 = Date.now();
     await step("GATT connect", () => this.t.open());
+    this.log(`board: GATT connected, characteristics found ${this.since()}`);
     if (this.retired) throw new Error("this link was replaced by a new connection");
     await this.session();
   }
   async reconnect() { return this.open(); }
+  // Time since the connect started, for the log: the board drops a link that is not authenticated after 30 s.
+  since() { return `(+${((Date.now() - (this.t0 || Date.now())) / 1000).toFixed(1)} s)`; }
 
   // After the GATT connection: Info is open. The first Status read starts the pairing. The board drops a link that
   // is not authenticated after 30 s, so read at once and try again until the read works or the link drops.
   async session() {
     const t = this.t, B = this.board;
     B.info = null; B.status = null; B.live = null; B.flags = 0;
-    try { B.info = JSON.parse(dec.decode(await t.read("info"))); } catch (e) { this.log(`board: Info read failed: ${e.message}`, "warn"); }
+    try { B.info = JSON.parse(dec.decode(await t.read("info"))); this.log(`board: Info read ${this.since()}`); }
+    catch (e) { this.log(`board: Info read failed ${this.since()}: ${errText(e)}`, "warn"); }
     // A paired phone gets the answer at once. Show the pairing hint only when the read fails or takes long.
     let hinted = false;
     const hint = () => { if (!hinted) { hinted = true; this.emit("pairing", {}); } };
@@ -130,7 +135,12 @@ export class ScrlLink extends LinkBase {
     let first = null, lastErr = null;
     const until = Date.now() + 45000;
     while (!first && t.connected && Date.now() < until) {
-      try { first = await t.read("status"); } catch (e) { lastErr = e; hint(); await sleep(1500); }
+      try { first = await t.read("status"); } catch (e) {
+        lastErr = e;
+        this.log(`board: Status read failed ${this.since()}: ${errText(e)}`, "warn");
+        hint();
+        await sleep(1500);
+      }
     }
     clearTimeout(slow);
     if (!first) {
@@ -139,9 +149,11 @@ export class ScrlLink extends LinkBase {
       throw e;
     }
     // Each later step names itself in its error: the connect dialog and the log then show the step that failed.
+    this.log(`board: Status read, ${first.length} bytes ${this.since()}`);
     await step("Status data", () => this.takeStatus(first), first);
     let raw = null;
     await step("Settings read", async () => { raw = await t.read("settings"); });
+    this.log(`board: Settings read ${this.since()}`);
     await step("Settings data", () => { B.settings = SC.parseSettings(dec.decode(raw)); }, raw);
     // The subscriptions need the authenticated link, so they come after the first good read.
     await step("Live subscribe", () => t.subscribe("live", b => { try { this.takeLive(SC.parseLive(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } }));
@@ -392,6 +404,7 @@ export class ScrlLink extends LinkBase {
     let lastErr = null;
     while (Date.now() < until) {
       try {
+        this.t0 = Date.now();
         await t.open();
         this.expectRestart = false;
         await this.session();
