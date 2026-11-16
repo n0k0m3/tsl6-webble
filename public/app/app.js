@@ -100,8 +100,8 @@ export async function gate(type, opts = {}) {
   if (!tested && !READ_ONLY.has(type) && !opts.read && !S.prefs.skipUntested && !warned.has(type) && !S.mock) {
     // The H2 board gets its own commands, not the vendor bytes: say so.
     const ok = await confirmBox(isH2() ? {
-      en: `${cmdName(type)} is not tested with the H2 board on a car yet. Send it?`,
-      zh: `${cmdName(type)} 尚未在实车上用H2模块测试。确定发送吗？`,
+      en: `${cmdName(type)} is not tested with the BLE board on a car yet. Send it?`,
+      zh: `${cmdName(type)} 尚未在实车上用BLE模块测试。确定发送吗？`,
     } : {
       en: `${cmdName(type)} is not tested on a car yet. The app sends the same bytes as the vendor app. Send it?`,
       zh: `${cmdName(type)} 尚未在实车上测试。本应用发送与原厂小程序相同的数据。确定发送吗？`,

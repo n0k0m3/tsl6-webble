@@ -2,6 +2,7 @@
 // The command logic is the same as before the redesign; only the grouping and the look changed.
 import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab, isH2 } from "../app.js";
+import { boardName } from "../../lib/scrl.js";
 import { H2_TYPE, H2_ROWS } from "../../lib/h2-menus.js";
 import { h2PromptDiag } from "../../lib/scrl-tsl6.js";
 import { boardBanner } from "./board.js";
@@ -208,7 +209,7 @@ definePage("status", () => {
         h("li", null, L("Keep the car awake (climate or Camp mode on).", "保持车辆唤醒（打开空调或露营模式）。")),
         h("li", null, L("Close the vendor Mini App, or turn off Bluetooth on that phone. The module takes one phone at a time.", "关闭原厂小程序，或关闭那部手机的蓝牙。模块一次只连接一部手机。")),
         h("li", null, L("The default BLE password is 1234.", "默认蓝牙密码为 1234。")),
-        h("li", null, L("H2 board: pick SCRL-xxxx. At the first connection the phone asks for the passkey from the label on the board.", "H2模块：选择 SCRL-xxxx。首次连接时，手机会要求输入模块标签上的配对码。")))));
+        h("li", null, L("BLE board (NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware): pick SCRL-xxxx. At the first connection the phone asks for the passkey from the label on the board.", "BLE模块（NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板）：选择 SCRL-xxxx。首次连接时，手机会要求输入模块标签上的配对码。")))));
     el.querySelector(".btn.primary")?.setAttribute("data-id", "connect");
   }
 
@@ -249,7 +250,7 @@ definePage("status", () => {
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
         h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })]
-          : h("span", { class: "vehicle-name" }, isH2() ? L("H2 board", "H2模块") : "TSL6")),
+          : h("span", { class: "vehicle-name" }, isH2() ? L(boardName(S.link.board && S.link.board.info), boardName(S.link.board && S.link.board.info, true)) : "TSL6")),
         // The board has no gauges: its button opens the Board page (state, counters, board actions).
         isH2() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
           : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
