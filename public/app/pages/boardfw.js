@@ -1,8 +1,10 @@
-// Board firmware page: update of the H2 board over Bluetooth (the "scrl-ble-board" firmware, an ESP-IDF image).
+// Board firmware page: update of the BLE board over Bluetooth (the "scrl-ble-board" firmware, an ESP-IDF image).
 // The TSL6 Firmware page is a different flasher for a different chip. It keeps its own page and links (#firmware).
 //
-// The page checks the file before it sends a byte: ESP image magic, chip ID, project name, size, and the SHA-256 at
-// the end of the image. After a good update the board restarts into the new image. The image stays in Listen-Only
+// The page checks the file before it sends a byte: ESP image magic, chip ID, project name, board ID, size, and the
+// SHA-256 at the end of the image. The chip and the board ID must match the connected board, as the firmware checks
+// them: the same chip with other pins is not the same board. An image with another CAN controller (a T-2CAN can0
+// image on a can1 board) is allowed, with a warning. After a good update the board restarts into the new image. The image stays in Listen-Only
 // until the phone confirms it. With no confirm in 10 minutes the board goes back to the old image.
 import { h, L, toast, confirmBox, clear, icon } from "../ui.js";
 import { S, definePage, onBus, isH2, switchTab } from "../app.js";
@@ -10,26 +12,43 @@ import * as SC from "../../lib/scrl.js";
 import { boardBanner } from "./board.js";
 
 // The session lives at module scope: a language change mounts a new page, and an update must go on.
-const U = { image: null, fileName: "", errors: [], running: false, canAbort: false, abortAsked: false, sent: 0, size: 0, text: "", tone: "" };
+const U = { image: null, raw: null, checkedFor: "", fileName: "", errors: [], warnings: [], running: false, canAbort: false, abortAsked: false, sent: 0, size: 0, text: "", tone: "" };
 const board = () => (isH2() && S.link.connected ? S.link.board : null);
 let redraw = () => {};
 
-async function loadFile(file) {
-  U.image = null; U.errors = []; U.fileName = file.name; U.text = ""; U.tone = "";
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const { errors, info } = SC.checkImage(bytes);
-  if (!errors.length && !(await SC.appendedHashOk(bytes))) errors.push("The SHA-256 at the end of the image is wrong. The file is damaged.");
+// The board that the image must fit: the connected board, or null.
+const target = () => { const B = board(); return B && B.info ? SC.boardOf(B.info) : null; };
+const targetKey = () => { const t = target(); return t ? `${t.id}/${t.chip}/${t.can}` : ""; };
+
+// Check the loaded file against the board that is connected now. The hash check ran once at load.
+function recheck() {
+  U.image = null; U.errors = []; U.warnings = [];
+  if (!U.raw) return;
+  const { errors, warnings, info } = SC.checkImage(U.raw.bytes, target());
+  if (!U.raw.hashOk) errors.push("The SHA-256 at the end of the image is wrong. The file is damaged.");
+  U.checkedFor = targetKey();
+  U.warnings = warnings;
   if (errors.length) U.errors = errors;
-  else U.image = { bytes, sha: await SC.sha256(bytes), info };
+  else U.image = { bytes: U.raw.bytes, sha: U.raw.sha, info };
+}
+
+async function loadFile(file) {
+  U.raw = null; U.fileName = file.name; U.text = ""; U.tone = "";
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  U.raw = { bytes, sha: await SC.sha256(bytes), hashOk: bytes.length > 32 && await SC.appendedHashOk(bytes) };
+  recheck();
   redraw();
 }
 
 async function start() {
-  const link = S.link, img = U.image;
+  const link = S.link;
+  if (U.checkedFor !== targetKey()) { recheck(); redraw(); }
+  const img = U.image;
   if (!img || U.running || !board()) return;
+  const warn = U.warnings.length ? `\n\n${U.warnings.join("\n")}` : "";
   if (!(await confirmBox({
-    en: `Send ${img.info.project} ${img.info.version} to the board? The car must be parked. The board is in Listen-Only during the update and until you confirm the new image.`,
-    zh: `将 ${img.info.project} ${img.info.version} 发送到模块吗？车辆必须已停好。更新期间以及确认新固件之前，模块处于只听模式。`,
+    en: `Send ${img.info.project} ${img.info.version} for ${img.info.board} to the board? The car must be parked. The board is in Listen-Only during the update and until you confirm the new image.${warn}`,
+    zh: `将 ${img.info.project} ${img.info.version}（${img.info.board}）发送到模块吗？车辆必须已停好。更新期间以及确认新固件之前，模块处于只听模式。${warn}`,
   }, L("Board firmware", "模块固件"), L("Send", "发送"), { focusCancel: true }))) return;
   U.running = true; U.canAbort = false; U.abortAsked = false; U.sent = 0; U.size = img.bytes.length; U.tone = "";
   redraw();
@@ -73,15 +92,24 @@ definePage("boardfw", () => {
 
   function draw() {
     const B = board();
+    if (U.raw && !U.running && U.checkedFor !== targetKey()) recheck();
     boardBanner(banner);
     const pending = !!(B && (B.flags & SC.FLAG.IMAGE_PENDING));
-    nowOut.textContent = !B ? L("Connect to an H2 board first (Car tab).", "请先连接H2模块（车辆页）。")
-      : L(`The board runs ${B.info && B.info.fw ? B.info.fw : "?"} (build ${B.info && B.info.build ? B.info.build : "?"}).`, `模块运行 ${B.info && B.info.fw ? B.info.fw : "?"}（构建 ${B.info && B.info.build ? B.info.build : "?"}）。`);
+    const t = target();
+    const can = t ? SC.CAN_NAMES[t.can] || t.can : "?";
+    nowOut.textContent = !B ? L("Connect to a BLE board first (Car tab).", "请先连接BLE模块（车辆页）。")
+      : L(`The board is ${SC.boardName(B.info)} (${t ? t.id : "?"}, ${t ? t.chip : "?"}, CAN ${can}). It runs ${B.info && B.info.fw ? B.info.fw : "?"} (build ${B.info && B.info.build ? B.info.build : "?"}).`,
+        `模块为 ${SC.boardName(B.info, true)}（${t ? t.id : "?"}，${t ? t.chip : "?"}，CAN ${can}），运行 ${B.info && B.info.fw ? B.info.fw : "?"}（构建 ${B.info && B.info.build ? B.info.build : "?"}）。`);
     chunkOut.textContent = S.link && isH2() ? L(`Bytes per write: ${S.link.chunk}. The page cannot read the link limit. After a cut write it uses the next smaller size. You can set it in Device > Bytes per BLE write.`,
       `每次写入：${S.link.chunk} 字节。页面无法读取链路上限。写入被截断后会改用更小的值。可在「设备 > 每次写入字节数」中设置。`) : "";
-    imgOut.className = "out" + (U.errors.length ? " bad" : "");
+    imgOut.className = "out" + (U.errors.length ? " bad" : U.warnings.length ? " warn" : "");
+    const ii = U.image && U.image.info;
     imgOut.textContent = U.errors.length ? U.errors.join("\n")
-      : U.image ? `${U.image.info.project} ${U.image.info.version}, ${L("built", "构建于")} ${U.image.info.built}, ESP-IDF ${U.image.info.idf}\n${U.image.bytes.length} ${L("bytes", "字节")}, SHA-256 ${SC.hex(U.image.sha).slice(0, 16)}...`
+      : ii ? `${ii.project} ${ii.version}, ${L("built", "构建于")} ${ii.built}, ESP-IDF ${ii.idf}\n`
+        + `${L("Board", "模块")} ${ii.board} (${ii.chip}, CAN ${SC.CAN_NAMES[ii.can] || ii.can})\n`
+        + `${U.image.bytes.length} ${L("bytes", "字节")}, SHA-256 ${SC.hex(U.image.sha).slice(0, 16)}...`
+        + (U.warnings.length ? `\n\n${U.warnings.join("\n")}` : "")
+        + (!B ? `\n${L("Connect to the board: the app then checks the image against it.", "请连接模块：应用会再按该模块检查固件。")}` : "")
         : "";
     prog.hidden = !U.running;
     prog.max = U.size || 1; prog.value = U.sent;
@@ -101,7 +129,7 @@ definePage("boardfw", () => {
           "请停好车并保持唤醒。更新后模块会重启，应用会自动重新连接。请在10分钟内确认新固件，否则模块会回退到旧固件。")))),
     h("div", { class: "sec-label" }, L("1. Image file", "1. 固件文件")),
     h("div", { class: "card" }, h("div", { class: "form" }, fileIn, imgOut,
-      h("p", { class: "row-note fw-note" }, L("The file is scrl-ble-board.bin from the firmware build. The app checks it before it sends a byte.", "文件为固件编译生成的 scrl-ble-board.bin。发送前应用会先检查文件。")))),
+      h("p", { class: "row-note fw-note" }, L("The file is scrl-<build>.bin from build/out of the firmware build (tools/build-boards.sh), for the board that is connected. Not the -full.bin file. The app checks it before it sends a byte.", "文件为固件编译（tools/build-boards.sh）在 build/out 中生成的 scrl-<build>.bin，须与所连模块一致。不要用 -full.bin 文件。发送前应用会先检查文件。")))),
     h("div", { class: "sec-label" }, L("2. Update", "2. 更新")),
     h("div", { class: "card" }, h("div", { class: "form" }, h("div", { class: "btns" }, startBtn, abortBtn), prog, msgOut, chunkOut)),
     h("p", { class: "sec-foot" }, h("button", { class: "linkish", type: "button", onclick: () => switchTab("status") }, icon("chevron-left", 16), L("Car tab", "车辆页"))));

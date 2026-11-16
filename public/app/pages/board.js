@@ -1,4 +1,4 @@
-// Board page: what only the H2 board has. Warnings, op mode, live state, exact times, counters, pairing.
+// Board page: what only the BLE board has. Warnings, op mode, live state, exact times, counters, pairing.
 // The Car and Settings tabs show the board with the TSL6 rows that it shares. The rest is here.
 // boardBanner() draws the warnings. The Car tab shows them too, because one of them has a 10-minute limit.
 import { h, L, toast, confirmBox, promptBox, clear, toggle, icon } from "../ui.js";
@@ -42,6 +42,10 @@ function warnings() {
       `模块发生了${st.busOff}次总线关闭，已锁定为只听模式。解除前请检查接线。`), L("Release lock", "解除锁定"), releaseLock]);
   }
   if (has(F.WRONG_BUS)) list.push(["wrongbus", "bad", L("This bus carries 0x370, so it is not Vehicle CAN. The board does not send on it.", "此总线上有0x370，不是车辆CAN。模块不会在此发送。")]);
+  if (B.info && SC.boardListenOnly(B.info)) {
+    list.push(["listenonly", "", L("This is the listen-only build. It never sends, whatever the op mode says. To send, flash the esp32-generic-twai build.",
+      "这是只听版本固件，无论运行模式如何都不会发送。如需发送，请刷写 esp32-generic-twai 版本。")]);
+  }
   if (!has(F.PINS_CHECKED)) {
     list.push(["pins", "", L(`This firmware build does not name the CAN pins, so it cannot go to Active.${st.rxPin >= 0 ? ` It listens on GPIO${st.rxPin} now.` : ""} Set the pin choice in the build after the continuity check.`,
       `此固件未指定CAN引脚，无法进入主动模式。${st.rxPin >= 0 ? `当前在GPIO${st.rxPin}上监听。` : ""}请在导通检查后于编译配置中设置引脚。`)]);
@@ -51,7 +55,7 @@ function warnings() {
   if (has(F.CAN_RUNNING) && st.rx.all === 0 && st.uptime > 10) list.push(["silent", "", L("The board gets no CAN frames. The car sleeps, or the wiring is wrong.", "模块未收到CAN数据。车辆休眠，或接线有误。")]);
   if (has(F.AUTOPARK)) list.push(["autopark", "", L("Autopark runs. The board does not send.", "自动泊车进行中，模块不发送。")]);
   if (has(F.TESLA_OTA)) list.push(["teslaota", "", L("A Tesla software update runs. The board does not send.", "特斯拉软件更新进行中，模块不发送。")]);
-  if (st.opMode === 1 && !has(F.ACTIVE) && !list.some(a => ["pending", "lock", "pins"].includes(a[0]))) {
+  if (st.opMode === 1 && !has(F.ACTIVE) && !list.some(a => ["pending", "lock", "pins", "listenonly"].includes(a[0]))) {
     list.push(["held", "", L("The op mode setting is Active, but the board is in Listen-Only now.", "运行模式设为主动，但模块当前处于只听模式。")]);
   }
   return list;
@@ -148,8 +152,8 @@ definePage("board", () => {
       el.className = "page narrow";
       el.append(h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("cpu", 24)),
-        h("h2", null, L("No H2 board", "未连接H2模块")),
-        h("p", null, L("This page is for the H2 board (M5Stack NanoH2 with the CAN unit). Connect to one first.", "本页用于H2模块（M5Stack NanoH2 加 CAN 单元）。请先连接。")))));
+        h("h2", null, L("No BLE board", "未连接BLE模块")),
+        h("p", null, L("This page is for a board with the BLE firmware (NanoH2, T-2CAN, ATOM and the other hypery boards). Connect to one first.", "本页用于刷了BLE固件的模块（NanoH2、T-2CAN、ATOM 及其他 hypery 板）。请先连接。")))));
       return;
     }
     el.className = "page cols";
@@ -199,7 +203,11 @@ definePage("board", () => {
     const st = B.status, lv = B.live;
     boardBanner(refs.banner);
     refs.opSw.set(st.opMode === 1);
-    refs.opSub.textContent = st.opMode !== 1 ? L("Listen-Only", "只听模式")
+    // The listen-only build cannot send: Active is locked. A stored Active can still be turned off.
+    const never = SC.boardListenOnly(B.info);
+    refs.opSw.disabled = never && st.opMode !== 1;
+    refs.opSub.textContent = never ? L("Listen-only build: never sends", "只听版本：从不发送")
+      : st.opMode !== 1 ? L("Listen-Only", "只听模式")
       : has(F.ACTIVE) ? L("Active now", "当前为主动模式") : L("Set to Active, held in Listen-Only (see the warnings)", "已设为主动，但被保持在只听模式（见上方提示）");
     const phase = lv ? SC.PHASES[lv.phase] || `code ${lv.phase}` : st.phase;
     const block = lv ? SC.BLOCKS[lv.block] || `code ${lv.block}` : st.block;

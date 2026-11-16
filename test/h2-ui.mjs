@@ -1,4 +1,4 @@
-// Browser test of the app with the H2 board, in headless Chrome. It needs playwright-core and a Chrome or Chromium:
+// Browser test of the app with the BLE board, in headless Chrome. It needs playwright-core and a Chrome or Chromium:
 //
 //   PLAYWRIGHT_CORE=/path/to/playwright-core/index.mjs CHROME=/usr/bin/google-chrome node test/h2-ui.mjs
 //
@@ -52,6 +52,9 @@ function image(project, { version = "9.9.9", size = 64 * 1024, board = "nanoh2-m
   return { name: `scrl-${board}${can === "twai" ? "" : "-can1"}.bin`, mimeType: "application/octet-stream", buffer: b };
 }
 const BIN = image("scrl-ble-board"), HELLO = image("hello_world");
+const T2 = image("scrl-ble-board", { board: "lilygo-t2can", chip: "esp32s3" });
+const T2_CAN1 = image("scrl-ble-board", { board: "lilygo-t2can", chip: "esp32s3", can: "mcp2515" });
+const WAVESHARE = image("scrl-ble-board", { board: "waveshare-s3-can", chip: "esp32s3" });
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, headless: true });
 const results = [];
@@ -88,7 +91,7 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2", {}, async page => {
   await connect(page);
   assert.deepEqual(await ids(page, "[data-page=car] [data-row]", "data-row"), ["vehicleType", "apAssist"]);
   assert.equal(await page.isVisible("[data-id=open-gauges]"), false, "no gauges for the board");
-  assert.match(await text(page, ".vehicle-name"), /H2 board/);
+  assert.match(await text(page, ".vehicle-name"), /M5Stack NanoH2/);
   await tab(page, "settings");
   assert.deepEqual(await ids(page, "[data-page=settings] [data-id^=set-]", "data-id"), ["set-search", "set-opmode", "set-time", "set-jg", "set-jj"]);
   assert.equal(await page.isVisible("[data-id=set-mianSwitch]"), false, "no master switch");
@@ -97,9 +100,10 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2", {}, async page => {
   assert.deepEqual(await ids(page, "[data-id^=tool-]", "data-id"), ["tool-board", "tool-boardfw", "tool-log", "tool-reset"]);
   await tab(page, "me");
   assert.equal(await page.isDisabled("[data-id=pref-hwType]"), true, "the type picker is locked for a board");
-  assert.match(await text(page, "[data-id=pref-hwType]"), /H2 board/);
+  assert.match(await text(page, "[data-id=pref-hwType]"), /BLE board: M5Stack NanoH2/);
   assert.equal(await page.isVisible("[data-id=enter-password]"), false, "the board has no BLE password");
   assert.match(await text(page, "[data-page=device]"), /Board ID\s*74dafe000001/);
+  assert.match(await text(page, "[data-page=device]"), /Board type\s*nanoh2-minican[\s\S]*Chip\s*esp32h2[\s\S]*CAN controller\s*TWAI/);
   // a paired phone gets no pairing hint
   assert.doesNotMatch(await page.locator("#toast").textContent().catch(() => ""), /passkey/);
 });
@@ -306,6 +310,50 @@ await scenario("update-cut-write-steps-down", "mock=h2&cut=200", {}, async page 
   await page.waitForFunction(() => /The new image runs/.test(document.querySelector("[data-id=bfw-msg]").textContent), null, { timeout: 90000 });
 });
 
+await scenario("t2can-refuses-other-boards-and-warns-on-can-change", "mock=h2&board=lilygo-t2can", {}, async page => {
+  await connect(page);
+  assert.match(await text(page, ".vehicle-name"), /LilyGO T-2CAN/);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-boardfw]");
+  assert.match(await text(page, "[data-page=firmware]"), /LilyGO T-2CAN \(lilygo-t2can, esp32s3, CAN TWAI\)/);
+  // An H2 image: wrong chip. A Waveshare image: same chip, other board. Neither is sent.
+  await page.setInputFiles("[data-id=bfw-file]", BIN);
+  await page.waitForFunction(() => /needs 0x9 \(esp32s3\)/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.isDisabled("[data-id=bfw-start]"), true, "an image for another chip is not sent");
+  await page.setInputFiles("[data-id=bfw-file]", WAVESHARE);
+  await page.waitForFunction(() => /for the board "waveshare-s3-can"/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.isDisabled("[data-id=bfw-start]"), true, "an image for another board is not sent");
+  // The can1 build for the same board: allowed, with the wiring warning in the page and in the confirm.
+  await page.setInputFiles("[data-id=bfw-file]", T2_CAN1);
+  await page.waitForFunction(() => /move the Vehicle CAN wires/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.isDisabled("[data-id=bfw-start]"), false);
+  await page.click("[data-id=bfw-start]");
+  assert.match(await text(page, ".dlg"), /lilygo-t2can[\s\S]*MCP2515.*now uses TWAI/);
+  await dlgOk(page);
+  await page.waitForFunction(() => /The new image runs/.test(document.querySelector("[data-id=bfw-msg]").textContent), null, { timeout: 90000 });
+  await tab(page, "status");
+  await page.click("[data-id=warn-pending]");
+  await toastIs(page, /confirmed/);
+  await tab(page, "me");
+  assert.match(await text(page, "[data-page=device]"), /CAN controller\s*MCP2515/);
+  // Now the board runs can1: the can0 image gets the warning the other way round.
+  await tab(page, "tools");
+  await page.click("[data-id=tool-boardfw]");
+  await page.setInputFiles("[data-id=bfw-file]", T2);
+  await page.waitForFunction(() => /TWAI. The board now uses MCP2515/.test(document.querySelector("[data-id=bfw-image]").textContent));
+});
+
+await scenario("listen-only-build-locks-active", "mock=h2&board=esp32-generic-twai-sniffer&lo", {}, async page => {
+  await connect(page);
+  assert.match(await text(page, ".vehicle-name"), /ESP32 DevKit \(listen only\)/);
+  await board(page);
+  assert.match(await text(page, "[data-id=board-banner]"), /listen-only build. It never sends/);
+  assert.equal(await page.isDisabled("[data-id=board-op]"), true, "Active is locked");
+  assert.match(await text(page, "[data-page=board]"), /Listen-only build: never sends/);
+  await tab(page, "me");
+  assert.match(await text(page, "[data-id=pref-hwType]"), /BLE board: ESP32 DevKit \(listen only\)/);
+});
+
 await scenario("pairing-hint-then-connect", "mock=h2&pair", {}, async page => {
   await page.click("[data-id=connect]");
   await toastIs(page, /type the 6 digits from the label/);
@@ -413,7 +461,7 @@ await fake("real-connect-path-board", { kind: "h2", name: "SCRL-FAKE" }, async p
   await page.click('.opt[data-v="2"]');
   // no board command ran on hardware yet: the app says so once per session (the mock runs skip this warning)
   await page.waitForSelector(".dlg");
-  assert.match(await text(page, ".dlg"), /not tested with the H2 board on a car yet/);
+  assert.match(await text(page, ".dlg"), /not tested with the BLE board on a car yet/);
   await dlgOk(page);
   await toastIs(page, /Saved/);
   await tab(page, "tools");

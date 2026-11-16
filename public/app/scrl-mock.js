@@ -1,9 +1,10 @@
-// Mock H2 board for UI wiring tests: open the app with ?mock=h2.
+// Mock BLE board for UI wiring tests: open the app with ?mock=h2.
 // It answers from the same notes as the codec (lib/scrl.js), so it proves nothing about the real board.
 //   ?mock=h2&pair     the first Status reads fail, as during a pairing
 //   ?mock=h2&lock     bus-off lock            ?mock=h2&pending   unconfirmed image
 //   ?mock=h2&cut=N    writes longer than N bytes are cut         ?mock=h2&lo   Scroll Ack off, Listen-Only
 //   ?mock=h2&nopair   the pairing never works: the board drops the link
+//   ?mock=h2&board=ID the board type (default nanoh2-minican)    ?mock=h2&can=mcp2515   its CAN controller (default twai)
 import * as SC from "../lib/scrl.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -18,6 +19,9 @@ export class MockH2Transport {
     this.passkey = ""; this.refused = 0;
     this.lock = q.has("lock"); this.pending = q.has("pending"); this.authFails = q.has("pair") ? 3 : 0;
     this.cut = Number(q.get("cut")) || 0;
+    this.board = SC.BOARDS[q.get("board")] ? q.get("board") : "nanoh2-minican";
+    this.chip = SC.BOARDS[this.board].chip;
+    this.can = q.get("can") || "twai";
     this.boot = Date.now(); this.sent = 1284; this.fw = "0.1.0"; this.rx = 0; this.ota = null; this.lines = [];
     this.say("BOOT reset reason 1, power-on count 42");
     this.say("CAN  started Active");
@@ -84,7 +88,7 @@ export class MockH2Transport {
     await sleep(40);
     if (!this.up) throw new Error("GATT Server is disconnected");
     if (name === "info") {
-      return enc.encode(`{"fw":"${this.fw}","build":"4d298926","built":"Nov 15 2026 15:33:32","idf":"v5.5.6","board":"nanoh2-minican","chip":"esp32h2","id":"74dafe000001","rst_log":[${this.pending ? 3 : 1},1,1,9]}`);
+      return enc.encode(`{"fw":"${this.fw}","build":"4d298926","built":"Nov 15 2026 15:33:32","idf":"v5.5.6","board":"${this.board}","chip":"${this.chip}","can":"${this.can}","id":"74dafe000001","rst_log":[${this.pending ? 3 : 1},1,1,9]}`);
     }
     if (this.q.has("nopair")) { if (++this.refused >= 3) this.drop(0); throw new Error("GATT Error: insufficient authentication"); }
     if (this.authFails > 0) { this.authFails--; throw new Error("GATT Error: insufficient authentication"); }
@@ -165,11 +169,16 @@ export class MockH2Transport {
         const all = new Uint8Array(o.size); let p = 0; for (const part of o.parts) { all.set(part, p); p += part.length; }
         const sha = await SC.sha256(all);
         if (!sha.every((v, i) => v === o.sha[i])) st = E.SHA;
-        else this.fw = SC.checkImage(all).info.version || this.fw;
+        else {
+          // As the firmware: the chip and the board ID must match this board.
+          const c = SC.checkImage(all, { id: this.board, chip: this.chip, can: this.can });
+          if (c.errors.length) { st = E.IMAGE; this.say(`UPD  image is for board "${c.info.board || "?"}", this is "${this.board}"`); }
+          else { this.fw = c.info.version || this.fw; this.nextCan = c.info.can || this.can; }
+        }
       }
       this.otaEvent(O.EVT_END, st);
       this.ota = null;
-      if (st === E.OK) { this.say("UPD  image written to ota_1 - restart"); setTimeout(() => { this.pending = true; this.boot = Date.now(); this.lines = []; this.drop(2000); this.say("UPD  new image runs from ota_1 - confirm it within 10 min"); }, 600); }
+      if (st === E.OK) { this.say("UPD  image written to ota_1 - restart"); setTimeout(() => { this.pending = true; this.can = this.nextCan || this.can; this.boot = Date.now(); this.lines = []; this.drop(2000); this.say("UPD  new image runs from ota_1 - confirm it within 10 min"); }, 600); }
     } else if (b[0] === O.OP_ABORT && b.length === 1) {
       const st = this.ota ? E.ABORTED : E.STATE;
       this.otaEvent(O.EVT_STOPPED, st);

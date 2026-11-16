@@ -1,7 +1,8 @@
 // Device tab: connection (was the Bluetooth tab), module info, restart, preferences (was the Me tab).
 import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go, isH2 } from "../app.js";
-import { CHUNK_STEPS, resetReasonName } from "../../lib/scrl.js";
+import { CHUNK_STEPS, resetReasonName, boardName, boardOf, CAN_NAMES } from "../../lib/scrl.js";
+const linkInfo = () => (S.link && S.link.board ? S.link.board.info : null);
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
 import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
 
@@ -53,7 +54,7 @@ definePage("me", () => {
       return h("div", { class: "card" },
         h("div", { class: "li first" }, h("span", { class: "chip" }, icon("bluetooth-off", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Not connected", "未连接"))),
-            h("div", { class: "li-sub" }, supported ? L("Pick TSL6, or SCRL-xxxx for an H2 board, in the browser's Bluetooth list.", "在浏览器的蓝牙列表中选择 TSL6，H2模块请选择 SCRL-xxxx。")
+            h("div", { class: "li-sub" }, supported ? L("Pick TSL6, or SCRL-xxxx for a BLE board, in the browser's Bluetooth list.", "在浏览器的蓝牙列表中选择 TSL6，BLE模块请选择 SCRL-xxxx。")
               : L("This browser has no Web Bluetooth.", "此浏览器不支持网页蓝牙。"))),
           supported ? h("button", { class: "btn primary small", type: "button", "data-id": "connect", onclick: () => connect({ all }) }, L("Connect", "连接")) : null),
         supported ? h("label", { class: "li check-row" }, allBox,
@@ -96,8 +97,12 @@ definePage("me", () => {
 
     const info = isH2() && S.link.board ? S.link.board.info : null;
     if (info) {
-      // H2 board: its own Info, not the TSL6 status bytes.
-      el.append(grp(h("div", { class: "sec-label" }, L("H2 board", "H2模块")), h("div", { class: "card" },
+      // BLE board: its own Info, not the TSL6 status bytes.
+      const bo = boardOf(info);
+      el.append(grp(h("div", { class: "sec-label" }, L(boardName(info), boardName(info, true))), h("div", { class: "card" },
+        infoRow("Board type", "模块类型", bo.id),
+        infoRow("Chip", "芯片", bo.chip),
+        infoRow("CAN controller", "CAN 控制器", CAN_NAMES[bo.can] || bo.can),
         infoRow("Board ID", "模块ID", info.id, true, true),
         infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
         infoRow("Built", "构建时间", info.built),
@@ -161,8 +166,8 @@ definePage("me", () => {
         if (v != null) { setHwType(Number(v)); render(); toast(L("Saved", "已保存"), "ok"); }
       } }, h("span", { class: "chip" }, icon("cpu", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
-          h("div", { class: "li-sub" }, isH2() ? L("Set by the connected board.", "由已连接的模块决定。") : L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
-        h("div", { class: "li-trail" }, h("span", { class: "val" }, isH2() ? L("H2 board", "H2模块") : (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), isH2() ? null : chev())),
+          h("div", { class: "li-sub" }, isH2() ? L("Set by the connected board. Every BLE board has the same rows.", "由已连接的模块决定。所有BLE模块的选项相同。") : L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
+        h("div", { class: "li-trail" }, h("span", { class: "val" }, isH2() ? L(`BLE board: ${boardName(linkInfo())}`, `BLE模块：${boardName(linkInfo(), true)}`) : (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), isH2() ? null : chev())),
       autoGaugeShown ? gaugeRow : null, driveRow, skipRow)));
 
     el.append(grp(h("div", { class: "sec-label" }, L("About", "关于")), h("div", { class: "card pad about" },

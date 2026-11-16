@@ -1,4 +1,4 @@
-// Link to the H2 board (M5Stack NanoH2 + Unit Mini CAN, firmware "scrl-ble-board").
+// Link to the BLE board (firmware "scrl-ble-board": the NanoH2 and the hypery ESP32 boards).
 //
 // ScrlLink has the same API as the TSL6 link (ble.js), so the pages work with both. It gives the pages a status in the
 // TSL6 layout and takes the TSL6 commands that the board can do (lib/scrl-tsl6.js). It refuses every other command.
@@ -30,7 +30,7 @@ export class GattTransport {
     this.onGone = () => this.onDisconnect();
     device.addEventListener("gattserverdisconnected", this.onGone);
   }
-  get name() { return this.device.name || "H2 board"; }
+  get name() { return this.device.name || "BLE board"; }
   get connected() { return !!(this.device.gatt && this.device.gatt.connected); }
   async open() {
     const U = SC.UUIDS;
@@ -125,7 +125,7 @@ export class ScrlLink extends LinkBase {
     await t.subscribe("otaCtrl", b => { try { this.onOtaEvent(SC.parseOtaEvent(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } });
     this.connected = true;
     this.authed = true;
-    this.log(`connected: ${this.name} (H2 board${B.info && B.info.fw ? `, firmware ${B.info.fw}` : ""})`, "ok");
+    this.log(`connected: ${this.name} (${SC.boardName(B.info)}${B.info && B.info.fw ? `, firmware ${B.info.fw}` : ""})`, "ok");
     this.emit("state", { connected: true });
     this.pushStatus(true);
     clearInterval(this.pollTimer);
@@ -214,7 +214,7 @@ export class ScrlLink extends LinkBase {
       case 0xb0: // gauge stream: the board has none. The Car tab reads the Live record.
         return null;
       default:
-        throw new Error(`the H2 board has no command ${cmd.toString(16).toUpperCase()}`);
+        throw new Error(`the board has no command ${cmd.toString(16).toUpperCase()}`);
     }
   }
   async send(cmd, payload) { await this.exec(cmd, payload); }
