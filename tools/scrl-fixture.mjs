@@ -1,4 +1,4 @@
-// Writes test/fixtures/scrl-protocol.json from the firmware of the H2 board.
+// Writes test/fixtures/scrl-protocol.json from the firmware of the BLE board (ble-board/ in flipper-tesla-fsd).
 //
 //   node tools/scrl-fixture.mjs <path of the flipper-tesla-fsd repo>
 //
@@ -45,6 +45,18 @@ function uuids() {
   return out;
 }
 
+// Board ID and IDF target of each board: Kconfig SCRL_BOARD_ID ("default "id" if SCRL_BOARD_X") and the
+// "depends on IDF_TARGET_Y" of each SCRL_BOARD_X entry.
+function boards() {
+  const src = read(path.join(mainDir, "Kconfig.projbuild"));
+  const target = {};
+  for (const [, sym, chip] of src.matchAll(/config (SCRL_BOARD_\w+)\s+bool "[^"]*"\s+depends on IDF_TARGET_(\w+)/g)) target[sym] = chip.toLowerCase();
+  const out = {};
+  for (const [, id, sym] of src.matchAll(/default "([\w-]+)" if (SCRL_BOARD_\w+)/g)) out[id] = target[sym];
+  if (!Object.keys(out).length || Object.values(out).some(v => !v)) throw new Error("Kconfig: board list not found");
+  return out;
+}
+
 execFileSync("make", ["-C", path.join(fw, "test"), "scrl_vectors"], { stdio: ["ignore", "ignore", "inherit"] });
 const bin = path.join(fw, "test/scrl_vectors");
 const vectors = JSON.parse(execFileSync(bin, { encoding: "utf8" }));
@@ -57,7 +69,7 @@ for (const [k, v] of Object.entries(ota)) if (k.startsWith("ERR_")) otaErr[k.sli
 const slots = [...read(path.join(fw, "ble-board/partitions.csv")).matchAll(/^ota_\d,\s*app,\s*ota_\d,\s*\S+,\s*(\S+)/gm)].map(x => Number(x[1]));
 
 const fixture = {
-  about: "Protocol of the H2 board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
+  about: "Protocol of the BLE board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
   firmware_commit: execFileSync("git", ["-C", fw, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim(),
   flags: defines("scrl_status.h", "SCRL_FLAG_"),
   cmd: defines("scrl_ble.h", "SCRL_CMD_"),
@@ -65,6 +77,8 @@ const fixture = {
   ota_err: otaErr,
   uuids: uuids(),
   slot_size: Math.min(...slots),
+  boards: boards(),
+  board_desc: defines("scrl_board_desc.h", "SCRL_BOARD_DESC_"),
   vectors,
   // What the firmware settings reader does with each write that the app can send.
   writes: boardWrites(vectors.default_settings_json).map(([current, write]) => ({ current, write, ...parse(current, write) })),

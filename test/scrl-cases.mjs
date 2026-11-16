@@ -1,4 +1,4 @@
-// The settings writes and the passkeys that the app can send to the H2 board. tools/scrl-fixture.mjs runs each one
+// The settings writes and the passkeys that the app can send to the BLE board. tools/scrl-fixture.mjs runs each one
 // through the firmware code and stores the answer. test/scrl.mjs builds the same list and checks the answers.
 import { H2_TIME, H2_GAP, H2_ORDER } from "../public/lib/h2-menus.js";
 import { h2SettingChange, H2_DEFAULTS } from "../public/lib/scrl-tsl6.js";

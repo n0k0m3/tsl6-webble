@@ -38,15 +38,18 @@ const server = http.createServer((req, res) => {
 await new Promise(r => server.listen(0, "127.0.0.1", r));
 const base = `http://127.0.0.1:${server.address().port}/index.html`;
 
-// A small image with the layout of an ESP-IDF app: header, one segment header, app description, SHA-256 at the end.
-function image(project, version = "9.9.9", size = 64 * 1024) {
+// A small image with the layout of an ESP-IDF app: header, one segment header, app description, the board
+// descriptor of the firmware (offset 288), SHA-256 at the end.
+const CHIPS = { esp32: 0x00, esp32s3: 0x09, esp32h2: 0x10 };
+function image(project, { version = "9.9.9", size = 64 * 1024, board = "nanoh2-minican", chip = "esp32h2", can = "twai" } = {}) {
   const b = Buffer.alloc(size);
-  for (let i = 300; i < size - 32; i++) b[i] = (i * 31 + 7) & 0xFF;
-  b[0] = 0xE9; b[1] = 1; b[12] = 0x10; b[23] = 1;
+  for (let i = 400; i < size - 32; i++) b[i] = (i * 31 + 7) & 0xFF;
+  b[0] = 0xE9; b[1] = 1; b[12] = CHIPS[chip]; b[23] = 1;
   b.writeUInt32LE(0xABCD5432, 32);
   b.write(version, 32 + 16); b.write(project, 32 + 48); b.write("12:00:00", 32 + 80); b.write("Jan  1 2026", 32 + 96); b.write("v5.5.6", 32 + 112);
+  b.writeUInt32LE(0x4C524353, 288); b.writeUInt32LE(1, 292); b.write(board, 296); b.write(can, 328);
   crypto.createHash("sha256").update(b.subarray(0, size - 32)).digest().copy(b, size - 32);
-  return { name: `${project}.bin`, mimeType: "application/octet-stream", buffer: b };
+  return { name: `scrl-${board}${can === "twai" ? "" : "-can1"}.bin`, mimeType: "application/octet-stream", buffer: b };
 }
 const BIN = image("scrl-ble-board"), HELLO = image("hello_world");
 

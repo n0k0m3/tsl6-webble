@@ -1,6 +1,6 @@
 {
- "about": "Protocol of the H2 board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
- "firmware_commit": "3c463d0",
+ "about": "Protocol of the BLE board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
+ "firmware_commit": "b8bf442",
  "flags": {
   "TX_ALLOWED": 1,
   "TIMER_ARMED": 2,
@@ -66,6 +66,25 @@
   "otaData": "e5910009-51ba-4d0b-8422-5cb9dc778552"
  },
  "slot_size": 1966080,
+ "boards": {
+  "nanoh2-minican": "esp32h2",
+  "m5stack-atom": "esp32",
+  "m5stack-atom-matrix": "esp32",
+  "m5stack-atom-swap-pins": "esp32",
+  "esp32-generic-twai": "esp32",
+  "esp32-generic-twai-sniffer": "esp32",
+  "esp32-mcp2515": "esp32",
+  "esp32-lilygo": "esp32",
+  "ttgo-tdisplay": "esp32",
+  "lilygo-t2can": "esp32s3",
+  "lilygo-t2can-fd": "esp32s3",
+  "waveshare-s3-can": "esp32s3"
+ },
+ "board_desc": {
+  "MAGIC": 1280459603,
+  "VERSION": 1,
+  "OFFSET": 288
+ },
  "vectors": {
   "status_json": "{\"scroll_ack_sent_count\":16909060,\"scroll_ack_diag\":{\"phase\":\"SecondPending\",\"block\":\"gap\",\"native_age_ms\":2,\"das_age_ms\":40,\"das_ap_state\":6,\"das_hands_on\":3,\"vehicle_bus\":\"can0\",\"tx_allowed\":true,\"pairs_aborted\":7,\"timer_armed\":true},\"op\":1,\"flags\":1061,\"rx\":[1000,10,20,0,30,40,50,1],\"tx\":[8,2,3],\"boff\":1,\"rst\":1,\"pwr\":42,\"up\":3600,\"rxpin\":2}",
   "live_hex": "020e0603250403020107000200280000000000",

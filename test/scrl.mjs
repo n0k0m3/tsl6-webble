@@ -1,4 +1,4 @@
-// Tests for the H2 board support: the board codec (public/lib/scrl.js), the adapter to the TSL6 pages
+// Tests for the BLE board support: the board codec (public/lib/scrl.js), the adapter to the TSL6 pages
 // (public/lib/scrl-tsl6.js, public/lib/h2-menus.js) and the type filter in public/lib/tsl6-settings.js.
 // No vendor code and no firmware repo needed:  node test/scrl.mjs
 //
@@ -99,12 +99,36 @@ await test("update: BEGIN bytes, events, window and cut detection", () => {
   assert.deepEqual(SC.CHUNK_STEPS.map(SC.nextChunk), [240, 180, 100, 20, 0]);
 });
 
-async function fakeImage({ chip = 0x0010, project = "scrl-ble-board", size = 1024 } = {}) {
+await test("the board table and the board descriptor match the firmware", () => {
+  assert.deepEqual(Object.fromEntries(Object.entries(SC.BOARDS).map(([id, b]) => [id, b.chip])), FX.boards);
+  for (const chip of Object.values(FX.boards)) assert.ok(chip in SC.CHIP_IDS, `chip ID for ${chip}`);
+  assert.equal(SC.IMG.BOARD_MAGIC, FX.board_desc.MAGIC);
+  assert.equal(SC.IMG.BOARD_VERSION, FX.board_desc.VERSION);
+  assert.equal(SC.IMG.BOARD_AT, FX.board_desc.OFFSET);
+});
+
+await test("boardOf and boardName: new Info, firmware 0.1.0 Info, no Info", () => {
+  assert.deepEqual(SC.boardOf({ board: "lilygo-t2can", chip: "esp32s3", can: "mcp2515" }), { id: "lilygo-t2can", chip: "esp32s3", can: "mcp2515" });
+  assert.deepEqual(SC.boardOf({ board: "nanoh2-minican", chip: "esp32h2" }), { id: "nanoh2-minican", chip: "esp32h2", can: "twai" });
+  assert.equal(SC.boardOf(null), null);
+  assert.equal(SC.boardName({ board: "esp32-mcp2515" }), "ESP32 + MCP2515");
+  assert.equal(SC.boardName({ fw: "0.1.0" }), "M5Stack NanoH2");
+  assert.equal(SC.boardName({ board: "some-new-board" }), "some-new-board");
+  assert.equal(SC.boardName(null), "BLE board");
+  assert.equal(SC.boardName(null, true), "BLE模块");
+  assert.equal(SC.boardListenOnly({ board: "esp32-generic-twai-sniffer" }), true);
+  assert.equal(SC.boardListenOnly({ board: "esp32-generic-twai" }), false);
+  assert.equal(SC.boardListenOnly(null), false);
+});
+
+async function fakeImage({ chip = 0x0010, project = "scrl-ble-board", size = 1024, board = "nanoh2-minican", can = "twai", desc = true } = {}) {
   const b = new Uint8Array(size);
   b[0] = 0xE9; b[1] = 1; b[12] = chip & 0xFF; b[13] = chip >> 8; b[23] = 1;
-  new DataView(b.buffer).setUint32(32, 0xABCD5432, true);
+  const dv = new DataView(b.buffer);
+  dv.setUint32(32, 0xABCD5432, true);
   const put = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
   put(32 + 16, "9.9.9"); put(32 + 48, project); put(32 + 80, "12:00:00"); put(32 + 96, "Jan  1 2026"); put(32 + 112, "v5.5.6");
+  if (desc) { dv.setUint32(288, SC.IMG.BOARD_MAGIC, true); dv.setUint32(292, 1, true); put(296, board); put(328, can); }
   b.set(await SC.sha256(b.subarray(0, size - 32)), size - 32);
   return b;
 }
@@ -118,6 +142,27 @@ await test("image check: a good image passes, each wrong image fails", async () 
   assert.match(SC.checkImage(await fakeImage({ project: "hello_world" })).errors.join(), /hello_world/);
   assert.match(SC.checkImage(await fakeImage({ size: SC.OTA.SLOT_SIZE + 16 })).errors.join(), /app slot/);
   assert.match(SC.checkImage(new Uint8Array(100)).errors.join(), /too small/);
+  assert.match(SC.checkImage(await fakeImage({ desc: false })).errors.join(), /no board ID/);
+  assert.deepEqual(SC.checkImage(good).info.board, "nanoh2-minican");
+});
+
+await test("image check against the connected board: chip, board ID, CAN controller", async () => {
+  const t2 = { id: "lilygo-t2can", chip: "esp32s3", can: "twai" };
+  const t2img = await fakeImage({ chip: 0x0009, board: "lilygo-t2can" });
+  assert.deepEqual(SC.checkImage(t2img, t2).errors, []);
+  assert.deepEqual(SC.checkImage(t2img, t2).warnings, []);
+  // An H2 image on the T-2CAN: wrong chip.
+  assert.match(SC.checkImage(await fakeImage(), t2).errors.join(), /chip ID is 0x10 \(esp32h2\).*needs 0x9 \(esp32s3\)/);
+  // Same chip, other board: the firmware refuses it, so the app does not send it.
+  const waveshare = await fakeImage({ chip: 0x0009, board: "waveshare-s3-can" });
+  assert.match(SC.checkImage(waveshare, t2).errors.join(), /for the board "waveshare-s3-can".*This board is "lilygo-t2can"/);
+  // The can1 build on a can0 board: allowed, with a warning about the wires.
+  const can1 = SC.checkImage(await fakeImage({ chip: 0x0009, board: "lilygo-t2can", can: "mcp2515" }), t2);
+  assert.deepEqual(can1.errors, []);
+  assert.match(can1.warnings.join(), /MCP2515.*now uses TWAI.*move the Vehicle CAN wires/);
+  // Without a board: any known chip passes, an unknown chip fails.
+  assert.deepEqual(SC.checkImage(t2img).errors, []);
+  assert.match(SC.checkImage(await fakeImage({ chip: 0x000D })).errors.join(), /No board of this firmware/);
 });
 
 // ---------------------------------------------------------------- adapter to the TSL6 pages
