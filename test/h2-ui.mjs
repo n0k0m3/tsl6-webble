@@ -419,7 +419,11 @@ function fakeBluetooth(opts) {
       await h2.open();
       return { getPrimaryService: async uuid => {
         if (uuid !== H2(1)) throw new DOMException("no such service", "NotFoundError");
-        return { getCharacteristic: async u => { if (!H2_NAMES[u]) throw new DOMException("no characteristic", "NotFoundError"); return (chrs[u] ||= new H2Chr(u)); } };
+        return { getCharacteristic: async u => {
+          if (!H2_NAMES[u]) throw new DOMException("no characteristic", "NotFoundError");
+          if (opts.failChr === H2_NAMES[u]) throw new Error("2"); // Bluefy gives only a number
+          return (chrs[u] ||= new H2Chr(u));
+        } };
       } };
     }
     const { MockLink } = await import("/app/mock.js");
@@ -485,6 +489,14 @@ await fake("real-connect-path-board", { kind: "h2", name: "SCRL-FAKE" }, async p
   await page.waitForFunction(() => /pat=2/.test(document.querySelector("#page").textContent));
   await page.waitForTimeout(300);
   assert.equal(((await text(page, "#page")).match(/SET {2}on=1 mode=0 pat=2/g) || []).length, 1, "no double notification after a reconnect");
+});
+
+await fake("gatt-step-failure-names-the-call", { kind: "h2", name: "SCRL-FAKE", failChr: "live" }, async page => {
+  await page.click("[data-id=connect]");
+  await page.waitForSelector(".dlg", { timeout: 20000 });
+  assert.match(await text(page, ".dlg"), /GATT connect: characteristic live: 2/);
+  await dlgOk(page);
+  assert.equal(await page.isVisible("[data-id=connect]"), true);
 });
 
 await fake("real-connect-path-board-show-all-devices", { kind: "h2", name: "" }, async page => {
