@@ -57,9 +57,9 @@ A settings write changes only the field you edit. It keeps every other bit as th
 
 To test the app without a module, open it with `?mock`. A red **MOCK MODULE** label shows. The mock answers from the same notes as the codecs, so it proves nothing about the real module.
 
-## H2 board
+## BLE board
 
-The app also controls the H2 board: an M5Stack NanoH2 (ESP32-H2) with the Unit Mini CAN, with the `scrl-ble-board` firmware. The board sends scroll ticks on Vehicle CAN, as the TSL6 does. Its firmware is in another repo.
+The app also controls a board with the `scrl-ble-board` firmware (BLE only, no Wi-Fi). The firmware runs on the M5Stack NanoH2 with the Unit Mini CAN, and on every hypery ESP32 board: ATOM Lite and Matrix, ESP32 DevKit, ESP32 + MCP2515, T-CAN485, T-Display, T-2CAN, T-2CAN FD and Waveshare S3-CAN. The board sends scroll ticks on Vehicle CAN, as the TSL6 does. Its firmware is in another repo. Inside the code the device type is still called "H2".
 
 **Status: checked against a mock board only. The app never talked to a real board.**
 
@@ -70,7 +70,7 @@ Pick `SCRL-xxxx` in the Bluetooth list. The app then shows the board as one more
 | Car | The AP assist switch (scroll ticks on or off), the live prompt state, and the board warnings |
 | Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the op mode |
 | Tools | Board, Board firmware, Log, Restore defaults |
-| Device | Board ID, firmware version, restart |
+| Device | Device type ("BLE board: " and the board name; every board has the same rows), board type, chip, CAN controller, board ID, firmware version, restart |
 
 What only the board has is on the **Board** page (Tools > Board):
 
@@ -84,12 +84,13 @@ Differences from the TSL6:
 
 - **No BLE password.** The board uses Bluetooth pairing. At the first connection the phone asks for a 6-digit passkey: it is on the label that you put on the board. The app never asks for it.
 - **The board accepts a new phone only in its pairing window:** 5 minutes after power-on, or 2 minutes after a press of its button.
-- **Firmware update** is on its own page (Tools > Board firmware). After an update, confirm the new image within 10 minutes, or the board goes back to the old one.
+- **Firmware update** is on its own page (Tools > Board firmware). Use `build/out/scrl-<build>.bin` of the firmware build. The page sends an image only when its chip and its board ID match the connected board, because the firmware refuses any other image. An image with another CAN controller for the same board (a T-2CAN can0 or can1 build) is allowed, with a warning to move the Vehicle CAN wires. After an update, confirm the new image within 10 minutes, or the board goes back to the old one.
+- **The listen-only build** (`esp32-generic-twai-sniffer`) never sends. The Board page says so and locks Active.
 - **Restore defaults** turns the scroll ticks off and puts the board in Listen-Only. The bonds and the passkey stay.
 
 How it works: the link to the board (`public/app/scrl-link.js`) gives the pages a status in the TSL6 layout and takes the TSL6 commands that the board can do. It refuses every other command, and it refuses a settings write that changes a bit that the board does not have (`public/lib/scrl-tsl6.js`).
 
-To test without a board, open the app with `?mock=h2`. Options: `&pair` (pairing delay), `&nopair` (pairing fails), `&lock` (bus-off lock), `&pending` (unconfirmed image), `&cut=N` (writes longer than N bytes are cut), `&lo` (scroll ticks off, Listen-Only).
+To test without a board, open the app with `?mock=h2`. Options: `&pair` (pairing delay), `&nopair` (pairing fails), `&lock` (bus-off lock), `&pending` (unconfirmed image), `&cut=N` (writes longer than N bytes are cut), `&lo` (scroll ticks off, Listen-Only), `&board=ID` (board type, for example `lilygo-t2can`), `&can=mcp2515` (its CAN controller).
 
 ## Firmware images (flasher, step 1)
 
@@ -199,15 +200,15 @@ node test/flash.mjs
 
 To test the Firmware page without a module, open the app with `?mock`. The mock has a bootloader: `55 01` restarts it into boot mode, and `?mock&boot` starts in boot mode.
 
-The H2 board support has two tests:
+The BLE board support has two tests:
 
 ```sh
 node test/scrl.mjs     # board codec, adapter to the TSL6 pages, type filter. Needs nothing else
 PLAYWRIGHT_CORE=<path>/playwright-core/index.mjs CHROME=<path of chrome> node test/h2-ui.mjs   # the app in headless Chrome
 ```
 
-- `test/scrl.mjs` checks the app against `test/fixtures/scrl-protocol.json`. That file holds what the board firmware defines and does: its constants, the output of its status packers, and the answer of its settings reader to each write that the app can send. `node tools/scrl-fixture.mjs <firmware repo>` writes it. Run that again after each change of the board protocol, and look at `git diff`.
-- `test/h2-ui.mjs` runs 16 scenarios. It serves `public/` on 127.0.0.1 itself. It skips without `playwright-core`. Three of the scenarios put a fake `navigator.bluetooth` in, so the real connect path runs: two with a board behind it, one with a TSL6 behind it. All scenarios answer from the mocks in the app.
+- `test/scrl.mjs` checks the app against `test/fixtures/scrl-protocol.json`. That file holds what the board firmware defines and does: its constants, its board list and board descriptor, the output of its status packers, and the answer of its settings reader to each write that the app can send. `node tools/scrl-fixture.mjs <firmware repo>` writes it. Run that again after each change of the board protocol, and look at `git diff`.
+- `test/h2-ui.mjs` runs 18 scenarios. It serves `public/` on 127.0.0.1 itself. It skips without `playwright-core`. Three of the scenarios put a fake `navigator.bluetooth` in, so the real connect path runs: two with a board behind it, one with a TSL6 behind it. All scenarios answer from the mocks in the app.
 
 ## Deploy
 
