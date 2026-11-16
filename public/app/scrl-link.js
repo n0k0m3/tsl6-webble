@@ -12,12 +12,19 @@ import { h2Status, h2SettingsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Error text with the DOMException name and code. Bluefy can throw a bare number, or an Error with only "2".
+function errText(e) {
+  if (e == null || typeof e !== "object") return `${e} (${typeof e})`;
+  const name = e.name && e.name !== "Error" ? `${e.name} ` : "";
+  const code = e.code !== undefined && e.code !== 0 ? ` [code ${e.code}]` : "";
+  return `${name}${e.message || String(e)}${code}`;
+}
 // Run one step of the session. On an error: log the bytes that the board sent (Status and Settings hold no secret),
 // then throw an Error that starts with the step name. e.step holds the name.
 async function step(name, fn, bytes) {
   try { return await fn(); } catch (e) {
-    const err = new Error(`${name}: ${e && e.message ? e.message : e}`);
-    err.step = name;
+    const err = new Error(`${name}: ${errText(e)}`);
+    err.step = e && e.step ? `${name}: ${e.step}` : name;
     if (bytes) err.bytes = `${bytes.length} bytes: ${dec.decode(bytes).slice(0, 600)}`;
     throw err;
   }
@@ -47,9 +54,12 @@ export class GattTransport {
     const U = SC.UUIDS;
     this.gen++;
     this.queue = Promise.resolve();
-    const server = await this.device.gatt.connect();
-    const svc = await server.getPrimaryService(U.service);
-    for (const name of Object.keys(U)) if (name !== "service") this.chr[name] = await svc.getCharacteristic(U[name]);
+    // Each call names itself in its error: some browsers (Bluefy) give only a number as the message.
+    const server = await step("connect", () => this.device.gatt.connect());
+    const svc = await step("service", () => server.getPrimaryService(U.service));
+    for (const name of Object.keys(U)) {
+      if (name !== "service") this.chr[name] = await step(`characteristic ${name}`, () => svc.getCharacteristic(U[name]));
+    }
   }
   op(fn) { const job = this.queue.then(fn); this.queue = job.catch(() => {}); return job; }
   read(name) {
