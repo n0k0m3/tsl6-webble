@@ -1,7 +1,10 @@
 // Car tab (vendor pages/index): vehicle, AP assist, lights, comfort, doors, seats, scroll wheel, driving systems.
 // The command logic is the same as before the redesign; only the grouping and the look changed.
 import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
-import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab } from "../app.js";
+import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab, isH2 } from "../app.js";
+import { H2_TYPE, H2_ROWS } from "../../lib/h2-menus.js";
+import { h2PromptDiag } from "../../lib/scrl-tsl6.js";
+import { boardBanner } from "./board.js";
 import { WebLink } from "../ble.js";
 import {
   ROW_BY_ID, A7_HARD_GATED, A7_RELEASE, A2_RELEASE, decodeLiveState, switchCommand, memoryCommand, tapCommand,
@@ -15,7 +18,15 @@ function promptTime(p) {
   try { const t = decodeSettings(p).time; return isPromptTime(t) ? t : null; } catch { return null; }
 }
 
-const shown = r => r && (!r.types || r.types.includes(S.hwType));
+// The H2 board has only the rows in H2_ROWS. A row with no type list is not for the board.
+// The scroll interval value of a prompt mode, or null. The H2 board keeps the mode in its own settings: a custom
+// delay has no menu value, and it is still a prompt mode.
+function promptOf(p) {
+  if (isH2()) { const s = S.link.board && S.link.board.settings; return s && s.mode === 0 ? 0 : null; }
+  return promptTime(p);
+}
+
+const shown = r => r && (S.hwType === H2_TYPE ? H2_ROWS.includes(r.id) : (!r.types || r.types.includes(S.hwType)));
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
 const NAME = { apAutoState: { en: "AP resume", zh: "AP恢复" }, vehicleAPState: { en: "Autopilot", zh: "车辆AP" } };
 
@@ -47,7 +58,8 @@ definePage("status", () => {
   const linkReady = () => !!(S.link && S.link.connected && S.link.authed && !S.blank);
   const keepAlive = () => { if (linkReady() && !document.hidden) send(B0, startPayload(), { read: true, quiet: true }); };
   function syncStream() {
-    const want = promptNow != null && entered && !document.hidden && linkReady();
+    // The H2 board has no gauge stream. Its Live record carries the prompt state (see the "board" event below).
+    const want = promptNow != null && entered && !document.hidden && linkReady() && !isH2();
     if (want === streamOn) return;
     streamOn = want;
     clearInterval(keepTimer); keepTimer = 0;
@@ -65,6 +77,27 @@ definePage("status", () => {
       : [L(...PROMPT_PHASE[diag.phase]), " · ", L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`),
         h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`))];
     refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, line));
+  }
+
+  // H2 board: the hero line and the warnings come from the board's Live record, once per second.
+  // Only text changes here. The page is not built again, so a tap is never lost.
+  function drawBoard() {
+    const link = S.link;
+    if (!isH2() || !link.board) return;
+    const B = link.board;
+    diag = h2PromptDiag(B.live, B.flags);
+    if (refs.apSub && B.settings) {
+      const s = B.settings, secs = ms => (ms / 1000).toString();
+      const raw = h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`));
+      const sent = L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`);
+      clear(refs.apSub).append(s.mode === 0
+        ? L(`On hands-on prompt, about ${secs(s.delay_ms)} s after it`, `手扶提示时，约${secs(s.delay_ms)}秒后拨动`)
+        : L(`Every ${secs(s.interval_ms * 0.8)}-${secs(s.interval_ms * 1.2)} s while AP is active`, `AP激活时，每${secs(s.interval_ms * 0.8)}-${secs(s.interval_ms * 1.2)}秒`));
+      refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, diag.noData
+        ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
+        : s.mode === 0 ? [L(...PROMPT_PHASE[diag.phase]), " · ", sent, raw] : [sent, raw]));
+    }
+    if (refs.banner) boardBanner(refs.banner);
   }
 
   // ---- one hold button (seat A7 or wheel A2): press frame, then exactly one release frame
@@ -174,7 +207,8 @@ definePage("status", () => {
       h("div", { class: "card pad" }, h("ol", { class: "steps" },
         h("li", null, L("Keep the car awake (climate or Camp mode on).", "保持车辆唤醒（打开空调或露营模式）。")),
         h("li", null, L("Close the vendor Mini App, or turn off Bluetooth on that phone. The module takes one phone at a time.", "关闭原厂小程序，或关闭那部手机的蓝牙。模块一次只连接一部手机。")),
-        h("li", null, L("The default BLE password is 1234.", "默认蓝牙密码为 1234。")))));
+        h("li", null, L("The default BLE password is 1234.", "默认蓝牙密码为 1234。")),
+        h("li", null, L("H2 board: pick SCRL-xxxx. At the first connection the phone asks for the passkey from the label on the board.", "H2模块：选择 SCRL-xxxx。首次连接时，手机会要求输入模块标签上的配对码。")))));
     el.querySelector(".btn.primary")?.setAttribute("data-id", "connect");
   }
 
@@ -214,10 +248,16 @@ definePage("status", () => {
     refs.tt = h("div", { class: "cl-tt", role: "group", "aria-label": L("Functions that are on", "已开启的功能") });
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
-        h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })] : h("span", { class: "vehicle-name" }, "TSL6")),
-        h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
+        h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })]
+          : h("span", { class: "vehicle-name" }, isH2() ? L("H2 board", "H2模块") : "TSL6")),
+        // The board has no gauges: its button opens the Board page (state, counters, board actions).
+        isH2() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
+          : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
       refs.pills, refs.tt);
-    pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
+    if (!isH2()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
+    // Board warnings come first on the landing tab: an unconfirmed image has a 10-minute limit.
+    refs.banner = isH2() ? h("div", { class: "span", "data-id": "board-banner" }) : null;
+    if (refs.banner) { el.append(refs.banner); boardBanner(refs.banner); }
     el.append(vcard);
 
     // AP assist
@@ -227,7 +267,7 @@ definePage("status", () => {
     refs.apSub = h("div", { class: "hero-sub" }, "—");
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
     switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
-    promptNow = promptTime(S.status);
+    promptNow = promptOf(S.status);
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
     if (promptNow != null) switches.apAssist.name = L("AP assist (on prompt)", "AP辅助（手扶提示时）");
     el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),
@@ -337,9 +377,19 @@ definePage("status", () => {
       for (const [, s] of lit) refs.tt.append(h("span", { class: "tt " + s.tone }, icon(s.ico, 20), h("span", null, s.name)));
     }
     clearInterval(timer);
-    const pt = promptTime(p);
+    const pt = promptOf(p);
     if (pt !== promptNow) { promptNow = pt; render(); return; } // the hero title and telltale name change
     syncStream();
+    if (isH2()) {
+      // One CAN lane for the one bus of the board.
+      if (refs.pills) {
+        const on = live.can[0];
+        const name = on ? L("CAN connected", "CAN 已连接") : L("No CAN frames", "无CAN数据");
+        clear(refs.pills).append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, "CAN", h("i")));
+      }
+      drawBoard();
+      return;
+    }
     if (promptNow != null) drawPrompt(); // the stock 2-3 s timer does not run in a prompt mode
     else if (refs.apSub) {
       countdown = live.timerMs / 1000;
@@ -364,6 +414,7 @@ definePage("status", () => {
       entered = true;
       offs.push(onBus("status", p => { const was = !!el.querySelector('[data-row="vehicleType"]'); if (!was || S.blank) render(); else update(p); }));
       offs.push(onBus("conn", st => { if (!st.connected) releaseAll(); render(); }));
+      offs.push(onBus("board", () => drawBoard()));
       offs.push(onBus("frame", fr => {
         if (fr.cmd === 0xa7) { const r = decodeA7Reply(fr.payload); if (r) toast(L(r.en, r.zh), r.ok ? "ok" : "bad"); }
         if (fr.cmd === B0 && streamOn) {

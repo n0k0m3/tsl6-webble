@@ -1,10 +1,11 @@
 // Device tab: connection (was the Bluetooth tab), module info, restart, preferences (was the Me tab).
 import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
-import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go } from "../app.js";
+import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go, isH2 } from "../app.js";
+import { CHUNK_STEPS, resetReasonName } from "../../lib/scrl.js";
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
 import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
 
-export const APP_BUILD = "2026-11-14";
+export const APP_BUILD = "2026-11-15";
 const TYPES = [[6, "TSL6 (type 6)"], [8, "TSL6 (type 8)"], [19, "Type 19"], [7, "Type 7"], [5, "Type 5"], [3, "Type 3"]];
 
 definePage("me", () => {
@@ -52,14 +53,16 @@ definePage("me", () => {
       return h("div", { class: "card" },
         h("div", { class: "li first" }, h("span", { class: "chip" }, icon("bluetooth-off", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Not connected", "未连接"))),
-            h("div", { class: "li-sub" }, supported ? L("Pick TSL6 in the browser's Bluetooth list.", "在浏览器的蓝牙列表中选择 TSL6。")
+            h("div", { class: "li-sub" }, supported ? L("Pick TSL6, or SCRL-xxxx for an H2 board, in the browser's Bluetooth list.", "在浏览器的蓝牙列表中选择 TSL6，H2模块请选择 SCRL-xxxx。")
               : L("This browser has no Web Bluetooth.", "此浏览器不支持网页蓝牙。"))),
           supported ? h("button", { class: "btn primary small", type: "button", "data-id": "connect", onclick: () => connect({ all }) }, L("Connect", "连接")) : null),
         supported ? h("label", { class: "li check-row" }, allBox,
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Show all devices", "显示所有设备"))),
             h("div", { class: "li-sub" }, L("Use it if the module does not appear.", "找不到模块时使用。")))) : null);
     }
-    const sizes = [[platformChunk(), L(`${platformChunk()} bytes (default)`, `${platformChunk()} 字节（默认）`)], [SAFE_CHUNK, L("20 bytes (safe, slow)", "20 字节（稳定，较慢）")]];
+    // The H2 board uses this size only for its firmware update, and steps down after a cut write.
+    const sizes = isH2() ? CHUNK_STEPS.map(n => [n, n === platformChunk() ? L(`${n} bytes (default)`, `${n} 字节（默认）`) : L(`${n} bytes`, `${n} 字节`)])
+      : [[platformChunk(), L(`${platformChunk()} bytes (default)`, `${platformChunk()} 字节（默认）`)], [SAFE_CHUNK, L("20 bytes (safe, slow)", "20 字节（稳定，较慢）")]];
     return h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip green" }, icon("bluetooth-connected", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, link.name)),
@@ -82,7 +85,7 @@ definePage("me", () => {
         if (v != null) { link.setChunk(Number(v)); render(); toast(L("Saved", "已保存"), "ok"); }
       } }, h("span", { class: "chip" }, icon("sliders-horizontal", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Bytes per BLE write", "每次写入字节数"))),
-          h("div", { class: "li-sub" }, L("Drops to 20 after a write error", "写入出错时自动降为20"))),
+          h("div", { class: "li-sub" }, isH2() ? L("For the firmware update. Steps down after a cut write", "用于固件更新。写入被截断后自动减小") : L("Drops to 20 after a write error", "写入出错时自动降为20"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, String(link.chunk)), chev())));
   }
 
@@ -91,7 +94,21 @@ definePage("me", () => {
     const m = S.status ? meInfo(S.status) : null;
     el.append(grp(h("div", { class: "sec-label" }, L("Connection", "连接")), connectionCard()));
 
-    el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
+    const info = isH2() && S.link.board ? S.link.board.info : null;
+    if (info) {
+      // H2 board: its own Info, not the TSL6 status bytes.
+      el.append(grp(h("div", { class: "sec-label" }, L("H2 board", "H2模块")), h("div", { class: "card" },
+        infoRow("Board ID", "模块ID", info.id, true, true),
+        infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
+        infoRow("Built", "构建时间", info.built),
+        infoRow("ESP-IDF", "ESP-IDF", info.idf),
+        infoRow("Last reset reasons", "最近复位原因", Array.isArray(info.rst_log) ? info.rst_log.map(resetReasonName).join(", ") : null),
+        infoRow("App build", "应用版本", APP_BUILD),
+        h("button", { class: "li", type: "button", "data-id": "open-board", onclick: () => go("board") },
+          h("span", { class: "chip" }, icon("cpu", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Board", "模块"))),
+            h("div", { class: "li-sub" }, L("State, op mode, counters, pairing", "状态、运行模式、计数器、配对"))), chev()))));
+    } else el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
       infoRow("Device ID", "设备ID", m && m.moduleId, true, true),
       infoRow("MAC", "设备MAC", m && m.mac, false, true),
       m && m.vin ? infoRow("Vehicle VIN", "车辆VIN", m.vin, false, true) : null,
@@ -106,10 +123,11 @@ definePage("me", () => {
         h("span", { class: "chip" }, icon("refresh-cw", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))), chev()),
       // Same page as Tools > Firmware: OTA update of the runtime, or recovery of a module in boot mode.
-      h("button", { class: "li", type: "button", "data-id": "firmware", onclick: () => go("firmware") },
+      h("button", { class: "li", type: "button", "data-id": "firmware", onclick: () => go(isH2() ? "boardfw" : "firmware") },
         h("span", { class: "chip" }, icon("hard-drive-download", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Flash firmware", "刷写固件"))),
-          h("div", { class: "li-sub" }, L("Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块"))), chev()),
+          h("div", { class: "li-sub" }, isH2() ? L("Update the board over Bluetooth", "通过蓝牙更新模块")
+            : L("Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块"))), chev()),
       h("button", { class: "li", type: "button", "data-id": "clear-cache", onclick: clearCache },
         h("span", { class: "chip" }, icon("trash-2", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
@@ -136,13 +154,15 @@ definePage("me", () => {
     el.append(grp(h("div", { class: "sec-label" }, L("Preferences", "偏好设置")), h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip" }, icon("languages", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Language", "语言")))), lang),
-      h("button", { class: "li", type: "button", "data-id": "pref-hwType", onclick: async () => {
+      // An H2 board sets the type by itself. The picker is for the TSL6 only.
+      h("button", { class: "li", type: "button", "data-id": "pref-hwType", disabled: isH2(), onclick: async () => {
+        if (isH2()) return;
         const v = await chooseOption({ title: L("Device type", "设备类型"), options: TYPES, value: S.hwType });
         if (v != null) { setHwType(Number(v)); render(); toast(L("Saved", "已保存"), "ok"); }
       } }, h("span", { class: "chip" }, icon("cpu", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
-          h("div", { class: "li-sub" }, L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
-        h("div", { class: "li-trail" }, h("span", { class: "val" }, (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), chev())),
+          h("div", { class: "li-sub" }, isH2() ? L("Set by the connected board.", "由已连接的模块决定。") : L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
+        h("div", { class: "li-trail" }, h("span", { class: "val" }, isH2() ? L("H2 board", "H2模块") : (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), isH2() ? null : chev())),
       autoGaugeShown ? gaugeRow : null, driveRow, skipRow)));
 
     el.append(grp(h("div", { class: "sec-label" }, L("About", "关于")), h("div", { class: "card pad about" },

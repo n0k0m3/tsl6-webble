@@ -1,5 +1,8 @@
 // App core: state, router, connection, password flow and the command gate.
-import { WebLink } from "./ble.js";
+import { WebLink, SVC } from "./ble.js";
+import { ScrlLink, GattTransport, isH2Name } from "./scrl-link.js";
+import { H2_TYPE } from "../lib/h2-menus.js";
+import { UUIDS as H2_UUIDS } from "../lib/scrl.js";
 import { h, clear, L, getLang, setLang, onLang, icon, toast, dialog, alertBox, confirmBox, promptBox, fmtTime } from "./ui.js";
 import { decodeStatus, hex } from "../lib/tsl6-settings.js";
 
@@ -27,6 +30,8 @@ export const S = {
 };
 export function savePref(k, v) { S.prefs[k] = v; setPref(k, v); }
 export function setHwType(t) { S.hwType = t; setPref("hwType", t); }
+// True while the link is an H2 board. The app then uses device type H2_TYPE: the pages show only what the board has.
+export const isH2 = () => !!(S.link && S.link.kind === "h2");
 
 // ---------------------------------------------------------------- log
 const LOG_MAX = 3000;
@@ -90,8 +95,14 @@ export async function gate(type, opts = {}) {
     return false;
   }
   if (opts.confirm && !(await confirmBox(opts.confirm, null, null, { focusCancel: !!opts.danger }))) return false;
-  if (!TESTED.has(type) && !READ_ONLY.has(type) && !opts.read && !S.prefs.skipUntested && !warned.has(type) && !S.mock) {
-    const ok = await confirmBox({
+  // TESTED lists the commands that the owner tested on the car with a TSL6. With the H2 board nothing is tested yet.
+  const tested = TESTED.has(type) && !isH2();
+  if (!tested && !READ_ONLY.has(type) && !opts.read && !S.prefs.skipUntested && !warned.has(type) && !S.mock) {
+    // The H2 board gets its own commands, not the vendor bytes: say so.
+    const ok = await confirmBox(isH2() ? {
+      en: `${cmdName(type)} is not tested with the H2 board on a car yet. Send it?`,
+      zh: `${cmdName(type)} 尚未在实车上用H2模块测试。确定发送吗？`,
+    } : {
       en: `${cmdName(type)} is not tested on a car yet. The app sends the same bytes as the vendor app. Send it?`,
       zh: `${cmdName(type)} 尚未在实车上测试。本应用发送与原厂小程序相同的数据。确定发送吗？`,
     }, L("Untested command", "未测试的指令"), L("Send", "发送"));
@@ -182,29 +193,65 @@ function wireLink(link) {
   });
   link.on("password", () => { updateChip(); askPassword("asked"); });
   link.on("auth", () => updateChip());
+  // H2 board: its state for the board rows, and the pairing hint (the phone asks for the passkey, not this app).
+  link.on("board", b => bus.dispatchEvent(new CustomEvent("board", { detail: b })));
+  link.on("pairing", () => toast(L("Waiting for the secure link. If the phone asks for a passkey, type the 6 digits from the label on the board.",
+    "等待安全连接。如手机要求配对码，请输入模块标签上的6位数字。"), "warn", 6000));
   link.on("frame", fr => bus.dispatchEvent(new CustomEvent("frame", { detail: fr })));
   link.on("state", st => {
     if (!st.connected) { S.status = null; S.boot = null; }
+    // The device type follows the link: H2_TYPE for a board, else the type that the user chose for the TSL6.
+    S.hwType = st.connected && link.kind === "h2" ? H2_TYPE : pref("hwType", 6);
     bus.dispatchEvent(new CustomEvent("conn", { detail: st }));
     renderTop();
   });
 }
 
+// The chooser lists the TSL6 and the H2 board. The app keeps its link until the user picked a device.
+function pickDevice(all) {
+  const services = [SVC, H2_UUIDS.service];
+  return navigator.bluetooth.requestDevice(all ? { acceptAllDevices: true, optionalServices: services }
+    : { filters: [{ services: [SVC] }, { namePrefix: "TSL" }, { namePrefix: "FFKJ" }, { services: [H2_UUIDS.service] }, { namePrefix: "SCRL-" }], optionalServices: services });
+}
+// A device with a name of neither kind ("Show all devices"): it is a board if it has the board service.
+async function hasH2Service(device) {
+  try { const server = await device.gatt.connect(); await server.getPrimaryService(H2_UUIDS.service); return true; } catch { return false; }
+}
+
 export async function connect({ all = false } = {}) {
   if (S.link && S.link.connected) return;
-  const link = S.mock ? S.link : new WebLink();
-  if (!S.mock) { if (S.link && S.link.retire) S.link.retire(); S.link = link; wireLink(link); }
+  // After a firmware update the board restarts, and its link connects again by itself. A second link would
+  // fight with it.
+  if (S.link && S.link.updating) { toast(L("The board restarts after the update. The app connects again by itself.", "模块更新后正在重启，应用会自动重新连接。"), "warn", 3500); return; }
+  let link = S.link, device = null;
   try {
-    await link.open({ all });
+    if (!S.mock) {
+      device = await pickDevice(all);
+      const h2 = isH2Name(device.name) || (!/^(TSL|FFKJ)/.test(device.name || "") && await hasH2Service(device));
+      link = h2 ? new ScrlLink(new GattTransport(device)) : new WebLink();
+      if (S.link && S.link.retire) S.link.retire();
+      S.link = link;
+      wireLink(link);
+    }
+    await link.open({ all, device });
     const st = await link.readStatus();
     if (!st) {
       log("no status reply after connect: the module sent nothing back", "bad");
       toast(L("The module does not answer. See Tools > Log and capture.", "模块无应答，请查看「工具 > 日志与抓包」"), "bad", 4000);
     }
-    if (S.prefs.autoGauge && S.hwType && !S.blank && !link.boot) go("gauge");
+    if (S.prefs.autoGauge && S.hwType && !S.blank && !link.boot && link.kind !== "h2") go("gauge");
   } catch (e) {
     if (e && e.name === "NotFoundError") return; // user closed the chooser
     log(`connect failed: ${e.name || ""} ${e.message}`, "bad");
+    if (e && e.pairing) {
+      // The board dropped the link, or the pairing did not finish. The reasons need more than a toast.
+      if (link && link.close) link.close();
+      alertBox({
+        en: `No secure link to the board (${e.message}). Check: 1. The pairing window is open: 5 minutes after power-on, or 2 minutes after a press of the board button. 2. You typed the passkey from the label on the board. 3. If this phone has an old pairing for the board, remove the board in the Bluetooth settings of the phone, then connect again.`,
+        zh: `无法与模块建立安全连接（${e.message}）。请检查：1. 配对窗口已打开：上电后5分钟内，或按下模块按钮后2分钟内。2. 已输入模块标签上的配对码。3. 如手机保存了旧的配对，请在手机蓝牙设置中删除该模块后重新连接。`,
+      }, L("Pairing", "配对"));
+      return;
+    }
     toast(L("Connect failed: ", "连接失败：") + e.message, "bad", 3500);
   }
 }
@@ -324,9 +371,14 @@ function renderTabs() {
 
 onLang(() => { rerender(); });
 
-export async function start({ mock = false, MockLink } = {}) {
+export async function start({ mock = false, MockLink, MockH2Transport } = {}) {
   setLang(getLang());
-  if (mock && MockLink) {
+  if (mock && MockH2Transport) {
+    S.mock = true;
+    S.link = new ScrlLink(new MockH2Transport());
+    wireLink(S.link);
+    document.body.classList.add("is-mock");
+  } else if (mock && MockLink) {
     S.mock = true;
     S.link = new MockLink();
     wireLink(S.link);

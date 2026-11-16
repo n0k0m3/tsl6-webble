@@ -191,11 +191,12 @@ export class WebLink extends LinkBase {
 
   static available() { return !!(globalThis.navigator && navigator.bluetooth); }
 
-  async open({ all = false } = {}) {
+  // device: a device that the app already picked (the chooser also lists the H2 board, see app.js connect()).
+  async open({ all = false, device = null } = {}) {
     const opts = all
       ? { acceptAllDevices: true, optionalServices: [SVC] }
       : { filters: [{ services: [SVC] }, { namePrefix: "TSL" }, { namePrefix: "FFKJ" }], optionalServices: [SVC] };
-    this.device = await navigator.bluetooth.requestDevice(opts);
+    this.device = device || await navigator.bluetooth.requestDevice(opts);
     this.device.addEventListener("gattserverdisconnected", this.onDisc);
     return this.attach();
   }

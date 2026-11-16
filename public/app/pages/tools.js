@@ -1,7 +1,7 @@
 // Tools tab: the vendor settings-page buttons and the tool pages, in one list.
 // Restore defaults and service mode keep their vendor confirms and gates.
 import { h, L, icon, toast, clear } from "../ui.js";
-import { S, definePage, onBus, ask, send, go } from "../app.js";
+import { S, definePage, onBus, ask, send, go, isH2 } from "../app.js";
 import { SET_ACTIONS, buildA4, serviceModeCommand } from "../../lib/tsl6-status.js";
 import { decodeSettings } from "../../lib/tsl6-settings.js";
 
@@ -9,7 +9,12 @@ async function restoreDefaults() {
   if (!S.status) return toast(L("Connect to the module first.", "请先连接蓝牙"));
   const a = SET_ACTIONS.find(x => x.id === "reset");
   const c = buildA4(S.status);
-  const r = await ask(c.type, c.payload, { confirm: a.confirm, timeout: 3000 });
+  // For the H2 board the link writes the board defaults. The confirm says what they are.
+  const confirm = isH2() ? {
+    en: "Restore the board settings to their defaults? Scroll Ack goes off and the board goes to Listen-Only. The bonds and the passkey stay.",
+    zh: "将模块设置恢复为默认值吗？免打扰关闭，模块进入只听模式。配对和配对码保留。",
+  } : a.confirm;
+  const r = await ask(c.type, c.payload, { confirm, timeout: 3000 });
   if (r) { toast(L("Defaults restored", "恢复默认设置成功"), "ok"); setTimeout(() => S.link.readStatus().catch(() => {}), 500); }
 }
 async function serviceMode() {
@@ -18,7 +23,13 @@ async function serviceMode() {
 }
 
 // [id, icon, chip color, en, zh, sub en, sub zh, action]
+// Tools that the H2 board has. Every other tool is hidden for the board.
+const H2_TOOLS = ["board", "boardfw", "log", "reset"];
 const GROUPS = [
+  { en: "H2 board", zh: "H2模块", h2: true, items: [
+    ["board", "cpu", "", "Board", "模块", "State, op mode, counters, pairing", "状态、运行模式、计数器、配对", () => go("board")],
+    ["boardfw", "hard-drive-download", "", "Board firmware", "模块固件", "Update over Bluetooth", "通过蓝牙更新", () => go("boardfw")],
+  ] },
   { en: "Car features", zh: "车辆功能", items: [
     ["shortcuts", "workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
     ["blebtn", "radio", "", "BLE buttons", "蓝牙按钮", "Remote buttons and their actions", "遥控按钮及其动作", () => go("blebtn")],
@@ -49,7 +60,8 @@ definePage("tools", () => {
     // While the module is off, the vendor settings-page tools hide; the tools that the old Me tab always showed stay.
     const moduleOff = !!S.status && !S.blank && decodeSettings(S.status).mianSwitch === 1;
     for (const g of GROUPS) {
-      const items = g.items.filter(([id]) => !moduleOff || ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"].includes(id));
+      if (g.h2 && !isH2()) continue; // the board group shows only for a board
+      const items = g.items.filter(([id]) => (isH2() ? H2_TOOLS.includes(id) : !moduleOff || ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"].includes(id)));
       if (!items.length) continue;
       el.append(h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(g.en, g.zh)),
         h("div", { class: "card" }, items.map(([id, ico, color, en, zh, sen, szh, fn], i) =>
