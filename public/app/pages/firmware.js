@@ -8,7 +8,7 @@ import { S, definePage, onBus, connect, go, log } from "../app.js";
 import { decodeStatus } from "../../lib/tsl6-settings.js";
 import { formatVersion } from "../../lib/tsl6-status.js";
 import {
-  inRuntime, inBoot, uid14, lhex, inspectImage, origPassOk, fetchSecured, fetchPrompt, fetchStock,
+  inRuntime, inBoot, uid14, lhex, inspectImage, origPassOk, fetchSecured, fetchPrompt, fetchPromptV1, fetchStock,
   flashPages, requestRestart, reconnectFast, SAFE_CHUNK,
 } from "../../lib/tsl6-flash.js";
 
@@ -19,6 +19,7 @@ const RESCUE_MS = 180000; // rescue arm: time to power-cycle the module and pick
 // ---------------------------------------------------------------- session
 const F = {
   image: null,      // {pages (null if rejected), problems, lines, sha} | {error: {en, zh}}
+  build: "secured", // the BUILDS entry picked in the list
   confirm: false,
   modId: "",
   origPass: "",
@@ -48,25 +49,52 @@ async function accept(buf, source) {
   changed();
 }
 
-async function loadSecured() {
+// The images in the list. fetch() returns {buf, url}. "file" has no fetch: its button opens the file picker.
+// The notes are constant HTML.
+const BUILDS = {
+  secured: {
+    label: ["Secured build (recommended)", "安全版（推荐）"],
+    fetch: async () => ({ ...(await fetchSecured()), url: "runtime-nokey.bin" }),
+    note: ["<b>Use this one.</b> The original June 2026 firmware has a <b>backdoor</b>: a fixed vendor password that opens every TSL6 module over Bluetooth, whatever password you set. The secured build is the same firmware with the backdoor removed. Only your own password opens the module.",
+      "<b>请用这个。</b>2026 年 6 月的原版固件有<b>后门</b>：一个固定的厂家密码，无论你设置什么密码，都能通过蓝牙打开每一个 TSL6 模块。安全版是去掉后门的同一固件。只有你自己的密码能打开模块。"],
+  },
+  prompt: {
+    label: ["Prompt build v2 (test)", "提示版 v2（测试）"],
+    fetch: async () => ({ ...(await fetchPrompt()), url: "runtime-prompt.bin" }),
+    note: ["The secured build plus new choices in <b>Settings → Scroll interval → On hands-on prompt</b>. With one of them, the module scrolls only when the car shows the hands-on prompt: one tick pair after the delay you pick (0.3–5 s, random ± 50 %). <b>New in v2:</b> if the nag goes on to the chime, the module sends one more tick pair at each new level (at most 3 for one nag). The gap between the two ticks is your “Up/down tick gap” ± 50 %, random. The Car tab shows the live state. All other Scroll interval choices work as in the secured build. The gauge altitude then shows the prompt count instead. If you save settings in the vendor Mini App, it changes Scroll interval back to every 2–3 s.",
+      "安全版加新选项：<b>设置 → 滚轮操作时间 → 手扶提示时</b>。选其中一个后，只有车机显示手扶方向盘提示时模块才操作滚轮：在你选的延时后（0.3–5 秒，随机 ± 50 %）操作一次减加。<b>v2 新增：</b>如果提示升级为提示音，每升一级模块再操作一次减加（每次提示最多 3 次）。减加之间的间隔为“加减时间间隔”± 50 % 随机。车辆页显示实时状态。其他选项与安全版相同。仪表的海拔改为显示提示次数。如果在厂家小程序里保存设置，它会把滚轮操作时间改回每 2–3 秒。"],
+  },
+  promptV1: {
+    label: ["Prompt build v1 (car-tested)", "提示版 v1（已实车测试）"],
+    fetch: async () => ({ ...(await fetchPromptV1()), url: "runtime-prompt-v1.bin" }),
+    note: ["The first prompt build, tested on the car on 2026-11-14. It sends one tick pair for each prompt and nothing more, also when the nag goes on to the chime. Use it to go back if v2 does not work for you.",
+      "第一个提示版，2026-11-14 已实车测试。每次提示只操作一次减加，提示升级为提示音时也不再操作。如果 v2 不适合你，可用它退回。"],
+  },
+  original: {
+    label: ["Original build (backdoor)", "原版（有后门）"],
+    fetch: async () => {
+      if (!(await origPassOk(F.origPass))) throw new Error("wrong passphrase");
+      return fetchStock(log);
+    },
+    note: ["The original June 2026 build <b>has the backdoor</b>. It needs a passphrase to load. If you want the passphrase for the original (backdoor) build, contact me: <a href=\"https://github.com/n0k0m3\">n0k0m3 on GitHub</a>.",
+      "2026 年 6 月的原版<b>有后门</b>，需要口令才能加载。如需原版（有后门）的口令，请联系我：<a href=\"https://github.com/n0k0m3\">GitHub 上的 n0k0m3</a>。"],
+  },
+  file: {
+    label: ["Image file on this device", "本设备上的镜像文件"],
+    note: ["A runtime image in transport format (.bin) or as JSON. The page checks it before it allows a flash.",
+      "传输格式（.bin）或 JSON 格式的运行固件镜像。刷写前本页会先检查它。"],
+  },
+};
+
+async function loadBuild() {
+  const b = BUILDS[F.build];
+  if (!b || !b.fetch) return;
   F.busy = true; changed();
-  try { const { buf } = await fetchSecured(); await accept(buf, "runtime-nokey.bin"); }
-  catch (e) { log(`secured build: ${e.message}`, "bad"); imageError(`Secured build failed: ${e.message}`, `安全版加载失败：${e.message}`); }
-  F.busy = false; changed();
-}
-async function loadPrompt() {
-  F.busy = true; changed();
-  try { const { buf } = await fetchPrompt(); await accept(buf, "runtime-prompt.bin"); }
-  catch (e) { log(`prompt build: ${e.message}`, "bad"); imageError(`Prompt build failed: ${e.message}`, `提示版加载失败：${e.message}`); }
-  F.busy = false; changed();
-}
-async function loadOriginal() {
-  F.busy = true; changed();
-  try {
-    if (!(await origPassOk(F.origPass))) throw new Error("wrong passphrase");
-    const { buf, url } = await fetchStock(log);
-    await accept(buf, url);
-  } catch (e) { log(`original build: ${e.message}`, "bad"); imageError(`Original build not loaded: ${e.message}`, `原版未加载：${e.message}`); }
+  try { const { buf, url } = await b.fetch(); await accept(buf, url); }
+  catch (e) {
+    log(`${b.label[0]}: ${e.message}`, "bad");
+    imageError(`${b.label[0]} not loaded: ${e.message}`, `${b.label[1]}未加载：${e.message}`);
+  }
   F.busy = false; changed();
 }
 
@@ -176,14 +204,17 @@ definePage("firmware", () => {
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Show all devices", "显示所有设备"))),
       h("div", { class: "li-sub" }, L("Use it if the module does not appear.", "找不到模块时使用。"))));
 
-  // Image
-  const securedBtn = h("button", { class: "btn primary", type: "button", "data-id": "fw-secured", onclick: loadSecured }, L("Load secured build", "加载安全版"));
-  const promptBtn = h("button", { class: "btn", type: "button", "data-id": "fw-prompt", onclick: loadPrompt }, L("Load prompt build (test)", "加载提示版（测试）"));
-  const passIn = h("input", { class: "text mono", type: "password", placeholder: L("Passphrase", "口令"), autocomplete: "off", spellcheck: "false", style: { flex: "1", minWidth: "160px" },
+  // Image: one list and one button. The file input stays hidden; the button opens it.
+  const buildSel = h("select", { class: "text", "data-id": "fw-build", "aria-label": L("Firmware image", "固件镜像"),
+    onchange: e => { F.build = e.target.value; F.image = null; changed(); } },
+    ...Object.entries(BUILDS).map(([id, b]) => h("option", { value: id }, L(b.label[0], b.label[1]))));
+  const buildNote = h("p", { class: "row-note fw-note" });
+  const passIn = h("input", { class: "text mono", type: "password", placeholder: L("Passphrase", "口令"), autocomplete: "off", spellcheck: "false", "data-id": "fw-pass",
     oninput: e => { F.origPass = e.target.value; } });
-  const origBtn = h("button", { class: "btn", type: "button", onclick: loadOriginal }, L("Load original (June 2026 dump)", "加载原版（2026 年 6 月）"));
-  const fileIn = h("input", { type: "file", accept: ".bin,.json,application/octet-stream,application/json",
-    onchange: async e => { const f = e.target.files[0]; if (f) await accept(await f.arrayBuffer(), f.name); } });
+  const fileIn = h("input", { type: "file", hidden: true, accept: ".bin,.json,application/octet-stream,application/json",
+    onchange: async e => { const f = e.target.files[0]; e.target.value = ""; if (f) await accept(await f.arrayBuffer(), f.name); } });
+  const loadBtn = h("button", { class: "btn primary", type: "button", "data-id": "fw-load",
+    onclick: () => { if (F.build === "file") fileIn.click(); else void loadBuild(); } });
   const imgOut = h("div", { class: "out", "data-id": "fw-image" });
 
   // Flash
@@ -210,19 +241,7 @@ definePage("firmware", () => {
 
     h("div", { class: "sec-label" }, L("1. Firmware image", "1. 固件镜像")),
     h("div", { class: "card" },
-      h("div", { class: "form" }, h("div", { class: "btns" }, securedBtn),
-        rich(L("<b>Use this one.</b> The original June 2026 firmware has a <b>backdoor</b>: a fixed vendor password that opens every TSL6 module over Bluetooth, whatever password you set. The secured build is the same firmware with the backdoor removed. Only your own password opens the module.",
-          "<b>请用这个。</b>2026 年 6 月的原版固件有<b>后门</b>：一个固定的厂家密码，无论你设置什么密码，都能通过蓝牙打开每一个 TSL6 模块。安全版是去掉后门的同一固件。只有你自己的密码能打开模块。"))),
-      h("div", { class: "subhead" }, L("Prompt build (test)", "提示版（测试）")),
-      h("div", { class: "form" }, h("div", { class: "btns" }, promptBtn),
-        rich(L("The secured build plus new choices in <b>Settings → Scroll interval → On hands-on prompt</b>. With one of them, the module scrolls only when the car shows the hands-on prompt: one tick pair after the delay you pick (0.3–5 s, random ± 50 %). The gap between the two ticks is your “Up/down tick gap” ± 50 %, random. The Car tab shows the live state. All other Scroll interval choices work as in the secured build. The gauge altitude then shows the prompt count instead. If you save settings in the vendor Mini App, it changes Scroll interval back to every 2–3 s.",
-          "安全版加新选项：<b>设置 → 滚轮操作时间 → 手扶提示时</b>。选其中一个后，只有车机显示手扶方向盘提示时模块才操作滚轮：在你选的延时后（0.3–5 秒，随机 ± 50 %）操作一次减加。减加之间的间隔为“加减时间间隔”± 50 % 随机。车辆页显示实时状态。其他选项与安全版相同。仪表的海拔改为显示提示次数。如果在厂家小程序里保存设置，它会把滚轮操作时间改回每 2–3 秒。"))),
-      h("div", { class: "subhead" }, L("Original build", "原版")),
-      h("div", { class: "form" }, h("div", { class: "btns" }, passIn, origBtn),
-        rich(L("The original build <b>has the backdoor</b>. It needs a passphrase to load. If you want the passphrase for the original (backdoor) build, contact me: <a href=\"https://github.com/n0k0m3\">n0k0m3 on GitHub</a>.",
-          "原版<b>有后门</b>，需要口令才能加载。如需原版（有后门）的口令，请联系我：<a href=\"https://github.com/n0k0m3\">GitHub 上的 n0k0m3</a>。"))),
-      h("div", { class: "subhead" }, L("Other image", "其他镜像")),
-      h("div", { class: "form" }, fileIn, imgOut)),
+      h("div", { class: "form" }, buildSel, buildNote, passIn, h("div", { class: "btns" }, loadBtn, fileIn), imgOut)),
 
     h("div", { class: "sec-label" }, L("2. Flash", "2. 刷写")),
     h("div", { class: "card" },
@@ -286,7 +305,12 @@ definePage("firmware", () => {
     allBox.checked = F.showAll;
     // image
     drawImage();
-    securedBtn.disabled = promptBtn.disabled = origBtn.disabled = fileIn.disabled = F.busy;
+    const b = BUILDS[F.build] || BUILDS.secured;
+    buildSel.value = F.build;
+    buildSel.disabled = loadBtn.disabled = F.busy;
+    buildNote.innerHTML = L(b.note[0], b.note[1]);
+    passIn.hidden = F.build !== "original";
+    loadBtn.textContent = F.build === "file" ? L("Choose file", "选择文件") : L("Load", "加载");
     // flash
     confirmBox.checked = F.confirm;
     const pages = !!(F.image && F.image.pages);

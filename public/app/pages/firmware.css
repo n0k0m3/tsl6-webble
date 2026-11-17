@@ -18,3 +18,10 @@
 [data-page="firmware"] .out, [data-page="firmware"] .out *, [data-page="firmware"] .fw-sel { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 [data-page="firmware"] progress { width: 100%; height: 10px; accent-color: var(--accent-ui); }
 [data-page="firmware"] input[type=file] { max-width: 100%; font-size: 15px; }
+/* The image list: the same box as input.text, with a chevron. iOS shows its own picker wheel. */
+[data-page="firmware"] select.text { -webkit-appearance: none; appearance: none; width: 100%; min-height: 42px; padding: 10px 36px 10px 12px;
+  border: 1px solid var(--btn-b); border-radius: var(--r-sm); background: var(--card); font-size: 16px; font-weight: 600;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+[data-page="firmware"] select.text:focus { outline: 2px solid var(--accent-ui); outline-offset: 0; border-color: var(--accent-ui); }
+[data-page="firmware"] select.text:disabled { opacity: .6; }
