@@ -1,7 +1,7 @@
 // TSL6 runtime settings codec.
 // Bit map from the vendor Mini App (see docs/miniapp-protocol.md).
 // Pure functions: no BLE, no DOM. Works in the browser and in Node.
-import { H2_TYPE, H2_FIELDS, h2Options } from "./h2-menus.js";
+import { H2_TYPE, h2Fields, h2Options } from "./h2-menus.js";
 
 const OFF_ON = [[0, "Off (default)"], [1, "On"]];
 const ON_OFF_INV = [[0, "On (default)"], [1, "Off"]];
@@ -130,7 +130,7 @@ function present(f, payload) {
 // promptBuild adds the "time" prompt values (TIME_PROMPT) first. Without it the lists match the vendor menus.
 export function optionsFor(f, values, hwType, { promptBuild = false } = {}) {
   // The H2 board has its own menus (lib/h2-menus.js). They hold only what the board can do.
-  if (hwType === H2_TYPE) return h2Options(f.id, values ? values[f.id] : undefined).map(([v, en]) => [v, en]);
+  if (hwType === H2_TYPE) return h2Options(f.id, values ? values[f.id] : undefined, values).map(([v, en]) => [v, en]);
   if (f.id === "time") {
     const list = values && values.rand === 0 ? TIME_FIXED : TIME_RAND;
     return promptBuild ? [...TIME_PROMPT, ...list] : list;
@@ -143,8 +143,8 @@ export function optionsFor(f, values, hwType, { promptBuild = false } = {}) {
 
 // Field shown for this device type?
 export function appliesTo(f, hwType) {
-  // The H2 board has only the fields in H2_FIELDS. A field with no type list is not for the board.
-  if (hwType === H2_TYPE) return H2_FIELDS.includes(f.id);
+  // The H2 board has only its own fields (H2_FIELDS and the ported features that it reports).
+  if (hwType === H2_TYPE) return h2Fields().includes(f.id);
   return !f.types || f.types.includes(hwType);
 }
 

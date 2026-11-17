@@ -78,7 +78,7 @@ definePage("settings", () => {
   const label = id => ({ en: EN_NAME[id] || BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
   function options(id, vals) {
     // The H2 board has its own menus, with their own Chinese text (lib/h2-menus.js).
-    if (isH2()) return h2Options(id, vals[id]).map(([v, en, zh]) => [v, L(en, zh)]);
+    if (isH2()) return h2Options(id, vals[id], vals).map(([v, en, zh]) => [v, L(en, zh)]);
     const en = optionsFor(BY_ID[id], vals, S.hwType, EXTRA);
     let zh = ZH && ZH[id] && ZH[id].options;
     if (id === "lr" && [6, 8, 19].includes(S.hwType) && ZH) zh = ZH._lr68.options;

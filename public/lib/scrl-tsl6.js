@@ -5,10 +5,10 @@
 //   - builds a status payload in the TSL6 layout from the board's Info, Status and Settings,
 //   - turns an A3 settings write into the board settings that it changes,
 //   - gives the live prompt state in the shape that the Car tab draws.
-// Only the fields in H2_FIELDS and the rows in H2_ROWS mean something. Every other bit is 0.
+// Only the board fields (h2Fields()) and the rows in H2_ROWS mean something. Every other bit is 0.
 // A command or a change that the board does not have is refused: the adapter fails closed.
 
-import { H2_TIME, H2_GAP, H2_ORDER, H2_CUSTOM, H2_FIELDS } from "./h2-menus.js";
+import { H2_TIME, H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, H2_FEATURES } from "./h2-menus.js";
 import { BY_ID, decodeSettings } from "./tsl6-settings.js";
 import { FLAG } from "./scrl.js";
 
@@ -24,8 +24,11 @@ export function h2MenuValues(settings) {
   const ms = settings.mode === 0 ? settings.delay_ms : settings.interval_ms;
   const t = H2_TIME.find(([, mode, v]) => mode === settings.mode && v === ms);
   const g = H2_GAP.find(([, v]) => v === settings.gap_ms);
-  const o = H2_ORDER.find(([, pattern]) => pattern === settings.pattern);
-  return { time: t ? t[0] : H2_CUSTOM, jg: g ? g[0] : H2_CUSTOM, jj: o ? o[0] : 1 };
+  const o = h2Order().find(([, pattern]) => pattern === settings.pattern);
+  const out = { time: t ? t[0] : H2_CUSTOM, jg: g ? g[0] : H2_CUSTOM, jj: o ? o[0] : 1 };
+  // Ported features: the board value is the TSL6 value.
+  for (const [id] of H2_FEATURES) if (h2Has(id)) out[id] = settings[id];
+  return out;
 }
 
 // Board settings that one menu value changes. Throws for a value that the board menu does not have.
@@ -41,9 +44,14 @@ export function h2SettingChange(id, raw) {
     return { gap_ms: e[1] };
   }
   if (id === "jj") {
-    const e = H2_ORDER.find(([v]) => v === raw);
+    const e = h2Order().find(([v]) => v === raw);
     if (!e) throw new Error(`jj: the board has no value ${raw}`);
     return { pattern: e[1] };
+  }
+  const max = h2FeatureMax(id);
+  if (max !== undefined && h2Has(id)) {
+    if (!Number.isInteger(raw) || raw < 0 || raw > max) throw new Error(`${id}: the board has no value ${raw}`);
+    return { [id]: raw };
   }
   throw new Error(`${id}: not a setting of the board`);
 }
@@ -63,11 +71,12 @@ export function h2Status({ info, status, settings, flags }) {
   if ((flags & FLAG.CAN_RUNNING) && status && status.rx.all > 0) u[23] |= 1;
   // Settings.
   const m = h2MenuValues(settings);
-  for (const id of H2_FIELDS) {
+  for (const id of h2Fields()) {
     const f = BY_ID[id];
     u[f.byte] |= (m[id] << f.shift) & (((1 << f.width) - 1) << f.shift);
   }
-  u[BY_ID.rand.byte] |= 1 << BY_ID.rand.shift; // the board always uses random times
+  // A board without "rand" (firmware 0.2.0) always uses random times.
+  if (!h2Has("rand")) u[BY_ID.rand.byte] |= 1 << BY_ID.rand.shift;
   u.set(MARK, 36);
   return u;
 }
@@ -79,7 +88,8 @@ export function h2SettingsWrite(base, payload) {
   if (payload.length !== H2_STATUS_LEN || base.length !== H2_STATUS_LEN) throw new Error("settings write: wrong length");
   const before = decodeSettings(base), after = decodeSettings(payload);
   const out = {};
-  for (const id of H2_FIELDS) {
+  const fields = h2Fields();
+  for (const id of fields) {
     if (before[id] === after[id]) continue;
     Object.assign(out, h2SettingChange(id, after[id]));
   }
@@ -87,7 +97,7 @@ export function h2SettingsWrite(base, payload) {
   const strip = p => {
     const u = Uint8Array.from(p);
     for (let i = 18; i < 24; i++) u[i] = 0;
-    for (const id of H2_FIELDS) { const f = BY_ID[id]; u[f.byte] &= ~((((1 << f.width) - 1) << f.shift)); }
+    for (const id of fields) { const f = BY_ID[id]; u[f.byte] &= ~((((1 << f.width) - 1) << f.shift)); }
     return u;
   };
   const a = strip(base), b = strip(payload);
@@ -96,8 +106,9 @@ export function h2SettingsWrite(base, payload) {
 }
 
 // Board defaults for "Restore defaults": Scroll Ack off and Listen-Only, as after a factory reset. The bonds and
-// the passkey stay.
-export const H2_DEFAULTS = Object.freeze({ enabled: false, mode: 0, pattern: 0, delay_ms: 600, gap_ms: 100, interval_ms: 2500, op_mode: 0 });
+// the passkey stay. settingsDiff() writes a ported feature only when the board has it.
+export const H2_DEFAULTS = Object.freeze({ enabled: false, mode: 0, pattern: 0, delay_ms: 600, gap_ms: 100, interval_ms: 2500, op_mode: 0,
+  lr: 0, rand: 1 });
 
 // Live prompt state for the Car tab, in the shape of promptDiag() in lib/tsl6-gauge.js (the TSL6 prompt build
 // sends it in the gauge stream). The board sends it in its Live record, so the page needs no gauge stream.

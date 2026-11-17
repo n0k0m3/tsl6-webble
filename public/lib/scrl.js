@@ -98,7 +98,7 @@ function parseStatus(text) {
 const mergeFlags = (full, liveLow) => ((full & 0xFF00) | (liveLow & 0xFF)) >>> 0;
 
 const SETTING_KEYS = ["enabled", "mode", "pattern", "delay_ms", "gap_ms", "interval_ms", "op_mode"];
-const LIMITS = { delay_ms: [0, 5000], gap_ms: [0, 2000], interval_ms: [1000, 10000], mode: [0, 1], pattern: [0, 3], op_mode: [0, 1] };
+const LIMITS = { delay_ms: [0, 5000], gap_ms: [0, 2000], interval_ms: [1000, 10000], mode: [0, 1], pattern: [0, 5], op_mode: [0, 1] };
 function parseSettings(text) {
   const j = JSON.parse(text);
   if (!j || typeof j !== "object") throw new Error("Settings JSON: not an object");
@@ -107,6 +107,12 @@ function parseSettings(text) {
   for (const k of SETTING_KEYS.slice(1)) {
     if (!Number.isInteger(j[k]) || j[k] < 0) throw new Error(`Settings JSON: bad ${k}`);
     out[k] = j[k];
+  }
+  // Ported TSL6 features (firmware 0.3.0 and later): more keys, each a small integer.
+  for (const [k, v] of Object.entries(j)) {
+    if (k in out) continue;
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,30}$/.test(k) || !Number.isInteger(v) || v < 0 || v > 255) throw new Error(`Settings JSON: bad ${k}`);
+    out[k] = v;
   }
   return out;
 }
@@ -121,9 +127,10 @@ function settingsErrors(s) {
 }
 // Only the keys that differ. A write that names op_mode 1 releases a bus-off lock on the board,
 // so a save must not name op_mode when the user did not change it.
+// A key that the board does not report (a feature of newer firmware) is never written.
 function settingsDiff(board, form) {
   const out = {};
-  for (const k of SETTING_KEYS) if (board[k] !== form[k]) out[k] = form[k];
+  for (const k of Object.keys(board)) if (k in form && board[k] !== form[k]) out[k] = form[k];
   return out;
 }
 
