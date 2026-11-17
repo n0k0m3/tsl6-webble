@@ -15,14 +15,18 @@ export const BOOT_WINDOW_MS = 10000; // the bootloader goes back to the runtime 
 export const KNOWN_IMAGES = {
   "b1b2a3aa5e71d88336719bccb5da822faffc05acf50b5b482e570f1981dabbd5": "original June 2026 dump (runtime V1.0.00, HAS the vendor backdoor)",
   "7008bd0d6802de2daa9fb7743f3cc460f21dbaa35c799c94c55082c6d93093af": "secured build (June 2026 dump, backdoor removed)",
-  "8d22e7b1d7b8dfa4fc7d82abcd4eca175633786bbf584af9a5bf703a97b55373": "prompt build (secured build + scroll on the hands-on prompt)",
+  "8d22e7b1d7b8dfa4fc7d82abcd4eca175633786bbf584af9a5bf703a97b55373": "prompt build v1 (secured build + scroll on the hands-on prompt)",
+  "8f69a6e4387e2b356a095d47839f93ca61c5811ac8a551d18c4f6517aa9f7aeb": "prompt build v2 (prompt build + one more scroll at each nag escalation)",
 };
 export const SECURED_SHA = "7008bd0d6802de2daa9fb7743f3cc460f21dbaa35c799c94c55082c6d93093af";
 // The secured build is served by the live site only (not in git). Both images sit next to index.html.
 export const SECURED_URL = new URL("../runtime-nokey.bin", import.meta.url).href;
 // Prompt build: the secured build plus "Scroll interval = On hands-on prompt" (setting value 0). Served like the secured build.
-export const PROMPT_SHA = "8d22e7b1d7b8dfa4fc7d82abcd4eca175633786bbf584af9a5bf703a97b55373";
+// v2 also scrolls at hands-on 4 and 5 (the chime) and once more at each escalation. v1 acts on hands-on 3 only.
+export const PROMPT_SHA = "8f69a6e4387e2b356a095d47839f93ca61c5811ac8a551d18c4f6517aa9f7aeb";
 export const PROMPT_URL = new URL("../runtime-prompt.bin", import.meta.url).href;
+export const PROMPT_V1_SHA = "8d22e7b1d7b8dfa4fc7d82abcd4eca175633786bbf584af9a5bf703a97b55373";
+export const PROMPT_V1_URL = new URL("../runtime-prompt-v1.bin", import.meta.url).href;
 export const DUMP_URLS = [
   new URL("../runtime.bin", import.meta.url).href,
   "https://raw.githubusercontent.com/LQCross/TSL6-Firmware/main/latest-tsl6-535C62E239E339E31475FB10/runtime/runtime.bin",
@@ -141,6 +145,7 @@ async function fetchKnown(url, want, name, fetchFn) {
 }
 export const fetchSecured = (fetchFn = fetch) => fetchKnown(SECURED_URL, SECURED_SHA, "secured build", fetchFn);
 export const fetchPrompt = (fetchFn = fetch) => fetchKnown(PROMPT_URL, PROMPT_SHA, "prompt build", fetchFn);
+export const fetchPromptV1 = (fetchFn = fetch) => fetchKnown(PROMPT_V1_URL, PROMPT_V1_SHA, "prompt build v1", fetchFn);
 export async function fetchStock(log, fetchFn = fetch) {
   for (const url of DUMP_URLS) {
     try {

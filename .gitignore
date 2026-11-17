@@ -1,3 +1,4 @@
 # Secured build: served by the live site, not kept in git
 public/runtime-nokey.bin
 public/runtime-prompt.bin
+public/runtime-prompt-v1.bin
