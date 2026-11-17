@@ -75,7 +75,7 @@ await test("a settings save names op_mode only when it changes (a bus-off lock m
   assert.deepEqual(SC.settingsDiff(board, { ...board, gap_ms: 300 }), { gap_ms: 300 });
   for (const [v] of M.H2_TIME) assert.ok(!("op_mode" in A.h2SettingChange("time", v)));
   for (const [v] of M.H2_GAP) assert.ok(!("op_mode" in A.h2SettingChange("jg", v)));
-  for (const [v] of M.H2_ORDER) assert.ok(!("op_mode" in A.h2SettingChange("jj", v)));
+  for (const [v] of M.h2Order()) assert.ok(!("op_mode" in A.h2SettingChange("jj", v)));
 });
 
 await test("the firmware passkey reader takes the command of the app", () => {
@@ -170,9 +170,35 @@ const info = { id: "74dafe000001", fw: "0.1.0" };
 const defaults = SC.parseSettings(V.default_settings_json);
 const flagsOn = SC.FLAG.ENABLED | SC.FLAG.CAN_RUNNING | SC.FLAG.HW4_SEEN | SC.FLAG.ACTIVE;
 const statusOf = (settings, flags = flagsOn) => A.h2Status({ info, status: { rx: { all: 5 } }, settings, flags });
+// Firmware 0.2.0 settings: no ported features.
+const oldDefaults = Object.fromEntries(SC.SETTING_KEYS.map(k => [k, defaults[k]]));
+M.h2SetBoardSettings(defaults);
+
+await test("the firmware reports the ported features, and the app knows each one", () => {
+  assert.deepEqual(M.H2_FEATURES.map(([id]) => id).filter(id => id in defaults), M.H2_FEATURES.map(([id]) => id),
+    "every app feature is in the firmware defaults");
+  for (const k of Object.keys(defaults)) assert.ok(SC.SETTING_KEYS.includes(k) || M.h2FeatureMax(k) !== undefined, `app knows ${k}`);
+  assert.deepEqual(M.h2Fields(), ["time", "jg", "jj", "lr", "rand"]);
+  assert.equal(M.h2Order(), M.H2_ORDER_TSL6);
+});
+
+await test("a board without ported features (firmware 0.2.0) keeps the old menus", () => {
+  M.h2SetBoardSettings(oldDefaults);
+  try {
+    assert.deepEqual(M.h2Fields(), [...M.H2_FIELDS]);
+    assert.equal(M.h2Order(), M.H2_ORDER_OLD);
+    assert.throws(() => A.h2SettingChange("lr", 1), /not a setting/);
+    const p = statusOf(oldDefaults);
+    assert.equal(T.decodeSettings(p).rand, 1, "random times");
+    assert.deepEqual(SC.settingsDiff(oldDefaults, A.H2_DEFAULTS), {}, "restore defaults names no feature");
+    assert.deepEqual(T.FIELDS.filter(f => T.appliesTo(f, M.H2_TYPE)).map(f => f.id).sort(), [...M.H2_FIELDS].sort());
+  } finally {
+    M.h2SetBoardSettings(defaults);
+  }
+});
 
 await test("type filter: the board has exactly its own fields, and no TSL6 type changes", () => {
-  assert.deepEqual(T.FIELDS.filter(f => T.appliesTo(f, M.H2_TYPE)).map(f => f.id).sort(), [...M.H2_FIELDS].sort());
+  assert.deepEqual(T.FIELDS.filter(f => T.appliesTo(f, M.H2_TYPE)).map(f => f.id).sort(), M.h2Fields().sort());
   for (const type of [...T.TSL_TYPES, 9]) {
     for (const f of T.FIELDS) assert.equal(T.appliesTo(f, type), !f.types || f.types.includes(type), `${f.id} for type ${type}`);
     assert.ok(!T.TSL_TYPES.includes(M.H2_TYPE));
@@ -183,10 +209,10 @@ await test("type filter: the board has exactly its own fields, and no TSL6 type 
 });
 
 await test("board menus: each value fits its field, and has an English and a Chinese label", () => {
-  for (const id of M.H2_FIELDS) {
+  for (const id of M.h2Fields()) {
     const f = T.BY_ID[id], max = (1 << f.width) - 1;
     const opts = M.h2Options(id, undefined);
-    assert.ok(opts.length >= 4, id);
+    assert.ok(opts.length >= (M.h2FeatureMax(id) === undefined ? 4 : M.h2FeatureMax(id) + 1), id);
     assert.equal(new Set(opts.map(o => o[0])).size, opts.length, `${id}: no value twice`);
     for (const [v, en, zh] of opts) {
       assert.ok(Number.isInteger(v) && v >= 0 && v <= max, `${id} value ${v} fits ${f.width} bits`);
@@ -219,8 +245,7 @@ await test("the status in the TSL6 layout passes the checks of the TSL6 pages", 
   assert.deepEqual(off.can, [false, false, false]);
   // Every bit outside the board fields, the live bytes and the fixed marks is 0.
   const z = Uint8Array.from(statusOf(defaults, 0));
-  for (const id of M.H2_FIELDS) { const f = T.BY_ID[id]; z[f.byte] &= ~(((1 << f.width) - 1) << f.shift); }
-  z[T.BY_ID.rand.byte] &= ~(1 << T.BY_ID.rand.shift);
+  for (const id of M.h2Fields()) { const f = T.BY_ID[id]; z[f.byte] &= ~(((1 << f.width) - 1) << f.shift); }
   for (let i = 24; i < 36; i++) assert.equal(z[i], 0, `settings byte ${i}`);
   for (let i = 40; i < 76; i++) assert.equal(z[i], 0, `byte ${i}`);
 });
@@ -247,16 +272,32 @@ await test("a save from the Settings page changes exactly one board setting, for
       const { change } = save(start, "jg", v);
       assert.deepEqual(change, v === A.h2MenuValues(start).jg ? {} : { gap_ms: ms });
     }
-    for (const [v, pattern] of M.H2_ORDER) {
+    for (const [v, pattern] of M.h2Order()) {
       const { change } = save(start, "jj", v);
       assert.deepEqual(change, v === A.h2MenuValues(start).jj ? {} : { pattern });
+    }
+    for (const [id, max] of M.H2_FEATURES) {
+      for (let v = 0; v <= max; v++) {
+        const { change, next } = save(start, id, v);
+        assert.deepEqual(change, v === start[id] ? {} : { [id]: v });
+        assert.equal(A.h2MenuValues(next)[id], v);
+      }
+      assert.throws(() => A.h2SettingChange(id, max + 1), /no value/);
     }
   }
 });
 
+await test("the timer labels follow the random-interval setting", () => {
+  const timer = opts => opts.filter(([v]) => M.H2_TIME.find(e => e[0] === v)[1] === 1).map(o => o[1]);
+  assert.ok(timer(M.h2Options("time", 1, { rand: 1 })).every(t => /\d-\d/.test(t)), "ranges with rand 1");
+  assert.ok(timer(M.h2Options("time", 1, { rand: 0 })).every(t => !/\d-\d/.test(t)), "exact with rand 0");
+  assert.deepEqual(M.h2Order().map(([v, p]) => [v, M.h2Options("jj", v).find(o => o[0] === v)[1]]),
+    [[1, "Down, then up (default)"], [0, "Up, then down"], [2, "Alternate"], [3, "Random"]]);
+});
+
 await test("board values that no menu holds stay when another field is saved", () => {
   const custom = { ...defaults, mode: 0, delay_ms: 700, gap_ms: 137, interval_ms: 3333 };
-  assert.deepEqual(A.h2MenuValues(custom), { time: M.H2_CUSTOM, jg: M.H2_CUSTOM, jj: 1 });
+  assert.deepEqual(A.h2MenuValues(custom), { time: M.H2_CUSTOM, jg: M.H2_CUSTOM, jj: 1, lr: 0, rand: 1 });
   const { change, next } = save(custom, "jj", 0);
   assert.deepEqual(change, { pattern: 1 });
   assert.deepEqual([next.delay_ms, next.gap_ms, next.interval_ms], [700, 137, 3333]);
@@ -270,7 +311,7 @@ await test("board values that no menu holds stay when another field is saved", (
 await test("the adapter refuses each change that the board does not have", () => {
   const base = statusOf(defaults);
   for (const f of T.FIELDS) {
-    if (M.H2_FIELDS.includes(f.id) || f.layout76 === false) continue;
+    if (M.h2Fields().includes(f.id) || f.layout76 === false) continue;
     const cur = (base[f.byte] >> f.shift) & ((1 << f.width) - 1);
     const payload = T.encodeSettings(base, { [f.id]: cur ^ 1 }, 6, f.id);
     if (payload.every((v, i) => v === base[i] || (i >= 18 && i < 24))) continue; // a rule of the codec undid the change

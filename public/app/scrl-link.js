@@ -9,6 +9,7 @@
 import { LinkBase, platformChunk } from "./ble.js";
 import * as SC from "../lib/scrl.js";
 import { h2Status, h2SettingsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
+import { h2SetBoardSettings } from "../lib/h2-menus.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -154,7 +155,7 @@ export class ScrlLink extends LinkBase {
     let raw = null;
     await step("Settings read", async () => { raw = await t.read("settings"); });
     this.log(`board: Settings read ${this.since()}`);
-    await step("Settings data", () => { B.settings = SC.parseSettings(dec.decode(raw)); }, raw);
+    await step("Settings data", () => { B.settings = SC.parseSettings(dec.decode(raw)); h2SetBoardSettings(B.settings); }, raw);
     // The subscriptions need the authenticated link, so they come after the first good read.
     await step("Live subscribe", () => t.subscribe("live", b => { try { this.takeLive(SC.parseLive(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } }));
     await step("Log subscribe", () => t.subscribe("log", b => this.log(`board: ${dec.decode(b)}`)));
@@ -214,6 +215,7 @@ export class ScrlLink extends LinkBase {
   async refresh() {
     this.takeStatus(await this.t.read("status"));
     this.board.settings = SC.parseSettings(dec.decode(await this.t.read("settings")));
+    h2SetBoardSettings(this.board.settings);
     this.pushStatus(true);
     return this.status;
   }

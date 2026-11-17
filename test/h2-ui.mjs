@@ -93,7 +93,7 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2", {}, async page => {
   assert.equal(await page.isVisible("[data-id=open-gauges]"), false, "no gauges for the board");
   assert.match(await text(page, ".vehicle-name"), /M5Stack NanoH2/);
   await tab(page, "settings");
-  assert.deepEqual(await ids(page, "[data-page=settings] [data-id^=set-]", "data-id"), ["set-search", "set-opmode", "set-time", "set-jg", "set-jj"]);
+  assert.deepEqual(await ids(page, "[data-page=settings] [data-id^=set-]", "data-id"), ["set-search", "set-opmode", "set-lr", "set-time", "set-rand", "set-jg", "set-jj"]);
   assert.equal(await page.isVisible("[data-id=set-mianSwitch]"), false, "no master switch");
   assert.equal(await page.isVisible("[data-id=set-lab]"), false, "no lab rows");
   await tab(page, "tools");
@@ -133,9 +133,9 @@ await scenario("ap-assist-switch-and-settings-menus", "mock=h2", {}, async page 
   await page.waitForFunction(() => /0\.3 s/.test(document.querySelector("[data-id=set-jg]").textContent), null, { timeout: 8000 });
   // tick order: "Up only" is a board choice
   await page.click("[data-id=set-jj]");
-  assert.deepEqual(await page.$$eval(".opt", els => els.map(e => e.textContent.trim())), ["Down, then up (default)", "Up, then down", "Up only", "Down only"]);
+  assert.deepEqual(await page.$$eval(".opt", els => els.map(e => e.textContent.trim())), ["Down, then up (default)", "Up, then down", "Alternate", "Random"]);
   await page.click('.opt[data-v="2"]');
-  await page.waitForFunction(() => /Up only/.test(document.querySelector("[data-id=set-jj]").textContent), null, { timeout: 8000 });
+  await page.waitForFunction(() => /Alternate/.test(document.querySelector("[data-id=set-jj]").textContent), null, { timeout: 8000 });
   // The board holds exactly these values.
   await board(page);
   assert.equal(await text(page, "[data-id=board-interval_ms] .val"), "5000 ms");
@@ -143,6 +143,37 @@ await scenario("ap-assist-switch-and-settings-menus", "mock=h2", {}, async page 
   assert.equal(await text(page, "[data-id=board-delay_ms] .val"), "600 ms", "the prompt delay did not change");
   await tab(page, "status");
   assert.match(await text(page, ".hero-sub"), /Every 4-6 s while AP is active/);
+});
+
+await scenario("ported-scroll-settings-wheel-and-random-interval", "mock=h2", {}, async page => {
+  await connect(page);
+  await tab(page, "settings");
+  await page.click("[data-id=set-lr]");
+  assert.deepEqual(await page.$$eval(".opt", els => els.map(e => e.textContent.trim())),
+    ["Left wheel, volume (default)", "Right wheel, speed", "Left and right, alternate"]);
+  await page.click('.opt[data-v="1"]');
+  await toastIs(page, /Saved/);
+  await page.waitForFunction(() => /Right wheel/.test(document.querySelector("[data-id=set-lr]").textContent), null, { timeout: 8000 });
+  await page.click("[data-id=set-time]");
+  await page.click('.opt[data-v="1"]');
+  await toastIs(page, /Saved/);
+  await page.waitForFunction(() => /Every 2-3 s/.test(document.querySelector("[data-id=set-time]").textContent), null, { timeout: 8000 });
+  await page.click("[data-id=set-rand]");
+  assert.deepEqual(await page.$$eval(".opt", els => els.map(e => e.textContent.trim())), ["Off: the exact timer interval", "On (default)"]);
+  await page.click('.opt[data-v="0"]');
+  await toastIs(page, /Saved/);
+  await page.waitForFunction(() => /Every 2\.5 s/.test(document.querySelector("[data-id=set-time]").textContent), null, { timeout: 8000 });
+  await tab(page, "tools");
+  await page.click("[data-id=tool-log]");
+  await page.waitForFunction(() => /SET {2}on=1/.test(document.querySelector("#page").textContent));
+});
+
+await scenario("board-without-ported-settings-keeps-the-old-rows", "mock=h2&nofeat", {}, async page => {
+  await connect(page);
+  await tab(page, "settings");
+  assert.deepEqual(await ids(page, "[data-page=settings] [data-id^=set-]", "data-id"), ["set-search", "set-opmode", "set-time", "set-jg", "set-jj"]);
+  await page.click("[data-id=set-jj]");
+  assert.deepEqual(await page.$$eval(".opt", els => els.map(e => e.textContent.trim())), ["Down, then up (default)", "Up, then down", "Up only", "Down only"]);
 });
 
 await scenario("exact-time-shows-as-custom-and-stays", "mock=h2", {}, async page => {
@@ -486,9 +517,9 @@ await fake("real-connect-path-board", { kind: "h2", name: "SCRL-FAKE" }, async p
   await toastIs(page, /Saved/);
   await tab(page, "tools");
   await page.click("[data-id=tool-log]");
-  await page.waitForFunction(() => /pat=2/.test(document.querySelector("#page").textContent));
+  await page.waitForFunction(() => /pat=4/.test(document.querySelector("#page").textContent));
   await page.waitForTimeout(300);
-  assert.equal(((await text(page, "#page")).match(/SET {2}on=1 mode=0 pat=2/g) || []).length, 1, "no double notification after a reconnect");
+  assert.equal(((await text(page, "#page")).match(/SET {2}on=1 mode=0 pat=4/g) || []).length, 1, "no double notification after a reconnect");
 });
 
 await fake("gatt-step-failure-names-the-call", { kind: "h2", name: "SCRL-FAKE", failChr: "live" }, async page => {

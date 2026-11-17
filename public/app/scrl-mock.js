@@ -17,6 +17,9 @@ export class MockH2Transport {
     this.q = q; this.up = false; this.down = false; this.subs = {}; this.onDisconnect = () => {};
     const on = !q.has("lo");
     this.settings = { enabled: on, mode: 0, pattern: 0, delay_ms: 600, gap_ms: 100, interval_ms: 2500, op_mode: on ? 1 : 0 };
+    // Ported TSL6 features of firmware 0.3.0. "&nofeat" acts as firmware 0.2.0.
+    this.features = q.has("nofeat") ? {} : { lr: 2, rand: 1 }; // highest value of each
+    for (const k of Object.keys(this.features)) this.settings[k] = k === "rand" ? 1 : 0;
     this.passkey = ""; this.refused = 0;
     this.lock = q.has("lock"); this.pending = q.has("pending"); this.authFails = q.has("pair") ? 3 : 0;
     this.cut = Number(q.get("cut")) || 0;
@@ -96,7 +99,7 @@ export class MockH2Transport {
     if (name === "status") return enc.encode(this.statusText());
     if (name === "live") return this.liveBytes();
     if (name === "settings" && this.q.get("bad") === "settings") return enc.encode('{"enabled":1,"mode":0,"pattern":0,"delay_ms":600,"gap_ms":100,"interval_ms":2500,"op_mode":0}');
-    if (name === "settings") { const s = this.settings; return enc.encode(JSON.stringify({ enabled: s.enabled, mode: s.mode, pattern: s.pattern, delay_ms: s.delay_ms, gap_ms: s.gap_ms, interval_ms: s.interval_ms, op_mode: s.op_mode })); }
+    if (name === "settings") return enc.encode(JSON.stringify(this.settings));
     throw new Error("read not permitted");
   }
   async subscribe(name, cb) {
@@ -125,13 +128,19 @@ export class MockH2Transport {
     try { j = JSON.parse(text); } catch { throw new Error("GATT Error: value not allowed"); }
     const s = { ...this.settings };
     for (const [k, v] of Object.entries(j)) {
+      if (k in this.features) {
+        const max = this.features[k];
+        if (v === true || v === false) { if (max !== 1) throw new Error("GATT Error: value not allowed"); s[k] = +v; continue; }
+        if (!Number.isInteger(v) || v < 0 || v > max) throw new Error("GATT Error: value not allowed");
+        s[k] = v; continue;
+      }
       if (!SC.SETTING_KEYS.includes(k)) throw new Error("GATT Error: value not allowed");
       if (k === "enabled") { if (v !== true && v !== false && v !== 0 && v !== 1) throw new Error("GATT Error: value not allowed"); s.enabled = !!v; continue; }
       if (!Number.isInteger(v) || v < 0 || (k === "op_mode" && v > 1)) throw new Error("GATT Error: value not allowed");
       s[k] = v;
     }
     if (s.mode > 1) s.mode = 0;
-    if (s.pattern > 3) s.pattern = 0;
+    if (s.pattern > (Object.keys(this.features).length ? 5 : 3)) s.pattern = 0;
     s.delay_ms = Math.min(s.delay_ms, 5000); s.gap_ms = Math.min(s.gap_ms, 2000);
     s.interval_ms = Math.min(Math.max(s.interval_ms, 1000), 10000);
     if (j.op_mode === 1 && this.lock) { this.lock = false; }
@@ -151,7 +160,10 @@ export class MockH2Transport {
     if (b[0] === C.RESET_COUNTERS) { this.sent = 0; this.rx = 0; this.say("CMD  counters reset"); }
     else if (b[0] === C.REBOOT) { this.say("CMD  restart"); setTimeout(() => { this.boot = Date.now(); this.drop(1500); }, 300); }
     else if (b[0] === C.FORGET_BONDS) { this.say("BLE  bonds deleted"); setTimeout(() => this.drop(0), 100); }
-    else if (b[0] === C.FACTORY_RESET) { this.settings = { enabled: false, mode: 0, pattern: 0, delay_ms: 600, gap_ms: 100, interval_ms: 2500, op_mode: 0 }; setTimeout(() => { this.boot = Date.now(); this.drop(1500); }, 300); }
+    else if (b[0] === C.FACTORY_RESET) {
+      this.settings = { enabled: false, mode: 0, pattern: 0, delay_ms: 600, gap_ms: 100, interval_ms: 2500, op_mode: 0 };
+      for (const k of Object.keys(this.features)) this.settings[k] = k === "rand" ? 1 : 0;
+      setTimeout(() => { this.boot = Date.now(); this.drop(1500); }, 300); }
     else if (b[0] === C.CONFIRM_IMAGE) { if (this.pending) { this.pending = false; this.say("UPD  image confirmed"); } }
     else throw new Error("GATT Error: value not allowed");
   }

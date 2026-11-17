@@ -7,8 +7,23 @@
 // Device type of the board in this app. The TSL6 types are 3, 5, 6, 7, 8, 19.
 export const H2_TYPE = 100;
 
-// Settings fields that the board has. Every other field is hidden for the board.
+// Settings fields that every board has. Every other field is hidden for the board, unless it is a ported feature.
 export const H2_FIELDS = Object.freeze(["time", "jg", "jj"]);
+
+// Ported TSL6 settings (firmware SCRL_FEATURES, since firmware 0.3.0). The board has one when its Settings JSON has
+// the key. The key is the TSL6 setting ID, and the value is the TSL6 raw value. [id, highest value the board takes]
+export const H2_FEATURES = Object.freeze([["lr", 2], ["rand", 1]]);
+
+// Feature keys of the connected board. The board link sets them after each Settings read.
+let boardKeys = new Set();
+export function h2SetBoardSettings(settings) {
+  boardKeys = new Set(H2_FEATURES.map(([id]) => id).filter(id => settings && Number.isInteger(settings[id])));
+}
+export const h2Has = id => boardKeys.has(id);
+// Highest board value of a ported feature, or undefined for another field.
+export const h2FeatureMax = id => (H2_FEATURES.find(([k]) => k === id) || [])[1];
+// Every settings field of the connected board.
+export const h2Fields = () => [...H2_FIELDS, ...H2_FEATURES.map(([id]) => id).filter(h2Has)];
 // Car tab rows that the board has.
 export const H2_ROWS = Object.freeze(["apAssist"]);
 
@@ -26,27 +41,38 @@ export const H2_GAP = Object.freeze([
   [1, 100], [2, 200], [3, 300], [4, 400], [5, 500], [6, 600], [7, 700], [8, 800], [9, 900], [10, 1000],
   [11, 1500], [12, 2000],
 ]);
-// "jj": tick order. [menu value, board pattern]. The board has "one tick only" where the TSL6 has "alternate" and "random".
-export const H2_ORDER = Object.freeze([[1, 0], [0, 1], [2, 2], [3, 3]]);
+// "jj": tick order. [menu value, board pattern]. Firmware 0.2.0 has "one tick only" where the TSL6 has "alternate"
+// and "random". Firmware 0.3.0 has the TSL6 values (board patterns 4 and 5), and it came with "lr" and "rand".
+export const H2_ORDER_OLD = Object.freeze([[1, 0], [0, 1], [2, 2], [3, 3]]);
+export const H2_ORDER_TSL6 = Object.freeze([[1, 0], [0, 1], [2, 4], [3, 5]]);
+export const h2Order = () => (h2Has("rand") ? H2_ORDER_TSL6 : H2_ORDER_OLD);
 
 const secs = ms => (ms / 1000).toString();
-// The board draws each timer interval from the mean +/- 20 %.
-const range = ms => `${secs(ms * 0.8)}-${secs(ms * 1.2)}`;
+// The board draws each timer interval from the mean +/- 20 %, or uses the mean when "rand" is 0.
+const range = (ms, exact) => (exact ? secs(ms) : `${secs(ms * 0.8)}-${secs(ms * 1.2)}`);
 
 // Menu options of a board field: [value, English label, Chinese label].
 // current = the value now. H2_CUSTOM is listed only when it is the current value.
-export function h2Options(id, current) {
+// values = the decoded values of the other fields (the "time" labels depend on "rand").
+export function h2Options(id, current, values) {
   let list = [];
   if (id === "time") {
+    const exact = h2Has("rand") && values && values.rand === 0;
     list = H2_TIME.map(([v, mode, ms]) => (mode === 0
       ? [v, `On hands-on prompt, after about ${secs(ms)} s${ms === 600 ? " (default)" : ""}`, `手扶提示时，约${secs(ms)}秒后${ms === 600 ? "(默认)" : ""}`]
-      : [v, `Every ${range(ms)} s, while AP is active`, `AP激活时，每${range(ms)}秒`]));
+      : [v, `Every ${range(ms, exact)} s, while AP is active`, `AP激活时，每${range(ms, exact)}秒`]));
   } else if (id === "jg") {
     list = H2_GAP.map(([v, ms]) => [v, `${secs(ms)} s${ms === 100 ? " (default)" : ""}`, `${secs(ms)}秒${ms === 100 ? "(默认)" : ""}`]);
   } else if (id === "jj") {
-    const text = { 0: ["Down, then up (default)", "先减后加(默认)"], 1: ["Up, then down", "先加后减"], 2: ["Up only", "只加"], 3: ["Down only", "只减"] };
-    list = H2_ORDER.map(([v, pattern]) => [v, ...text[pattern]]);
+    const text = { 0: ["Down, then up (default)", "先减后加(默认)"], 1: ["Up, then down", "先加后减"], 2: ["Up only", "只加"], 3: ["Down only", "只减"],
+      4: ["Alternate", "交替"], 5: ["Random", "随机"] };
+    list = h2Order().map(([v, pattern]) => [v, ...text[pattern]]);
+  } else if (id === "lr" && h2Has("lr")) {
+    list = [[0, "Left wheel, volume (default)", "左滚轮，音量(默认)"], [1, "Right wheel, speed", "右滚轮，速度"],
+      [2, "Left and right, alternate", "左右交替"]];
+  } else if (id === "rand" && h2Has("rand")) {
+    list = [[0, "Off: the exact timer interval", "关：固定间隔"], [1, "On (default)", "开(默认)"]];
   }
-  if (current === H2_CUSTOM && id !== "jj") list.push([H2_CUSTOM, "Custom value (Board page)", "自定义值（模块页）"]);
+  if (current === H2_CUSTOM && (id === "time" || id === "jg")) list.push([H2_CUSTOM, "Custom value (Board page)", "自定义值（模块页）"]);
   return list;
 }

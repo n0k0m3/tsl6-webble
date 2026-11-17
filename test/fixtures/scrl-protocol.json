@@ -1,6 +1,6 @@
 {
  "about": "Protocol of the BLE board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
- "firmware_commit": "b8bf442",
+ "firmware_commit": "d344e64",
  "flags": {
   "TX_ALLOWED": 1,
   "TIMER_ARMED": 2,
@@ -113,7 +113,7 @@
    "delay",
    "gap"
   ],
-  "default_settings_json": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+  "default_settings_json": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
   "limits": {
    "delay_max": 5000,
    "gap_max": 2000,
@@ -127,7 +127,7 @@
  },
  "writes": [
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":300}",
    "result": 0,
    "op_mode_named": false,
@@ -138,11 +138,13 @@
     "delay_ms": 300,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":600}",
    "result": 0,
    "op_mode_named": false,
@@ -153,11 +155,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":1000}",
    "result": 0,
    "op_mode_named": false,
@@ -168,11 +172,13 @@
     "delay_ms": 1000,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":1500}",
    "result": 0,
    "op_mode_named": false,
@@ -183,11 +189,13 @@
     "delay_ms": 1500,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":2000}",
    "result": 0,
    "op_mode_named": false,
@@ -198,11 +206,13 @@
     "delay_ms": 2000,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":3000}",
    "result": 0,
    "op_mode_named": false,
@@ -213,11 +223,13 @@
     "delay_ms": 3000,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":5000}",
    "result": 0,
    "op_mode_named": false,
@@ -228,11 +240,13 @@
     "delay_ms": 5000,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":2500}",
    "result": 0,
    "op_mode_named": false,
@@ -243,11 +257,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":5000}",
    "result": 0,
    "op_mode_named": false,
@@ -258,11 +274,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 5000,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":7500}",
    "result": 0,
    "op_mode_named": false,
@@ -273,11 +291,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 7500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":10000}",
    "result": 0,
    "op_mode_named": false,
@@ -288,11 +308,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 10000,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":100}",
    "result": 0,
    "op_mode_named": false,
@@ -303,11 +325,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":200}",
    "result": 0,
    "op_mode_named": false,
@@ -318,11 +342,13 @@
     "delay_ms": 600,
     "gap_ms": 200,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":300}",
    "result": 0,
    "op_mode_named": false,
@@ -333,11 +359,13 @@
     "delay_ms": 600,
     "gap_ms": 300,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":400}",
    "result": 0,
    "op_mode_named": false,
@@ -348,11 +376,13 @@
     "delay_ms": 600,
     "gap_ms": 400,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":500}",
    "result": 0,
    "op_mode_named": false,
@@ -363,11 +393,13 @@
     "delay_ms": 600,
     "gap_ms": 500,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":600}",
    "result": 0,
    "op_mode_named": false,
@@ -378,11 +410,13 @@
     "delay_ms": 600,
     "gap_ms": 600,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":700}",
    "result": 0,
    "op_mode_named": false,
@@ -393,11 +427,13 @@
     "delay_ms": 600,
     "gap_ms": 700,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":800}",
    "result": 0,
    "op_mode_named": false,
@@ -408,11 +444,13 @@
     "delay_ms": 600,
     "gap_ms": 800,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":900}",
    "result": 0,
    "op_mode_named": false,
@@ -423,11 +461,13 @@
     "delay_ms": 600,
     "gap_ms": 900,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":1000}",
    "result": 0,
    "op_mode_named": false,
@@ -438,11 +478,13 @@
     "delay_ms": 600,
     "gap_ms": 1000,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":1500}",
    "result": 0,
    "op_mode_named": false,
@@ -453,11 +495,13 @@
     "delay_ms": 600,
     "gap_ms": 1500,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":2000}",
    "result": 0,
    "op_mode_named": false,
@@ -468,11 +512,13 @@
     "delay_ms": 600,
     "gap_ms": 2000,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"pattern\":0}",
    "result": 0,
    "op_mode_named": false,
@@ -483,11 +529,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"pattern\":1}",
    "result": 0,
    "op_mode_named": false,
@@ -498,41 +546,132 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
-   "write": "{\"pattern\":2}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"pattern\":4}",
    "result": 0,
    "op_mode_named": false,
    "settings": {
     "enabled": false,
     "mode": 0,
-    "pattern": 2,
+    "pattern": 4,
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
-   "write": "{\"pattern\":3}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"pattern\":5}",
    "result": 0,
    "op_mode_named": false,
    "settings": {
     "enabled": false,
     "mode": 0,
-    "pattern": 3,
+    "pattern": 5,
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"lr\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"lr\":1}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0,
+    "lr": 1,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"lr\":2}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0,
+    "lr": 2,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"rand\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"rand\":1}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": false,
+    "mode": 0,
+    "pattern": 0,
+    "delay_ms": 600,
+    "gap_ms": 100,
+    "interval_ms": 2500,
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"enabled\":true}",
    "result": 0,
    "op_mode_named": false,
@@ -543,11 +682,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"enabled\":false}",
    "result": 0,
    "op_mode_named": false,
@@ -558,11 +699,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"op_mode\":1}",
    "result": 0,
    "op_mode_named": true,
@@ -573,11 +716,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"op_mode\":0}",
    "result": 0,
    "op_mode_named": true,
@@ -588,11 +733,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"delay_ms\":0}",
    "result": 0,
    "op_mode_named": false,
@@ -603,11 +750,13 @@
     "delay_ms": 0,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"delay_ms\":5000}",
    "result": 0,
    "op_mode_named": false,
@@ -618,11 +767,13 @@
     "delay_ms": 5000,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":0}",
    "result": 0,
    "op_mode_named": false,
@@ -633,11 +784,13 @@
     "delay_ms": 600,
     "gap_ms": 0,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":2000}",
    "result": 0,
    "op_mode_named": false,
@@ -648,11 +801,13 @@
     "delay_ms": 600,
     "gap_ms": 2000,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"interval_ms\":1000}",
    "result": 0,
    "op_mode_named": false,
@@ -663,11 +818,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 1000,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "write": "{\"interval_ms\":10000}",
    "result": 0,
    "op_mode_named": false,
@@ -678,12 +835,14 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 10000,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
-   "write": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
+   "write": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "result": 0,
    "op_mode_named": true,
    "settings": {
@@ -693,11 +852,13 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":300}",
    "result": 0,
    "op_mode_named": false,
@@ -708,11 +869,13 @@
     "delay_ms": 300,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":600}",
    "result": 0,
    "op_mode_named": false,
@@ -723,11 +886,13 @@
     "delay_ms": 600,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":1000}",
    "result": 0,
    "op_mode_named": false,
@@ -738,11 +903,13 @@
     "delay_ms": 1000,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":1500}",
    "result": 0,
    "op_mode_named": false,
@@ -753,11 +920,13 @@
     "delay_ms": 1500,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":2000}",
    "result": 0,
    "op_mode_named": false,
@@ -768,11 +937,13 @@
     "delay_ms": 2000,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":3000}",
    "result": 0,
    "op_mode_named": false,
@@ -783,11 +954,13 @@
     "delay_ms": 3000,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":0,\"delay_ms\":5000}",
    "result": 0,
    "op_mode_named": false,
@@ -798,11 +971,13 @@
     "delay_ms": 5000,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":2500}",
    "result": 0,
    "op_mode_named": false,
@@ -813,11 +988,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 2500,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":5000}",
    "result": 0,
    "op_mode_named": false,
@@ -828,11 +1005,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 5000,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":7500}",
    "result": 0,
    "op_mode_named": false,
@@ -843,11 +1022,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 7500,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"mode\":1,\"interval_ms\":10000}",
    "result": 0,
    "op_mode_named": false,
@@ -858,11 +1039,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 10000,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":100}",
    "result": 0,
    "op_mode_named": false,
@@ -873,11 +1056,13 @@
     "delay_ms": 1234,
     "gap_ms": 100,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":200}",
    "result": 0,
    "op_mode_named": false,
@@ -888,11 +1073,13 @@
     "delay_ms": 1234,
     "gap_ms": 200,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":300}",
    "result": 0,
    "op_mode_named": false,
@@ -903,11 +1090,13 @@
     "delay_ms": 1234,
     "gap_ms": 300,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":400}",
    "result": 0,
    "op_mode_named": false,
@@ -918,11 +1107,13 @@
     "delay_ms": 1234,
     "gap_ms": 400,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":500}",
    "result": 0,
    "op_mode_named": false,
@@ -933,11 +1124,13 @@
     "delay_ms": 1234,
     "gap_ms": 500,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":600}",
    "result": 0,
    "op_mode_named": false,
@@ -948,11 +1141,13 @@
     "delay_ms": 1234,
     "gap_ms": 600,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":700}",
    "result": 0,
    "op_mode_named": false,
@@ -963,11 +1158,13 @@
     "delay_ms": 1234,
     "gap_ms": 700,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":800}",
    "result": 0,
    "op_mode_named": false,
@@ -978,11 +1175,13 @@
     "delay_ms": 1234,
     "gap_ms": 800,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":900}",
    "result": 0,
    "op_mode_named": false,
@@ -993,11 +1192,13 @@
     "delay_ms": 1234,
     "gap_ms": 900,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":1000}",
    "result": 0,
    "op_mode_named": false,
@@ -1008,11 +1209,13 @@
     "delay_ms": 1234,
     "gap_ms": 1000,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":1500}",
    "result": 0,
    "op_mode_named": false,
@@ -1023,11 +1226,13 @@
     "delay_ms": 1234,
     "gap_ms": 1500,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":2000}",
    "result": 0,
    "op_mode_named": false,
@@ -1038,11 +1243,13 @@
     "delay_ms": 1234,
     "gap_ms": 2000,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"pattern\":0}",
    "result": 0,
    "op_mode_named": false,
@@ -1053,11 +1260,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"pattern\":1}",
    "result": 0,
    "op_mode_named": false,
@@ -1068,12 +1277,48 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
-   "write": "{\"pattern\":2}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"pattern\":4}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 4,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"pattern\":5}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 5,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"lr\":0}",
    "result": 0,
    "op_mode_named": false,
    "settings": {
@@ -1083,26 +1328,81 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
-   "write": "{\"pattern\":3}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"lr\":1}",
    "result": 0,
    "op_mode_named": false,
    "settings": {
     "enabled": true,
     "mode": 1,
-    "pattern": 3,
+    "pattern": 2,
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 1,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"lr\":2}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1,
+    "lr": 2,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"rand\":0}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 0
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"rand\":1}",
+   "result": 0,
+   "op_mode_named": false,
+   "settings": {
+    "enabled": true,
+    "mode": 1,
+    "pattern": 2,
+    "delay_ms": 1234,
+    "gap_ms": 137,
+    "interval_ms": 3333,
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
+   }
+  },
+  {
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"enabled\":true}",
    "result": 0,
    "op_mode_named": false,
@@ -1113,11 +1413,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"enabled\":false}",
    "result": 0,
    "op_mode_named": false,
@@ -1128,11 +1430,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"op_mode\":1}",
    "result": 0,
    "op_mode_named": true,
@@ -1143,11 +1447,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"op_mode\":0}",
    "result": 0,
    "op_mode_named": true,
@@ -1158,11 +1464,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"delay_ms\":0}",
    "result": 0,
    "op_mode_named": false,
@@ -1173,11 +1481,13 @@
     "delay_ms": 0,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"delay_ms\":5000}",
    "result": 0,
    "op_mode_named": false,
@@ -1188,11 +1498,13 @@
     "delay_ms": 5000,
     "gap_ms": 137,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":0}",
    "result": 0,
    "op_mode_named": false,
@@ -1203,11 +1515,13 @@
     "delay_ms": 1234,
     "gap_ms": 0,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"gap_ms\":2000}",
    "result": 0,
    "op_mode_named": false,
@@ -1218,11 +1532,13 @@
     "delay_ms": 1234,
     "gap_ms": 2000,
     "interval_ms": 3333,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"interval_ms\":1000}",
    "result": 0,
    "op_mode_named": false,
@@ -1233,11 +1549,13 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 1000,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
    "write": "{\"interval_ms\":10000}",
    "result": 0,
    "op_mode_named": false,
@@ -1248,12 +1566,14 @@
     "delay_ms": 1234,
     "gap_ms": 137,
     "interval_ms": 10000,
-    "op_mode": 1
+    "op_mode": 1,
+    "lr": 0,
+    "rand": 1
    }
   },
   {
-   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1}",
-   "write": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0}",
+   "current": "{\"enabled\":true,\"mode\":1,\"pattern\":2,\"delay_ms\":1234,\"gap_ms\":137,\"interval_ms\":3333,\"op_mode\":1,\"lr\":0,\"rand\":1}",
+   "write": "{\"enabled\":false,\"mode\":0,\"pattern\":0,\"delay_ms\":600,\"gap_ms\":100,\"interval_ms\":2500,\"op_mode\":0,\"lr\":0,\"rand\":1}",
    "result": 0,
    "op_mode_named": true,
    "settings": {
@@ -1263,7 +1583,9 @@
     "delay_ms": 600,
     "gap_ms": 100,
     "interval_ms": 2500,
-    "op_mode": 0
+    "op_mode": 0,
+    "lr": 0,
+    "rand": 1
    }
   }
  ],
