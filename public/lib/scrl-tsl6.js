@@ -22,7 +22,7 @@ const hexBytes = s => (String(s || "").match(/[0-9a-f]{2}/gi) || []).map(x => pa
 // Menu value of each board field, or H2_CUSTOM when no menu entry holds the board value.
 export function h2MenuValues(settings) {
   const ms = settings.mode === 0 ? settings.delay_ms : settings.interval_ms;
-  const t = H2_TIME.find(([, mode, v]) => mode === settings.mode && v === ms);
+  const t = h2Times().find(([, mode, v]) => mode === settings.mode && v === ms);
   const g = H2_GAP.find(([, v]) => v === settings.gap_ms);
   const o = h2Order().find(([, pattern]) => pattern === settings.pattern);
   const out = { time: t ? t[0] : H2_CUSTOM, jg: g ? g[0] : H2_CUSTOM, jj: o ? o[0] : 1 };

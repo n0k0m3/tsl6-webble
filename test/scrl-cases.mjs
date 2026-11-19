@@ -1,15 +1,17 @@
 // The settings writes and the passkeys that the app can send to the BLE board. tools/scrl-fixture.mjs runs each one
 // through the firmware code and stores the answer. test/scrl.mjs builds the same list and checks the answers.
-import { H2_GAP, H2_FEATURES, h2Order, h2SetBoardSettings, h2SetIntervalMax, h2Times, H2_INTERVAL_MAX_OLD } from "../public/lib/h2-menus.js";
+import { H2_GAP, H2_FEATURES, h2Order, h2SetBoardSettings, h2SetIntervalMax, h2Times } from "../public/lib/h2-menus.js";
 import { h2SettingChange, H2_DEFAULTS } from "../public/lib/scrl-tsl6.js";
-import { limitsFor } from "../public/lib/scrl.js";
+import { limitsFor, intervalMax } from "../public/lib/scrl.js";
 
 // [settings on the board (JSON), write (JSON)] pairs. imax = the Info "imax" of the board (longest Timer interval).
 export function boardWrites(defaultsJson, imax) {
   // The menus follow the board: a board with ported features gets their writes too.
   h2SetBoardSettings(JSON.parse(defaultsJson));
-  h2SetIntervalMax(imax);
-  const limits = limitsFor({ imax });
+  h2SetIntervalMax(intervalMax({ imax }));
+  try { return writes(defaultsJson, limitsFor({ imax })); } finally { h2SetIntervalMax(intervalMax(null)); }
+}
+function writes(defaultsJson, limits) {
   const active = JSON.stringify({ ...JSON.parse(defaultsJson), enabled: true, op_mode: 1, mode: 1, pattern: 2, delay_ms: 1234, gap_ms: 137, interval_ms: 3333 });
   const out = [];
   for (const current of [defaultsJson, active]) {
@@ -29,7 +31,6 @@ export function boardWrites(defaultsJson, imax) {
     // Tools: restore defaults (the link sends only the keys that differ; this is the largest write).
     out.push([current, JSON.stringify(H2_DEFAULTS)]);
   }
-  h2SetIntervalMax(H2_INTERVAL_MAX_OLD);
   return out;
 }
 

@@ -32,21 +32,17 @@ export const H2_CUSTOM = 15;
 
 // "time": the trigger and its time. Prompt values are the same as for the TSL6 prompt build.
 //   [menu value, board mode (0 prompt, 1 timer), board delay_ms or interval_ms]
-// Timer values 5 to 8 are the TSL6 15-20 s to 30-35 s. Only a board that reports a longer
-// Timer interval (Info "imax", firmware 0.3.2) has them.
+// Timer values 5 to 8 use the TSL6 menu numbers for 15-20 s to 30-35 s. Each board value is the middle of
+// the TSL6 range, and the board adds its own +/- 20 % (the labels show the real range). Only a board that
+// reports a longer Timer interval (Info "imax", firmware 0.3.2) has them.
 export const H2_TIME = Object.freeze([
   [9, 0, 300], [0, 0, 600], [10, 0, 1000], [11, 0, 1500], [12, 0, 2000], [13, 0, 3000], [14, 0, 5000],
   [1, 1, 2500], [2, 1, 5000], [3, 1, 7500], [4, 1, 10000],
   [5, 1, 17500], [6, 1, 22500], [7, 1, 27500], [8, 1, 32500],
 ]);
-// Longest Timer interval of the connected board, in ms. The board link sets it from Info.
-// A board without "imax" in Info (firmware 0.3.1 and older) takes at most 10000 ms.
-export const H2_INTERVAL_MAX_OLD = 10000;
-let intervalMax = H2_INTERVAL_MAX_OLD;
-export function h2SetIntervalMax(ms) {
-  intervalMax = Number.isInteger(ms) && ms >= H2_INTERVAL_MAX_OLD ? ms : H2_INTERVAL_MAX_OLD;
-}
-export const h2IntervalMax = () => intervalMax;
+// Longest Timer interval of the connected board, in ms. The board link sets it from Info (scrl.js intervalMax).
+let intervalMax = 10000;
+export function h2SetIntervalMax(ms) { intervalMax = ms; }
 // The "time" entries that the connected board takes.
 export const h2Times = () => H2_TIME.filter(([, mode, ms]) => mode === 0 || ms <= intervalMax);
 // "jg": gap between the two ticks. [menu value, board gap_ms]

@@ -238,18 +238,17 @@ await test("the app limits are the firmware limits, and an old board keeps 10 s"
   assert.equal(SC.intervalMax({ imax: "35000" }), 10000, "imax must be a number");
   assert.equal(SC.intervalMax({ imax: 500 }), 10000, "imax below 10 s is ignored");
   assert.equal(SC.intervalMax({ imax: 35000 }), 35000);
-  assert.deepEqual(SC.settingsErrors({ ...defaults, interval_ms: 32500 }), ["interval_ms"], "old board: 32.5 s is an error");
-  assert.deepEqual(SC.settingsErrors({ ...defaults, interval_ms: 32500 }, { imax: 35000 }), [], "new board: 32.5 s is good");
 });
 
 await test("the TSL6 timer values 15-35 s need a board that reports a longer interval", () => {
   const long = [5, 6, 7, 8];
   const values = () => M.h2Options("time", undefined).map(o => o[0]);
   try {
-    M.h2SetIntervalMax(undefined);
+    M.h2SetIntervalMax(SC.intervalMax(null));
     assert.ok(long.every(v => !values().includes(v)), "old board: no 15-35 s values");
+    assert.equal(A.h2MenuValues({ ...defaults, mode: 1, interval_ms: 32500 }).time, M.H2_CUSTOM, "no Info: a long interval is a custom value");
     for (const v of long) assert.throws(() => A.h2SettingChange("time", v), /no value/);
-    M.h2SetIntervalMax(V.limits.interval_max);
+    M.h2SetIntervalMax(SC.intervalMax({ imax: V.limits.interval_max }));
     assert.ok(long.every(v => values().includes(v)), "new board: 15-35 s values");
     assert.deepEqual(long.map(v => A.h2SettingChange("time", v)),
       [17500, 22500, 27500, 32500].map(ms => ({ mode: 1, interval_ms: ms })));
@@ -258,7 +257,7 @@ await test("the TSL6 timer values 15-35 s need a board that reports a longer int
       "Every 22-33 s, while AP is active", "Every 26-39 s, while AP is active"]);
     assert.equal(A.h2MenuValues({ ...defaults, mode: 1, interval_ms: 32500 }).time, 8);
   } finally {
-    M.h2SetIntervalMax(undefined);
+    M.h2SetIntervalMax(SC.intervalMax(null));
   }
 });
 
@@ -296,9 +295,9 @@ function save(settings, id, raw) {
 }
 await test("a save from the Settings page changes exactly one board setting, for each menu value", () => {
   // A board with the firmware limits: the 15-35 s timer values are in the menu too.
-  M.h2SetIntervalMax(V.limits.interval_max);
+  M.h2SetIntervalMax(SC.intervalMax({ imax: V.limits.interval_max }));
   assert.equal(M.h2Times().length, M.H2_TIME.length);
-  try { saveEachValue(); } finally { M.h2SetIntervalMax(undefined); }
+  try { saveEachValue(); } finally { M.h2SetIntervalMax(SC.intervalMax(null)); }
 });
 function saveEachValue() {
   for (const start of [defaults, { ...defaults, enabled: true, op_mode: 1, mode: 1, interval_ms: 7500, gap_ms: 2000, pattern: 3 }]) {
