@@ -8,7 +8,7 @@
 // Only the board fields (h2Fields()) and the rows in H2_ROWS mean something. Every other bit is 0.
 // A command or a change that the board does not have is refused: the adapter fails closed.
 
-import { H2_TIME, H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, H2_FEATURES } from "./h2-menus.js";
+import { H2_TIME, H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES } from "./h2-menus.js";
 import { BY_ID, decodeSettings } from "./tsl6-settings.js";
 import { FLAG } from "./scrl.js";
 
@@ -34,7 +34,7 @@ export function h2MenuValues(settings) {
 // Board settings that one menu value changes. Throws for a value that the board menu does not have.
 export function h2SettingChange(id, raw) {
   if (id === "time") {
-    const e = H2_TIME.find(([v]) => v === raw);
+    const e = h2Times().find(([v]) => v === raw);
     if (!e) throw new Error(`time: the board has no value ${raw}`);
     return e[1] === 0 ? { mode: 0, delay_ms: e[2] } : { mode: 1, interval_ms: e[2] };
   }

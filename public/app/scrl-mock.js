@@ -20,6 +20,8 @@ export class MockH2Transport {
     // Ported TSL6 features of firmware 0.3.0. "&nofeat" acts as firmware 0.2.0.
     this.features = q.has("nofeat") ? {} : { lr: 2, rand: 1 }; // highest value of each
     for (const k of Object.keys(this.features)) this.settings[k] = k === "rand" ? 1 : 0;
+    // Longest Timer interval (Info "imax", firmware 0.3.2). "&noimax" (or "&nofeat") acts as older firmware: 10 s.
+    this.imax = q.has("nofeat") || q.has("noimax") ? 0 : 35000;
     this.passkey = ""; this.refused = 0;
     this.lock = q.has("lock"); this.pending = q.has("pending"); this.authFails = q.has("pair") ? 3 : 0;
     this.cut = Number(q.get("cut")) || 0;
@@ -92,7 +94,7 @@ export class MockH2Transport {
     await sleep(40);
     if (!this.up) throw new Error("GATT Server is disconnected");
     if (name === "info") {
-      return enc.encode(`{"fw":"${this.fw}","build":"4d298926","built":"Nov 15 2026 15:33:32","idf":"v5.5.6","board":"${this.board}","chip":"${this.chip}","can":"${this.can}","id":"74dafe000001","rst_log":[${this.pending ? 3 : 1},1,1,9]}`);
+      return enc.encode(`{"fw":"${this.fw}","build":"4d298926","built":"Nov 15 2026 15:33:32","idf":"v5.5.6","board":"${this.board}","chip":"${this.chip}","can":"${this.can}","id":"74dafe000001","rst_log":[${this.pending ? 3 : 1},1,1,9]${this.imax ? `,"imax":${this.imax}` : ""}}`);
     }
     if (this.q.has("nopair")) { if (++this.refused >= 3) this.drop(0); throw new Error("GATT Error: insufficient authentication"); }
     if (this.authFails > 0) { this.authFails--; throw new Error("GATT Error: insufficient authentication"); }
@@ -142,7 +144,7 @@ export class MockH2Transport {
     if (s.mode > 1) s.mode = 0;
     if (s.pattern > (Object.keys(this.features).length ? 5 : 3)) s.pattern = 0;
     s.delay_ms = Math.min(s.delay_ms, 5000); s.gap_ms = Math.min(s.gap_ms, 2000);
-    s.interval_ms = Math.min(Math.max(s.interval_ms, 1000), 10000);
+    s.interval_ms = Math.min(Math.max(s.interval_ms, 1000), this.imax || 10000);
     if (j.op_mode === 1 && this.lock) { this.lock = false; }
     this.settings = s;
     this.say(`SET  on=${+s.enabled} mode=${s.mode} pat=${s.pattern} dly=${s.delay_ms} gap=${s.gap_ms} int=${s.interval_ms} op=${s.op_mode}`);

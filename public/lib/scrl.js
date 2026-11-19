@@ -98,7 +98,11 @@ function parseStatus(text) {
 const mergeFlags = (full, liveLow) => ((full & 0xFF00) | (liveLow & 0xFF)) >>> 0;
 
 const SETTING_KEYS = ["enabled", "mode", "pattern", "delay_ms", "gap_ms", "interval_ms", "op_mode"];
+// Limits of firmware 0.3.1 and older. limitsFor(info) gives the limits of one board.
 const LIMITS = { delay_ms: [0, 5000], gap_ms: [0, 2000], interval_ms: [1000, 10000], mode: [0, 1], pattern: [0, 5], op_mode: [0, 1] };
+// Longest Timer interval in ms. Firmware 0.3.2 reports it in Info ("imax"). Older firmware takes 10000 ms.
+const intervalMax = info => (info && Number.isInteger(info.imax) && info.imax >= LIMITS.interval_ms[1] ? info.imax : LIMITS.interval_ms[1]);
+const limitsFor = info => ({ ...LIMITS, interval_ms: [LIMITS.interval_ms[0], intervalMax(info)] });
 function parseSettings(text) {
   const j = JSON.parse(text);
   if (!j || typeof j !== "object") throw new Error("Settings JSON: not an object");
@@ -117,9 +121,9 @@ function parseSettings(text) {
   return out;
 }
 // Range errors of a form, as a list of keys. The board clamps too, but the page shows the error first.
-function settingsErrors(s) {
+function settingsErrors(s, info) {
   const bad = [];
-  for (const [k, [lo, hi]] of Object.entries(LIMITS)) {
+  for (const [k, [lo, hi]] of Object.entries(limitsFor(info))) {
     if (!Number.isInteger(s[k]) || s[k] < lo || s[k] > hi) bad.push(k);
   }
   if (typeof s.enabled !== "boolean") bad.push("enabled");
@@ -256,7 +260,7 @@ function uptimeText(s) {
 export {
   UUIDS, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
-  SETTING_KEYS, LIMITS, parseSettings, settingsErrors, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
+  SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsErrors, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
   creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, IMG, checkImage, sha256, appendedHashOk, hex,
   uptimeText, BOARDS, CHIP_IDS, CAN_NAMES, boardOf, boardName, boardListenOnly,
 };

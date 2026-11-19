@@ -105,7 +105,7 @@ definePage("board", () => {
 
   // One exact time in ms. The Settings tab has menus. A value from here that no menu holds shows there as "Custom".
   async function editMs(key, en, zh) {
-    const [lo, hi] = SC.LIMITS[key];
+    const [lo, hi] = SC.limitsFor(board().info)[key];
     const now = board().settings[key];
     const text = await promptBox({ title: L(en, zh), label: L(`${lo} to ${hi} ms. Now: ${now} ms.`, `${lo} 至 ${hi} 毫秒。当前：${now} 毫秒。`), value: String(now), maxlength: 5 });
     if (text == null) return;

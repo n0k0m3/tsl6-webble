@@ -121,7 +121,7 @@ await scenario("ap-assist-switch-and-settings-menus", "mock=h2", {}, async page 
   // Settings: scroll interval -> timer, from the list sheet
   await tab(page, "settings");
   await page.click("[data-id=set-time]");
-  assert.deepEqual(await ids(page, ".opt", "data-v"), ["9", "0", "10", "11", "12", "13", "14", "1", "2", "3", "4"]);
+  assert.deepEqual(await ids(page, ".opt", "data-v"), ["9", "0", "10", "11", "12", "13", "14", "1", "2", "3", "4", "5", "6", "7", "8"]);
   assert.equal(await page.isVisible(".sheet-help"), false, "no TSL6 help text for the board");
   await page.click('.opt[data-v="2"]');
   await toastIs(page, /Saved/);
@@ -166,6 +166,35 @@ await scenario("ported-scroll-settings-wheel-and-random-interval", "mock=h2", {}
   await tab(page, "tools");
   await page.click("[data-id=tool-log]");
   await page.waitForFunction(() => /SET {2}on=1/.test(document.querySelector("#page").textContent));
+});
+
+await scenario("long-timer-values-15-to-35-s", "mock=h2", {}, async page => {
+  await connect(page);
+  await tab(page, "settings");
+  await page.click("[data-id=set-time]");
+  await page.click('.opt[data-v="8"]');
+  await toastIs(page, /Saved/);
+  await page.waitForFunction(() => /Every 26-39 s/.test(document.querySelector("[data-id=set-time]").textContent), null, { timeout: 8000 });
+  await board(page);
+  assert.equal(await text(page, "[data-id=board-interval_ms] .val"), "32500 ms");
+  await page.click("[data-id=board-interval_ms]");
+  assert.match(await text(page, ".dlg"), /1000 to 35000 ms/);
+  await page.fill(".dlg-input", "35001");
+  await dlgOk(page);
+  await toastIs(page, /whole number from 1000 to 35000/);
+  await tab(page, "status");
+  assert.match(await text(page, ".hero-sub"), /Every 26-39 s while AP is active/);
+});
+
+await scenario("board-without-imax-keeps-the-10-s-limit", "mock=h2&noimax", {}, async page => {
+  await connect(page);
+  await tab(page, "settings");
+  await page.click("[data-id=set-time]");
+  assert.deepEqual(await ids(page, ".opt", "data-v"), ["9", "0", "10", "11", "12", "13", "14", "1", "2", "3", "4"]);
+  await page.keyboard.press("Escape");
+  await board(page);
+  await page.click("[data-id=board-interval_ms]");
+  assert.match(await text(page, ".dlg"), /1000 to 10000 ms/);
 });
 
 await scenario("board-without-ported-settings-keeps-the-old-rows", "mock=h2&nofeat", {}, async page => {

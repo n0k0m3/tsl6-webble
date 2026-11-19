@@ -90,7 +90,7 @@ Differences from the TSL6:
 
 How it works: the link to the board (`public/app/scrl-link.js`) gives the pages a status in the TSL6 layout and takes the TSL6 commands that the board can do. It refuses every other command, and it refuses a settings write that changes a bit that the board does not have (`public/lib/scrl-tsl6.js`).
 
-To test without a board, open the app with `?mock=h2`. Options: `&pair` (pairing delay), `&nopair` (pairing fails), `&lock` (bus-off lock), `&pending` (unconfirmed image), `&cut=N` (writes longer than N bytes are cut), `&lo` (scroll ticks off, Listen-Only), `&board=ID` (board type, for example `lilygo-t2can`), `&can=mcp2515` (its CAN controller).
+To test without a board, open the app with `?mock=h2`. Options: `&pair` (pairing delay), `&nopair` (pairing fails), `&lock` (bus-off lock), `&pending` (unconfirmed image), `&cut=N` (writes longer than N bytes are cut), `&lo` (scroll ticks off, Listen-Only), `&board=ID` (board type, for example `lilygo-t2can`), `&can=mcp2515` (its CAN controller), `&nofeat` (firmware 0.2.0: no ported TSL6 settings), `&noimax` (firmware 0.3.1 and older: Timer interval up to 10 s).
 
 ## Firmware images (flasher, step 1)
 

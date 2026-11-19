@@ -9,7 +9,7 @@
 import { LinkBase, platformChunk } from "./ble.js";
 import * as SC from "../lib/scrl.js";
 import { h2Status, h2SettingsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
-import { h2SetBoardSettings } from "../lib/h2-menus.js";
+import { h2SetBoardSettings, h2SetIntervalMax } from "../lib/h2-menus.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -129,6 +129,7 @@ export class ScrlLink extends LinkBase {
     B.info = null; B.status = null; B.live = null; B.flags = 0;
     try { B.info = JSON.parse(dec.decode(await t.read("info"))); this.log(`board: Info read ${this.since()}`); }
     catch (e) { this.log(`board: Info read failed ${this.since()}: ${errText(e)}`, "warn"); }
+    h2SetIntervalMax(SC.intervalMax(B.info));
     // A paired phone gets the answer at once. Show the pairing hint only when the read fails or takes long.
     let hinted = false;
     const hint = () => { if (!hinted) { hinted = true; this.emit("pairing", {}); } };
