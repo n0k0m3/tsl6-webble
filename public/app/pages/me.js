@@ -6,7 +6,7 @@ const linkInfo = () => (S.link && S.link.board ? S.link.board.info : null);
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
 import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
 
-export const APP_BUILD = "2026-11-15";
+export const APP_BUILD = "2026-11-18";
 const TYPES = [[6, "TSL6 (type 6)"], [8, "TSL6 (type 8)"], [19, "Type 19"], [7, "Type 7"], [5, "Type 5"], [3, "Type 3"]];
 
 definePage("me", () => {
