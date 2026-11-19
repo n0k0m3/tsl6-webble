@@ -163,6 +163,8 @@ await scenario("ported-scroll-settings-wheel-and-random-interval", "mock=h2", {}
   await page.click('.opt[data-v="0"]');
   await toastIs(page, /Saved/);
   await page.waitForFunction(() => /Every 2\.5 s/.test(document.querySelector("[data-id=set-time]").textContent), null, { timeout: 8000 });
+  await tab(page, "status");
+  assert.match(await text(page, ".hero-sub"), /Every 2\.5 s while AP is active/, "rand 0: the exact interval");
   await tab(page, "tools");
   await page.click("[data-id=tool-log]");
   await page.waitForFunction(() => /SET {2}on=1/.test(document.querySelector("#page").textContent));
