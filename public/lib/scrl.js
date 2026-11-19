@@ -121,9 +121,9 @@ function parseSettings(text) {
   return out;
 }
 // Range errors of a form, as a list of keys. The board clamps too, but the page shows the error first.
-function settingsErrors(s, info) {
+function settingsErrors(s) {
   const bad = [];
-  for (const [k, [lo, hi]] of Object.entries(limitsFor(info))) {
+  for (const [k, [lo, hi]] of Object.entries(LIMITS)) {
     if (!Number.isInteger(s[k]) || s[k] < lo || s[k] > hi) bad.push(k);
   }
   if (typeof s.enabled !== "boolean") bad.push("enabled");
