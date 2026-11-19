@@ -201,7 +201,8 @@ function wireLink(link) {
   link.on("state", st => {
     if (!st.connected) { S.status = null; S.boot = null; }
     // The device type follows the link: H2_TYPE for a board, else the type that the user chose for the TSL6.
-    S.hwType = st.connected && link.kind === "h2" ? H2_TYPE : pref("hwType", 6);
+    // A TSL6 link keeps the type in memory: the stored pref can be stale when storage is blocked.
+    S.hwType = st.connected && link.kind === "h2" ? H2_TYPE : S.hwType === H2_TYPE ? pref("hwType", 6) : S.hwType;
     bus.dispatchEvent(new CustomEvent("conn", { detail: st }));
     renderTop();
   });
