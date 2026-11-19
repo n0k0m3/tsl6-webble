@@ -32,10 +32,23 @@ export const H2_CUSTOM = 15;
 
 // "time": the trigger and its time. Prompt values are the same as for the TSL6 prompt build.
 //   [menu value, board mode (0 prompt, 1 timer), board delay_ms or interval_ms]
+// Timer values 5 to 8 are the TSL6 15-20 s to 30-35 s. Only a board that reports a longer
+// Timer interval (Info "imax", firmware 0.3.2) has them.
 export const H2_TIME = Object.freeze([
   [9, 0, 300], [0, 0, 600], [10, 0, 1000], [11, 0, 1500], [12, 0, 2000], [13, 0, 3000], [14, 0, 5000],
   [1, 1, 2500], [2, 1, 5000], [3, 1, 7500], [4, 1, 10000],
+  [5, 1, 17500], [6, 1, 22500], [7, 1, 27500], [8, 1, 32500],
 ]);
+// Longest Timer interval of the connected board, in ms. The board link sets it from Info.
+// A board without "imax" in Info (firmware 0.3.1 and older) takes at most 10000 ms.
+export const H2_INTERVAL_MAX_OLD = 10000;
+let intervalMax = H2_INTERVAL_MAX_OLD;
+export function h2SetIntervalMax(ms) {
+  intervalMax = Number.isInteger(ms) && ms >= H2_INTERVAL_MAX_OLD ? ms : H2_INTERVAL_MAX_OLD;
+}
+export const h2IntervalMax = () => intervalMax;
+// The "time" entries that the connected board takes.
+export const h2Times = () => H2_TIME.filter(([, mode, ms]) => mode === 0 || ms <= intervalMax);
 // "jg": gap between the two ticks. [menu value, board gap_ms]
 export const H2_GAP = Object.freeze([
   [1, 100], [2, 200], [3, 300], [4, 400], [5, 500], [6, 600], [7, 700], [8, 800], [9, 900], [10, 1000],
@@ -58,7 +71,7 @@ export function h2Options(id, current, values) {
   let list = [];
   if (id === "time") {
     const exact = h2Has("rand") && values && values.rand === 0;
-    list = H2_TIME.map(([v, mode, ms]) => (mode === 0
+    list = h2Times().map(([v, mode, ms]) => (mode === 0
       ? [v, `On hands-on prompt, after about ${secs(ms)} s${ms === 600 ? " (default)" : ""}`, `手扶提示时，约${secs(ms)}秒后${ms === 600 ? "(默认)" : ""}`]
       : [v, `Every ${range(ms, exact)} s, while AP is active`, `AP激活时，每${range(ms, exact)}秒`]));
   } else if (id === "jg") {

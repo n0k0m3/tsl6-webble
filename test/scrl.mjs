@@ -57,7 +57,7 @@ await test("parseStatus and parseLive read the output of the firmware packers", 
 });
 
 await test("the firmware settings reader accepts each write that the app can send", () => {
-  const writes = boardWrites(V.default_settings_json);
+  const writes = boardWrites(V.default_settings_json, V.limits.interval_max);
   assert.ok(writes.length > 60);
   for (const [current, write] of writes) {
     const fx = FX.writes.find(w => w.current === current && w.write === write);
@@ -73,7 +73,7 @@ await test("the firmware settings reader accepts each write that the app can sen
 await test("a settings save names op_mode only when it changes (a bus-off lock must stay)", () => {
   const board = { ...SC.parseSettings(V.default_settings_json), enabled: true, op_mode: 1 };
   assert.deepEqual(SC.settingsDiff(board, { ...board, gap_ms: 300 }), { gap_ms: 300 });
-  for (const [v] of M.H2_TIME) assert.ok(!("op_mode" in A.h2SettingChange("time", v)));
+  for (const [v] of M.h2Times()) assert.ok(!("op_mode" in A.h2SettingChange("time", v)));
   for (const [v] of M.H2_GAP) assert.ok(!("op_mode" in A.h2SettingChange("jg", v)));
   for (const [v] of M.h2Order()) assert.ok(!("op_mode" in A.h2SettingChange("jj", v)));
 });
@@ -223,9 +223,43 @@ await test("board menus: each value fits its field, and has an English and a Chi
     assert.deepEqual(T.optionsFor(f, {}, M.H2_TYPE).map(o => o[0]), opts.map(o => o[0]));
   }
   assert.ok(M.h2Options("time", M.H2_CUSTOM).some(o => o[0] === M.H2_CUSTOM), "a custom value shows as the current value");
-  // The timer intervals stay inside the board limits.
-  for (const [, mode, ms] of M.H2_TIME) assert.ok(ms >= SC.LIMITS[mode === 0 ? "delay_ms" : "interval_ms"][0] && ms <= SC.LIMITS[mode === 0 ? "delay_ms" : "interval_ms"][1]);
-  for (const [, ms] of M.H2_GAP) assert.ok(ms <= SC.LIMITS.gap_ms[1]);
+  // The timer intervals stay inside the board limits of the firmware.
+  const lim = SC.limitsFor({ imax: V.limits.interval_max });
+  for (const [, mode, ms] of M.H2_TIME) assert.ok(ms >= lim[mode === 0 ? "delay_ms" : "interval_ms"][0] && ms <= lim[mode === 0 ? "delay_ms" : "interval_ms"][1]);
+  for (const [, ms] of M.H2_GAP) assert.ok(ms <= lim.gap_ms[1]);
+});
+
+await test("the app limits are the firmware limits, and an old board keeps 10 s", () => {
+  const L = V.limits;
+  assert.deepEqual(SC.limitsFor({ imax: L.interval_max }).interval_ms, [L.interval_min, L.interval_max]);
+  assert.deepEqual([SC.LIMITS.delay_ms[1], SC.LIMITS.gap_ms[1]], [L.delay_max, L.gap_max]);
+  assert.equal(SC.intervalMax(null), 10000, "no Info");
+  assert.equal(SC.intervalMax({ fw: "0.3.1" }), 10000, "Info without imax");
+  assert.equal(SC.intervalMax({ imax: "35000" }), 10000, "imax must be a number");
+  assert.equal(SC.intervalMax({ imax: 500 }), 10000, "imax below 10 s is ignored");
+  assert.equal(SC.intervalMax({ imax: 35000 }), 35000);
+  assert.deepEqual(SC.settingsErrors({ ...defaults, interval_ms: 32500 }), ["interval_ms"], "old board: 32.5 s is an error");
+  assert.deepEqual(SC.settingsErrors({ ...defaults, interval_ms: 32500 }, { imax: 35000 }), [], "new board: 32.5 s is good");
+});
+
+await test("the TSL6 timer values 15-35 s need a board that reports a longer interval", () => {
+  const long = [5, 6, 7, 8];
+  const values = () => M.h2Options("time", undefined).map(o => o[0]);
+  try {
+    M.h2SetIntervalMax(undefined);
+    assert.ok(long.every(v => !values().includes(v)), "old board: no 15-35 s values");
+    for (const v of long) assert.throws(() => A.h2SettingChange("time", v), /no value/);
+    M.h2SetIntervalMax(V.limits.interval_max);
+    assert.ok(long.every(v => values().includes(v)), "new board: 15-35 s values");
+    assert.deepEqual(long.map(v => A.h2SettingChange("time", v)),
+      [17500, 22500, 27500, 32500].map(ms => ({ mode: 1, interval_ms: ms })));
+    const labels = M.h2Options("time", undefined, { rand: 1 }).filter(o => long.includes(o[0])).map(o => o[1]);
+    assert.deepEqual(labels, ["Every 14-21 s, while AP is active", "Every 18-27 s, while AP is active",
+      "Every 22-33 s, while AP is active", "Every 26-39 s, while AP is active"]);
+    assert.equal(A.h2MenuValues({ ...defaults, mode: 1, interval_ms: 32500 }).time, 8);
+  } finally {
+    M.h2SetIntervalMax(undefined);
+  }
 });
 
 await test("the status in the TSL6 layout passes the checks of the TSL6 pages", () => {
@@ -261,8 +295,14 @@ function save(settings, id, raw) {
   return { change, next };
 }
 await test("a save from the Settings page changes exactly one board setting, for each menu value", () => {
+  // A board with the firmware limits: the 15-35 s timer values are in the menu too.
+  M.h2SetIntervalMax(V.limits.interval_max);
+  assert.equal(M.h2Times().length, M.H2_TIME.length);
+  try { saveEachValue(); } finally { M.h2SetIntervalMax(undefined); }
+});
+function saveEachValue() {
   for (const start of [defaults, { ...defaults, enabled: true, op_mode: 1, mode: 1, interval_ms: 7500, gap_ms: 2000, pattern: 3 }]) {
-    for (const [v, mode, ms] of M.H2_TIME) {
+    for (const [v, mode, ms] of M.h2Times()) {
       const cur = A.h2MenuValues(start).time;
       const { change, next } = save(start, "time", v);
       assert.deepEqual(change, v === cur ? {} : (mode === 0 ? { mode: 0, delay_ms: ms } : { mode: 1, interval_ms: ms }));
@@ -285,7 +325,7 @@ await test("a save from the Settings page changes exactly one board setting, for
       assert.throws(() => A.h2SettingChange(id, max + 1), /no value/);
     }
   }
-});
+}
 
 await test("the timer labels follow the random-interval setting", () => {
   const timer = opts => opts.filter(([v]) => M.H2_TIME.find(e => e[0] === v)[1] === 1).map(o => o[1]);

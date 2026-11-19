@@ -81,7 +81,7 @@ const fixture = {
   board_desc: defines("scrl_board_desc.h", "SCRL_BOARD_DESC_"),
   vectors,
   // What the firmware settings reader does with each write that the app can send.
-  writes: boardWrites(vectors.default_settings_json).map(([current, write]) => ({ current, write, ...parse(current, write) })),
+  writes: boardWrites(vectors.default_settings_json, vectors.limits.interval_max).map(([current, write]) => ({ current, write, ...parse(current, write) })),
   // What the firmware passkey reader does with the command of the app.
   passkeys: passkeyTexts.map(text => ({ text, ...passkey(SC.passkeyCommand(text)) })),
 };
