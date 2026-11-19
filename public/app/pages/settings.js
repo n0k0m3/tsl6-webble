@@ -2,7 +2,7 @@
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
 import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton, extendHelp } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword, isH2, go } from "../app.js";
-import { h2Options } from "../../lib/h2-menus.js";
+import { h2Options, h2Has } from "../../lib/h2-menus.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, TIME_PROMPT_ZH } from "../../lib/tsl6-settings.js";
 
 let ZH = null;
@@ -239,7 +239,9 @@ definePage("settings", () => {
     // Top row: search (with the legend) and the master switch; one row on desktop, stacked on a phone.
     legendSlot.replaceChildren(...(anyChanged ? [h("span", { class: "legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置"))] : []));
     const groupsBefore = el.childElementCount;
-    const H2_FOOT = { en: "The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 % (exact when Random interval is Off). Exact values: Tools > Board.", zh: "模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%（随机间隔关闭时为精确值）。精确值：工具 > 模块。" };
+    // A board with the "rand" row uses the exact timer interval when that row is Off.
+    const exactNote = h2Has("rand") ? { en: " (exact when Random interval is Off)", zh: "（滚轮随机时间关闭时为精确值）" } : { en: "", zh: "" };
+    const H2_FOOT = { en: `The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %${exactNote.en}. Exact values: Tools > Board.`, zh: `模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%${exactNote.zh}。精确值：工具 > 模块。` };
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, isH2() ? H2_FOOT : g.foot));
     if (query) {
       if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too
