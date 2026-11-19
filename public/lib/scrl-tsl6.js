@@ -8,7 +8,7 @@
 // Only the board fields (h2Fields()) and the rows in H2_ROWS mean something. Every other bit is 0.
 // A command or a change that the board does not have is refused: the adapter fails closed.
 
-import { H2_TIME, H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES } from "./h2-menus.js";
+import { H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES } from "./h2-menus.js";
 import { BY_ID, decodeSettings } from "./tsl6-settings.js";
 import { FLAG } from "./scrl.js";
 

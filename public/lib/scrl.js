@@ -120,15 +120,6 @@ function parseSettings(text) {
   }
   return out;
 }
-// Range errors of a form, as a list of keys. The board clamps too, but the page shows the error first.
-function settingsErrors(s) {
-  const bad = [];
-  for (const [k, [lo, hi]] of Object.entries(LIMITS)) {
-    if (!Number.isInteger(s[k]) || s[k] < lo || s[k] > hi) bad.push(k);
-  }
-  if (typeof s.enabled !== "boolean") bad.push("enabled");
-  return bad;
-}
 // Only the keys that differ. A write that names op_mode 1 releases a bus-off lock on the board,
 // so a save must not name op_mode when the user did not change it.
 // A key that the board does not report (a feature of newer firmware) is never written.
@@ -260,7 +251,7 @@ function uptimeText(s) {
 export {
   UUIDS, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
-  SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsErrors, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
+  SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
   creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, IMG, checkImage, sha256, appendedHashOk, hex,
   uptimeText, BOARDS, CHIP_IDS, CAN_NAMES, boardOf, boardName, boardListenOnly,
 };
