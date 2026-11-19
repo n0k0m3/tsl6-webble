@@ -239,7 +239,7 @@ definePage("settings", () => {
     // Top row: search (with the legend) and the master switch; one row on desktop, stacked on a phone.
     legendSlot.replaceChildren(...(anyChanged ? [h("span", { class: "legend" }, h("span", { class: "legend-dot", "aria-hidden": "true" }), L("Changed from default", "已改动的设置"))] : []));
     const groupsBefore = el.childElementCount;
-    const H2_FOOT = { en: "The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %. Exact values: Tools > Board.", zh: "模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%。精确值：工具 > 模块。" };
+    const H2_FOOT = { en: "The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 % (exact when Random interval is Off). Exact values: Tools > Board.", zh: "模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%（随机间隔关闭时为精确值）。精确值：工具 > 模块。" };
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, isH2() ? H2_FOOT : g.foot));
     if (query) {
       if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too

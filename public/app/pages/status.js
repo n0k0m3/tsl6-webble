@@ -3,7 +3,7 @@
 import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab, isH2 } from "../app.js";
 import { boardName } from "../../lib/scrl.js";
-import { H2_TYPE, H2_ROWS } from "../../lib/h2-menus.js";
+import { H2_TYPE, H2_ROWS, h2Has } from "../../lib/h2-menus.js";
 import { h2PromptDiag } from "../../lib/scrl-tsl6.js";
 import { boardBanner } from "./board.js";
 import { WebLink } from "../ble.js";
@@ -89,11 +89,13 @@ definePage("status", () => {
     diag = h2PromptDiag(B.live, B.flags);
     if (refs.apSub && B.settings) {
       const s = B.settings, secs = ms => (ms / 1000).toString();
+      // "Random interval" Off (rand 0): the board uses the exact Timer interval.
+      const every = h2Has("rand") && s.rand === 0 ? secs(s.interval_ms) : `${secs(s.interval_ms * 0.8)}-${secs(s.interval_ms * 1.2)}`;
       const raw = h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`));
       const sent = L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`);
       clear(refs.apSub).append(s.mode === 0
         ? L(`On hands-on prompt, about ${secs(s.delay_ms)} s after it`, `手扶提示时，约${secs(s.delay_ms)}秒后拨动`)
-        : L(`Every ${secs(s.interval_ms * 0.8)}-${secs(s.interval_ms * 1.2)} s while AP is active`, `AP激活时，每${secs(s.interval_ms * 0.8)}-${secs(s.interval_ms * 1.2)}秒`));
+        : L(`Every ${every} s while AP is active`, `AP激活时，每${every}秒`));
       refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, diag.noData
         ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
         : s.mode === 0 ? [L(...PROMPT_PHASE[diag.phase]), " · ", sent, raw] : [sent, raw]));
