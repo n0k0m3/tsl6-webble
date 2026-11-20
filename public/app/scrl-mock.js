@@ -25,6 +25,10 @@ export class MockH2Transport {
     for (const k of Object.keys(this.features)) this.settings[k] = k === "rand" ? 1 : 0;
     // Longest Timer interval (Info "imax", firmware 0.3.2). "&noimax" (or "&nofeat") acts as older firmware: 10 s.
     this.imax = q.has("nofeat") || q.has("noimax") ? 0 : 35000;
+    // OTA data with response (Info "otaw", firmware 0.4.2). "&nootaw" acts as older firmware: no write with response.
+    this.otaw = !q.has("nootaw");
+    // "&bluefy": OTA data writes without response never arrive, as seen in Bluefy on iOS (2026-11-20).
+    this.bluefy = q.has("bluefy");
     this.passkey = ""; this.refused = 0;
     this.lock = q.has("lock"); this.pending = q.has("pending"); this.authFails = q.has("pair") ? 3 : 0;
     this.cut = Number(q.get("cut")) || 0;
@@ -100,7 +104,7 @@ export class MockH2Transport {
     await sleep(40);
     if (!this.up) throw new Error("GATT Server is disconnected");
     if (name === "info") {
-      return enc.encode(`{"fw":"${this.fw}","build":"4d298926","built":"Nov 15 2026 15:33:32","idf":"v5.5.6","board":"${this.board}","chip":"${this.chip}","can":"${this.can}","id":"74dafe000001","rst_log":[${this.pending ? 3 : 1},1,1,9]${this.imax ? `,"imax":${this.imax}` : ""}}`);
+      return enc.encode(`{"fw":"${this.fw}","build":"4d298926","built":"Nov 15 2026 15:33:32","idf":"v5.5.6","board":"${this.board}","chip":"${this.chip}","can":"${this.can}","id":"74dafe000001","rst_log":[${this.pending ? 3 : 1},1,1,9]${this.imax ? `,"imax":${this.imax}` : ""}${this.otaw ? ',"otaw":1' : ""}}`);
     }
     if (this.q.has("nopair")) { if (++this.refused >= 3) this.drop(0); throw new Error("GATT Error: insufficient authentication"); }
     if (this.authFails > 0) { this.authFails--; throw new Error("GATT Error: insufficient authentication"); }
@@ -128,7 +132,11 @@ export class MockH2Transport {
     if (name === "settings") return this.writeSettings(dec.decode(bytes));
     if (name === "command") return this.command(bytes);
     if (name === "otaCtrl") return this.otaCtrl(bytes);
-    if (name === "otaData") return this.otaData(bytes);
+    if (name === "otaData") {
+      if (!noResponse && !this.otaw) throw new Error("write not permitted"); // older firmware: write without response only
+      if (noResponse && this.bluefy) return undefined; // the browser takes the write, the board never gets it
+      return this.otaData(bytes);
+    }
     throw new Error("write not permitted");
   }
   writeSettings(text) {

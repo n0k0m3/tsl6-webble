@@ -45,6 +45,13 @@ async function start() {
   if (U.checkedFor !== targetKey()) { recheck(); redraw(); }
   const img = U.image;
   if (!img || U.running || !board()) return;
+  // An iPhone or iPad can send only to firmware that takes a write with response (Info "otaw", 0.4.2).
+  if (!SC.otaWriteMode(board().info, navigator.userAgent, navigator.maxTouchPoints || 0)) {
+    U.text = L(`The update cannot start: ${SC.OTA_IOS_TEXT}.`, "无法开始更新：此模块固件不能从 iPhone 或 iPad 更新。请先通过 USB 刷写 0.4.2 或更新的固件，或从电脑发送此更新。");
+    U.tone = "bad";
+    redraw();
+    return;
+  }
   const warn = U.warnings.length ? `\n\n${U.warnings.join("\n")}` : "";
   if (!(await confirmBox({
     en: `Send ${img.info.project} ${img.info.version} for ${img.info.board} to the board? The car must be parked. The board is in Listen-Only during the update and until you confirm the new image.${warn}`,

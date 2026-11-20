@@ -98,6 +98,18 @@ await test("update: BEGIN bytes, events, window and cut detection", () => {
   assert.ok(SC.mayWrite(4096 - 240, 240, 0) && !SC.mayWrite(4096 - 239, 240, 0));
   assert.ok(SC.creditIsWhole(2160, 240, 700000) && !SC.creditIsWhole(2100, 240, 700000) && SC.creditIsWhole(709408, 240, 709408));
   assert.deepEqual(SC.CHUNK_STEPS.map(SC.nextChunk), [240, 180, 100, 20, 0]);
+  // iPhone and iPad send OTA data with response, and only to firmware that takes it (Info "otaw", 0.4.2).
+  const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Bluefy";
+  const IPAD = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15";
+  const DESK = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36";
+  assert.equal(SC.otaWriteMode({ otaw: 1 }, DESK), "command");
+  assert.equal(SC.otaWriteMode({}, DESK), "command");
+  assert.equal(SC.otaWriteMode({ otaw: 1 }, IPHONE), "response");
+  assert.equal(SC.otaWriteMode({ fw: "0.4.1" }, IPHONE), "");
+  assert.equal(SC.otaWriteMode(null, IPHONE), "");
+  assert.equal(SC.otaWriteMode({ otaw: 1 }, IPAD, 5), "response", "iPadOS shows a Mac user agent with touch");
+  assert.equal(SC.otaWriteMode({ otaw: 1 }, IPAD, 0), "command", "a real Mac");
+  assert.equal(SC.otaWriteMode({ otaw: "1" }, IPHONE), "", "otaw must be the number 1");
 });
 
 await test("the board table and the board descriptor match the firmware", () => {

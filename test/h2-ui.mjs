@@ -423,6 +423,32 @@ await scenario("update-and-confirm", "mock=h2", {}, async page => {
   assert.match(await text(page, "[data-page=device]"), /Firmware\s*9\.9\.9/);
 });
 
+// Bluefy on iOS delivers no OTA data write without response. An iPhone sends with response to firmware that
+// takes it (Info "otaw", 0.4.2). The mock refuses a write with response when "&nootaw" acts as older firmware.
+const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Bluefy";
+await scenario("update-iphone-with-response", "mock=h2&bluefy", { userAgent: IPHONE_UA }, async page => {
+  await connect(page);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-boardfw]");
+  await page.setInputFiles("[data-id=bfw-file]", BIN);
+  await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  await page.click("[data-id=bfw-start]");
+  await dlgOk(page);
+  await page.waitForFunction(() => /The new image runs/.test(document.querySelector("[data-id=bfw-msg]").textContent), null, { timeout: 120000 });
+});
+
+await scenario("update-iphone-old-firmware", "mock=h2&nootaw", { userAgent: IPHONE_UA }, async page => {
+  await connect(page);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-boardfw]");
+  await page.setInputFiles("[data-id=bfw-file]", BIN);
+  await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  await page.click("[data-id=bfw-start]");
+  await page.waitForFunction(() => /cannot start/.test(document.querySelector("[data-id=bfw-msg]").textContent));
+  assert.match(await text(page, "[data-id=bfw-msg]"), /0\.4\.2 or newer over USB/);
+  assert.equal(await page.locator(".dlg").count(), 0, "no send dialog");
+});
+
 await scenario("update-cut-write-steps-down", "mock=h2&cut=200", {}, async page => {
   await connect(page);
   await tab(page, "tools");

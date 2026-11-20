@@ -151,6 +151,17 @@ const mayWrite = (sent, n, credit) => sent + n <= credit + OTA.WINDOW;
 const creditIsWhole = (offset, chunk, size) => offset === size || offset % chunk === 0;
 const CHUNK_STEPS = [500, 240, 180, 100, 20];
 const nextChunk = c => CHUNK_STEPS.find(x => x < c) || 0;
+// Info "otaw":1 (firmware 0.4.2): OTA data also takes a write with response. Bluefy on iOS delivered none of the
+// writes without response there, and the link then blocked. So an iPhone or iPad must send with response.
+const otaWriteWithResponse = info => !!(info && info.otaw === 1);
+const isAppleMobile = (ua, touchPoints = 0) => /iPhone|iPad|iPod/.test(ua || "") || (/Macintosh/.test(ua || "") && touchPoints > 1);
+// How to send OTA data: "command" (write without response, fast), "response" (each write waits for the board),
+// or "" (this browser cannot update this firmware: flash a newer one over USB once).
+const OTA_IOS_TEXT = "this board firmware cannot take an update from an iPhone or iPad. Flash firmware 0.4.2 or newer over USB once, or send this update from a computer";
+function otaWriteMode(info, ua, touchPoints = 0) {
+  if (!isAppleMobile(ua, touchPoints)) return "command";
+  return otaWriteWithResponse(info) ? "response" : "";
+}
 // The page cannot read the MTU. iOS and macOS use 185 (182 per write). Others reach 247 or more.
 const platformChunk = ua => (/iPhone|iPad|iPod|Macintosh|Mac OS X/.test(ua || "") ? 180 : 240);
 
@@ -255,6 +266,6 @@ export {
   UUIDS, OPTIONAL, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
   SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
-  creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, IMG, checkImage, sha256, appendedHashOk, hex,
+  creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, otaWriteWithResponse, isAppleMobile, otaWriteMode, OTA_IOS_TEXT, IMG, checkImage, sha256, appendedHashOk, hex,
   uptimeText, BOARDS, CHIP_IDS, CAN_NAMES, boardOf, boardName, boardListenOnly,
 };

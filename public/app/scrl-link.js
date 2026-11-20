@@ -384,6 +384,10 @@ export class ScrlLink extends LinkBase {
     const say = t => { this.log(`board update: ${t}`); if (hooks.onText) hooks.onText(t); };
     const t = this.t, size = image.bytes.length, chunk = this.chunk;
     if (this.updating) throw new Error("an update runs");
+    const nav = globalThis.navigator || {};
+    const mode = SC.otaWriteMode(this.board.info, nav.userAgent, nav.maxTouchPoints || 0);
+    if (!mode) throw new Error(SC.OTA_IOS_TEXT);
+    this.log(`board update: ${size} bytes, ${chunk} bytes per write, ${mode === "response" ? "write with response" : "write without response"}`);
     this.updating = true; this.otaCredit = 0; this.otaStopped = null;
     let begun = false; // the board accepted BEGIN and END is not sent: an error must send ABORT
     const smaller = () => {
@@ -421,7 +425,7 @@ export class ScrlLink extends LinkBase {
         if (!SC.creditIsWhole(this.otaCredit, chunk, size)) fail(`the link cut a write of ${chunk} bytes`, { cut: true });
         if (!SC.mayWrite(sent, n, this.otaCredit)) continue;
         try {
-          await t.write("otaData", image.bytes.subarray(sent, sent + n), true);
+          await t.write("otaData", image.bytes.subarray(sent, sent + n), mode === "command");
         } catch (e) {
           // A browser can refuse a write that is too long for the link.
           if (!t.connected) fail("the board disconnected");
