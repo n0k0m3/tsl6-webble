@@ -7,14 +7,17 @@
 
 const uuid = n => `e591${n.toString(16).padStart(4, "0")}-51ba-4d0b-8422-5cb9dc778552`;
 const UUIDS = { service: uuid(1), info: uuid(2), status: uuid(3), live: uuid(4), settings: uuid(5),
-  command: uuid(6), log: uuid(7), otaCtrl: uuid(8), otaData: uuid(9) };
+  command: uuid(6), log: uuid(7), otaCtrl: uuid(8), otaData: uuid(9), capture: uuid(10) };
+// Characteristics that older firmware does not have. The link connects without them.
+const OPTIONAL = ["capture"];
 
 // SCRL_FLAG_* in scrl_status.h. The Live record carries only the low byte.
 const FLAG = { TX_ALLOWED: 1 << 0, TIMER_ARMED: 1 << 1, ACTIVE: 1 << 2, WRONG_BUS: 1 << 3, OTA_BLIND: 1 << 4,
   ENABLED: 1 << 5, BUS_OFF_LOCK: 1 << 6, BLE_OTA: 1 << 7, AUTOPARK: 1 << 8, TESLA_OTA: 1 << 9, HW4_SEEN: 1 << 10,
-  IMAGE_PENDING: 1 << 11, PINS_CHECKED: 1 << 12, PAIRING_OPEN: 1 << 13, CAN_RUNNING: 1 << 14 };
+  IMAGE_PENDING: 1 << 11, PINS_CHECKED: 1 << 12, PAIRING_OPEN: 1 << 13, CAN_RUNNING: 1 << 14, CAPTURE: 1 << 15 };
 // SCRL_CMD_* in scrl_ble.h.
-const CMD = { RESET_COUNTERS: 1, REBOOT: 2, FORGET_BONDS: 3, FACTORY_RESET: 4, CONFIRM_IMAGE: 5, SET_PASSKEY: 6 };
+const CMD = { RESET_COUNTERS: 1, REBOOT: 2, FORGET_BONDS: 3, FACTORY_RESET: 4, CONFIRM_IMAGE: 5, SET_PASSKEY: 6,
+  CAPTURE_START: 7, CAPTURE_STOP: 8, CAPTURE_MARK: 9 };
 // Command write for a new passkey: SET_PASSKEY, then 6 ASCII digits. Text keeps the leading zeros.
 const isPasskey = text => /^[0-9]{6}$/.test(text);
 function passkeyCommand(text) {
@@ -249,7 +252,7 @@ function uptimeText(s) {
 }
 
 export {
-  UUIDS, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
+  UUIDS, OPTIONAL, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
   SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
   creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, IMG, checkImage, sha256, appendedHashOk, hex,

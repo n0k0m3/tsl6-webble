@@ -13,6 +13,7 @@ import * as T from "../public/lib/tsl6-settings.js";
 import { decodeLiveState, meInfo, ROW_BY_ID, STATUS_ROWS } from "../public/lib/tsl6-status.js";
 import { promptDiag } from "../public/lib/tsl6-gauge.js";
 import { boardWrites, passkeyTexts } from "./scrl-cases.mjs";
+import * as CP from "../public/lib/scrl-capture.js";
 
 const FX = JSON.parse(fs.readFileSync(new URL("./fixtures/scrl-protocol.json", import.meta.url), "utf8"));
 const V = FX.vectors;
@@ -382,6 +383,81 @@ await test("the live prompt line has the shape of the TSL6 prompt build", () => 
   assert.equal(A.h2PromptDiag(live(0, 3, 2), F).phase, 3, "prompt seen, AP not active");
   assert.equal(A.h2PromptDiag(live(0, 0, 0, 1284), F).sent, 1284, "the full count, and AP state 0 is not 'no data'");
   assert.equal(A.h2PromptDiag(live(0, 0, 0, 0), F).noData, false);
+});
+
+// ---------------------------------------------------------------- capture (firmware 0.4.0)
+await test("capture packets: the codec reads what the firmware packers make", () => {
+  const C = V.capture;
+  assert.ok(C, "no capture vectors: run tools/scrl-fixture.mjs");
+  assert.deepEqual([C.modes.plan, C.modes.all, C.modes.list, C.list_max], [CP.CAP.MODE_PLAN, CP.CAP.MODE_ALL, CP.CAP.MODE_LIST, CP.CAP.LIST_MAX]);
+  assert.deepEqual([FX.cmd.CAPTURE_START, FX.cmd.CAPTURE_STOP, FX.cmd.CAPTURE_MARK], [7, 8, 9], "the codec command bytes");
+  assert.ok(SC.OPTIONAL.includes("capture") && SC.UUIDS.capture, "Capture is an optional characteristic");
+  const fr = fromHex(C.frames_hex);
+  assert.ok(fr.length <= C.mtu - 3, "a packet fits the MTU");
+  const p = CP.parseCapturePacket(fr);
+  assert.deepEqual([p.type, p.count, p.seq, p.ringLost], [CP.CAP.FRAMES, 2, 0, 0]);
+  assert.deepEqual(CP.packetFrames(fr), [[100, 0x3C2, 8, false, "0102030405060708"], [150, 0x118, 4, false, "A0B1C2D3"]],
+    "only the plan IDs stream; the extended frame and 0x155 do not");
+  const ids = CP.parseCapturePacket(fromHex(C.ids_hex));
+  assert.deepEqual(ids.ids.map(e => [e.id, e.frames, e.firstMs, e.lastMs, e.dlc, e.data]),
+    [[0x3C2, 1, 100, 100, 8, "0102030405060708"], [0x155, 1, 120, 120, 8, "0102030405060708"], [0x118, 1, 150, 150, 4, "A0B1C2D3"]]);
+  assert.equal(ids.seq, 1);
+  assert.deepEqual(CP.parseCapturePacket(fromHex(C.mark_hex)).mark, { t: 777, step: 3 });
+  assert.deepEqual(CP.parseCapturePacket(fromHex(C.state_hex)).state,
+    { t: 1000, running: true, mode: 0, ids: 3, rxAll: 4, rxQueueLost: 5, ext: 1 });
+  assert.throws(() => CP.parseCapturePacket(fr.subarray(0, fr.length - 1)), /bytes/);
+  assert.throws(() => CP.parseCapturePacket(Uint8Array.of(9, 0, 0, 0, 0, 0, 0, 0)), /type 9/);
+});
+
+await test("capture commands", () => {
+  assert.deepEqual([...CP.captureStartCommand(CP.CAP.MODE_PLAN)], [7, 0]);
+  assert.deepEqual([...CP.captureStartCommand(CP.CAP.MODE_ALL)], [7, 1]);
+  assert.deepEqual([...CP.captureStartCommand(CP.CAP.MODE_LIST, [0x3C2, 0x118])], [7, 2, 0xC2, 0x03, 0x18, 0x01]);
+  assert.throws(() => CP.captureStartCommand(CP.CAP.MODE_PLAN, [1]));
+  assert.throws(() => CP.captureStartCommand(CP.CAP.MODE_LIST, []));
+  assert.throws(() => CP.captureStartCommand(CP.CAP.MODE_LIST, [0x800]));
+  assert.throws(() => CP.captureStartCommand(3));
+  assert.deepEqual([...CP.captureStopCommand()], [8]);
+  assert.deepEqual([...CP.captureMarkCommand(21)], [9, 21]);
+  assert.throws(() => CP.captureMarkCommand(256));
+});
+
+await test("capture recorder: the file has the frames, the marks, the gaps and the ID table", () => {
+  const C = V.capture, fr = fromHex(C.frames_hex);
+  const rec = new CP.CaptureRecorder({ board: "M5Stack NanoH2", fw: "0.4.0", mode: 0 });
+  const state = (seq, qlost) => { const b = fromHex(C.state_hex); b[2] = seq; b[20] = qlost; return b; };
+  rec.add(state(0, 5));
+  const f1 = fr.slice(); f1[2] = 1; rec.add(f1);
+  rec.add(fromHex(C.mark_hex).map((v, i) => (i === 2 ? 2 : v)));     // seq 2, step 3 at 777 ms
+  const f2 = fr.slice(); f2[2] = 5; f2[4] = 3;                         // seq 5: 2 packets missing, ring_lost 3
+  for (const o of [8, 24]) { f2[o] = 0x10; f2[o + 1] = 0x03; }         // t = 784 ms
+  f2[8 + 7] = 1;                                                       // the first record says "lost before me"
+  rec.add(f2);
+  rec.add(fromHex(C.ids_hex).map((v, i) => (i === 2 ? 6 : v)));
+  rec.add(state(7, 9));
+  assert.equal(rec.frames, 4);
+  assert.equal(rec.packetsMissing, 2);
+  assert.equal(rec.ringLost, 3);
+  assert.equal(rec.flaggedLost, 1);
+  assert.equal(rec.queueLost, 4, "queue loss during this capture only");
+  assert.equal(rec.seconds, 0.684);
+  const text = rec.toText(n => (n === 3 ? "Left stalk" : ""));
+  const lines = text.trim().split("\n");
+  assert.match(lines[0], /^# BLE board capture, \d{4}-/);
+  assert.match(lines[2], /frames 4, lost in the board ring 3, lost in the CAN queue 4, packets missing 2/);
+  const body = lines.slice(3); // after the 3 head lines
+  assert.deepEqual(body.slice(0, 8), [
+    "(0.100) can0 3C2#0102030405060708",
+    "(0.150) can0 118#A0B1C2D3",
+    "# step 3 at 0.777: Left stalk",
+    "# gap: 2 packet(s) missing here",
+    "# frames lost in the board ring before the next frame",
+    "(0.784) can0 3C2#0102030405060708",
+    "(0.784) can0 118#A0B1C2D3",
+    "# ID table: id, frames, period ms, dlc, last data",
+  ]);
+  assert.ok(lines.includes("# id 155 1 0.0 8 0102030405060708"));
+  assert.deepEqual(rec.idTable().map(e => e.id), [0x118, 0x155, 0x3C2], "equal counts sort by ID");
 });
 
 console.log(`\nall ${n} tests passed`);

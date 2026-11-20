@@ -1,6 +1,6 @@
 {
  "about": "Protocol of the BLE board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
- "firmware_commit": "01ca652",
+ "firmware_commit": "6afe3ae",
  "flags": {
   "TX_ALLOWED": 1,
   "TIMER_ARMED": 2,
@@ -16,7 +16,8 @@
   "IMAGE_PENDING": 2048,
   "PINS_CHECKED": 4096,
   "PAIRING_OPEN": 8192,
-  "CAN_RUNNING": 16384
+  "CAN_RUNNING": 16384,
+  "CAPTURE": 32768
  },
  "cmd": {
   "RESET_COUNTERS": 1,
@@ -24,7 +25,10 @@
   "FORGET_BONDS": 3,
   "FACTORY_RESET": 4,
   "CONFIRM_IMAGE": 5,
-  "SET_PASSKEY": 6
+  "SET_PASSKEY": 6,
+  "CAPTURE_START": 7,
+  "CAPTURE_STOP": 8,
+  "CAPTURE_MARK": 9
  },
  "ota": {
   "OP_BEGIN": 1,
@@ -63,7 +67,8 @@
   "command": "e5910006-51ba-4d0b-8422-5cb9dc778552",
   "log": "e5910007-51ba-4d0b-8422-5cb9dc778552",
   "otaCtrl": "e5910008-51ba-4d0b-8422-5cb9dc778552",
-  "otaData": "e5910009-51ba-4d0b-8422-5cb9dc778552"
+  "otaData": "e5910009-51ba-4d0b-8422-5cb9dc778552",
+  "capture": "e591000a-51ba-4d0b-8422-5cb9dc778552"
  },
  "slot_size": 1966080,
  "boards": {
@@ -123,7 +128,21 @@
    "pattern_max": 3
   },
   "status_max": 512,
-  "live_len": 19
+  "live_len": 19,
+  "capture": {
+   "mtu": 185,
+   "plan_count": 27,
+   "frames_hex": "010200000000000064000000c203080001020304050607089600000018010400a0b1c2d300000000",
+   "ids_hex": "0203010000000000c2030800010000006400000064000000010203040506070855010800010000007800000078000000010203040506070818010400010000009600000096000000a0b1c2d300000000",
+   "mark_hex": "03010200000000000903000003000000",
+   "state_hex": "0401030000000000e803000001000300040000000500000001000000",
+   "modes": {
+    "plan": 0,
+    "all": 1,
+    "list": 2
+   },
+   "list_max": 64
+  }
  },
  "writes": [
   {

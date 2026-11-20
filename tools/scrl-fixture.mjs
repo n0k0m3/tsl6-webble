@@ -39,7 +39,7 @@ function uuids() {
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
   };
   const names = { SERVICE: "service", INFO: "info", STATUS: "status", LIVE: "live", SETTINGS: "settings",
-    COMMAND: "command", LOG: "log", OTA_CTRL: "otaCtrl", OTA_DATA: "otaData" };
+    COMMAND: "command", LOG: "log", OTA_CTRL: "otaCtrl", OTA_DATA: "otaData", CAPTURE: "capture" };
   const out = {};
   for (const [, name, num] of src.matchAll(/UUID_(\w+) = SCRL_UUID\((0x[0-9a-fA-F]+)\)/g)) out[names[name]] = make(Number(num));
   return out;
