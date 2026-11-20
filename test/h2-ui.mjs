@@ -231,6 +231,25 @@ await scenario("capture-start-mark-stop-save", "mock=h2", {}, async page => {
   assert.doesNotMatch(await text(page, "[data-page=board]"), /Listen-Only build/);
 });
 
+await scenario("capture-drops-duplicate-packets", "mock=h2&capdup", {}, async page => {
+  await connect(page);
+  await capturePage(page);
+  await page.click("[data-id=cap-start]");
+  await page.click("[data-id=cap-start]", { force: true, trial: false }).catch(() => {}); // a second tap does nothing
+  await page.waitForFunction(() => /\d+ \(\d+\/s\)/.test(document.querySelector("[data-page=capture] [data-row=frames] .kv").textContent), null, { timeout: 8000 });
+  await page.click("[data-id=cap-step-2]");
+  await page.waitForTimeout(1500);
+  await page.click("[data-id=cap-stop]");
+  await page.waitForFunction(() => /Stopped after/.test(document.querySelector("[data-page=capture] [data-row=state] .kv").textContent), null, { timeout: 8000 });
+  assert.match(await capKv(page, "lost"), /^0 \/ 0 \/ 0$/, "no false gap from the repeats");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("[data-id=cap-save]")]);
+  const file = fs.readFileSync(await dl.path(), "utf8");
+  assert.match(file, /packets missing 0, duplicate packets dropped [1-9]/);
+  assert.equal((file.match(/^# step 2 /gm) || []).length, 1, "one step line");
+  const lines = file.split("\n").filter(l => l.startsWith("("));
+  assert.equal(new Set(lines).size, lines.length, "no frame line two times");
+});
+
 await scenario("capture-needs-firmware-0-4-0", "mock=h2&nocap", {}, async page => {
   await connect(page);
   await capturePage(page);

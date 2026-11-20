@@ -7,6 +7,7 @@
 //   ?mock=h2&board=ID the board type (default nanoh2-minican)    ?mock=h2&can=mcp2515   its CAN controller (default twai)
 //   ?mock=h2&bad=settings   the Settings JSON has a number for "enabled"   ?mock=h2&bad=log   the Log subscribe fails
 //   ?mock=h2&nocap    firmware before 0.4.0: no Capture characteristic   ?mock=h2&capdrop=N   the link drops N s into a capture
+//   ?mock=h2&capdup   each capture packet arrives two times (seen with a real phone, 2026-11-20)
 // The capture frames are made up (synthetic IDs and data). They are not from a car.
 import * as SC from "../lib/scrl.js";
 
@@ -264,7 +265,7 @@ export class MockH2Transport {
     new DataView(b.buffer).setUint16(2, c.seq & 0xFFFF, true);
     let o = 8; for (const r of recs) { b.set(r, o); o += r.length; }
     c.seq++;
-    if (this.up && this.subs.capture) this.subs.capture(b);
+    if (this.up && this.subs.capture) { this.subs.capture(b); if (this.q.has("capdup")) this.subs.capture(b.slice()); }
   }
 
   async otaCtrl(b) {
