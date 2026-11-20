@@ -47,6 +47,7 @@ export const isH2Name = name => /^SCRL-/.test(name || "");
 export class GattTransport {
   constructor(device) {
     this.device = device; this.chr = {}; this.queue = Promise.resolve(); this.gen = 0; this.onDisconnect = () => {};
+    this.cbs = {}; this.listenGen = {}; // one listener per characteristic and connection
     this.onGone = () => this.onDisconnect();
     device.addEventListener("gattserverdisconnected", this.onGone);
   }
@@ -82,17 +83,21 @@ export class GattTransport {
       else await c.writeValue(bytes);
     });
   }
+  // A second subscribe on the same connection only changes the callback: two listeners would give each value two times.
   subscribe(name, cb) {
     const gen = this.gen;
+    this.cbs[name] = cb;
+    if (this.listenGen[name] === gen) return this.op(async () => {});
+    this.listenGen[name] = gen;
     return this.op(async () => {
       const c = this.chr[name];
       c.addEventListener("characteristicvaluechanged", e => {
         // The browser can hand the same characteristic object to a later connection. Only the current one reads it.
         if (gen !== this.gen || e.target !== this.chr[name]) return;
         const v = e.target.value;
-        cb(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+        this.cbs[name](new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
       });
-      await c.startNotifications();
+      try { await c.startNotifications(); } catch (e) { delete this.listenGen[name]; throw e; }
     });
   }
   close() { if (this.connected) this.device.gatt.disconnect(); }
@@ -314,7 +319,12 @@ export class ScrlLink extends LinkBase {
   }
   async captureStart(mode, ids = []) {
     if (!this.canCapture) throw new Error("this board has no capture (firmware 0.4.0 and a TWAI board)");
+    if (this.captureStarting || this.captureLive) throw new Error("a capture runs already");
     const cmd = captureStartCommand(mode, ids);
+    this.captureStarting = true;
+    try { await this.captureBegin(mode, cmd); } finally { this.captureStarting = false; }
+  }
+  async captureBegin(mode, cmd) {
     if (!this.captureSubscribed) {
       await this.t.subscribe("capture", b => this.onCapture(b));
       this.captureSubscribed = true;
@@ -337,6 +347,7 @@ export class ScrlLink extends LinkBase {
     if (!rec) return;
     try {
       const p = rec.add(bytes);
+      if (!p) return; // a repeat of the last packet
       if (p.type === CAP.STATE && !p.state.running && this.captureLive) {
         this.captureLive = false;
         this.log(`board: capture stopped, ${rec.frames} frames`);

@@ -460,4 +460,18 @@ await test("capture recorder: the file has the frames, the marks, the gaps and t
   assert.deepEqual(rec.idTable().map(e => e.id), [0x118, 0x155, 0x3C2], "equal counts sort by ID");
 });
 
+await test("capture recorder: a packet that comes two times counts once (seen on a real phone)", () => {
+  const C = V.capture, fr = fromHex(C.frames_hex), mk = fromHex(C.mark_hex).map((v, i) => (i === 2 ? 1 : v));
+  const rec = new CP.CaptureRecorder({});
+  assert.ok(rec.add(fr));
+  assert.equal(rec.add(fr.slice()), null, "the repeat is dropped");
+  assert.ok(rec.add(mk));
+  assert.equal(rec.add(mk.slice()), null);
+  const again = fr.slice(); again[2] = 2;                       // same frames, next seq: a new packet
+  assert.ok(rec.add(again));
+  assert.deepEqual([rec.frames, rec.duplicates, rec.packetsMissing, rec.marks.length], [4, 2, 0, 1]);
+  assert.match(rec.toText(), /packets missing 0, duplicate packets dropped 2/);
+  assert.equal((rec.toText().match(/^# step 3 /gm) || []).length, 1);
+});
+
 console.log(`\nall ${n} tests passed`);

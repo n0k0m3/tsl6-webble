@@ -59,7 +59,7 @@ export function parseCapturePacket(b) {
     p.mark = { t: u32(b, 8), step: b[12] };
   } else if (p.type === CAP.STATE) {
     need(CAP.STATE_LEN);
-    p.state = { t: u32(b, 8), running: b[12] === 1, mode: b[13], ids: b[14], rxAll: u32(b, 16), rxQueueLost: u32(b, 20), ext: u32(b, 24) };
+    p.state = { t: u32(b, 8), running: b[12] === 1, mode: b[13], ids: u16(b, 14), rxAll: u32(b, 16), rxQueueLost: u32(b, 20), ext: u32(b, 24) };
   } else {
     throw new Error(`capture packet type ${p.type}`);
   }
@@ -93,9 +93,15 @@ export class CaptureRecorder {
     this.state = null;         // latest state
     this.firstState = null;
     this.firstT = null; this.lastT = null;
+    this.duplicates = 0;       // packets that came two times (the browser or the link gave them again)
+    this.last = null;
   }
+  // Takes one packet. Returns the parsed packet, or null for an exact repeat of the last one: each packet has its own
+  // sequence number, so the same bytes again are the same packet.
   add(bytes) {
+    if (this.last && this.last.length === bytes.length && this.last.every((v, i) => v === bytes[i])) { this.duplicates++; return null; }
     const p = parseCapturePacket(bytes);
+    this.last = bytes.slice();
     if (this.expectSeq !== null && p.seq !== this.expectSeq) {
       this.seqGaps.push([this.frames, (p.seq - this.expectSeq + 0x10000) & 0xFFFF]);
     }
@@ -140,7 +146,7 @@ export class CaptureRecorder {
     const m = this.meta;
     out.push(`# BLE board capture, ${this.startedAt.toISOString()}`);
     out.push(`# board ${m.board || "?"}, firmware ${m.fw || "?"}, mode ${m.mode ?? "?"}, time = board ms / 1000`);
-    out.push(`# frames ${this.frames}, lost in the board ring ${this.ringLost}, lost in the CAN queue ${this.queueLost}, packets missing ${this.packetsMissing}`);
+    out.push(`# frames ${this.frames}, lost in the board ring ${this.ringLost}, lost in the CAN queue ${this.queueLost}, packets missing ${this.packetsMissing}, duplicate packets dropped ${this.duplicates}`);
     const marks = [...this.marks].sort((a, b) => a.t - b.t);
     let mi = 0, gi = 0, n = 0;
     const markLine = mk => `# step ${mk.step} at ${(mk.t / 1000).toFixed(3)}${stepText(mk.step) ? `: ${stepText(mk.step)}` : ""}`;

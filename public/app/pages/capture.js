@@ -62,11 +62,12 @@ definePage("capture", () => {
 
   async function start() {
     const link = board();
-    if (!link) return;
+    if (!link || link.captureLive || link.captureStarting) return;
     if (lastRec && lastRec.frames && !(await confirmBox({
       en: "Start a new capture? The frames of the last capture go away. Save them first if you need them.",
       zh: "开始新的采集吗？上次采集的数据将被清除。如需保留请先保存。",
     }, L("Capture", "采集"), L("Start", "开始"), { focusCancel: true }))) return;
+    if (refs.startBtn) refs.startBtn.disabled = true; // a second tap must not start a second capture
     try {
       await link.captureStart(mode);
       lastRec = link.capture;

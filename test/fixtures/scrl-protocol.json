@@ -1,6 +1,6 @@
 {
  "about": "Protocol of the BLE board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
- "firmware_commit": "6afe3ae",
+ "firmware_commit": "140db33",
  "flags": {
   "TX_ALLOWED": 1,
   "TIMER_ARMED": 2,
