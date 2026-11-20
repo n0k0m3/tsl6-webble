@@ -195,6 +195,7 @@ function wireLink(link) {
   link.on("auth", () => updateChip());
   // H2 board: its state for the board rows, and the pairing hint (the phone asks for the passkey, not this app).
   link.on("board", b => bus.dispatchEvent(new CustomEvent("board", { detail: b })));
+  link.on("capture", r => bus.dispatchEvent(new CustomEvent("capture", { detail: r })));
   link.on("pairing", () => toast(L("Waiting for the secure link. If the phone asks for a passkey, type the 6 digits from the label on the board.",
     "等待安全连接。如手机要求配对码，请输入模块标签上的6位数字。"), "warn", 6000));
   link.on("frame", fr => bus.dispatchEvent(new CustomEvent("frame", { detail: fr })));

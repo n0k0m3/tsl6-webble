@@ -2,7 +2,7 @@
 import { start, log } from "./app.js";
 
 const PAGES = ["status", "settings", "tools", "me", "password", "log", "firmware",
-  "shortcuts", "blebtn", "backup", "battery", "rgb", "gauge", "gaugemenu", "debug", "blehost", "board", "boardfw"];
+  "shortcuts", "blebtn", "backup", "battery", "rgb", "gauge", "gaugemenu", "debug", "blehost", "board", "boardfw", "capture"];
 const MOCKS = ["tables", "rgb", "live", "gauge"];
 
 const query = new URLSearchParams(location.search);

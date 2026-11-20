@@ -10,6 +10,7 @@ import { LinkBase, platformChunk } from "./ble.js";
 import * as SC from "../lib/scrl.js";
 import { h2Status, h2SettingsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
 import { h2SetBoardSettings, h2SetIntervalMax } from "../lib/h2-menus.js";
+import { CAP, CaptureRecorder, captureStartCommand, captureStopCommand, captureMarkCommand } from "../lib/scrl-capture.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -59,9 +60,16 @@ export class GattTransport {
     const server = await step("connect", () => this.device.gatt.connect());
     const svc = await step("service", () => server.getPrimaryService(U.service));
     for (const name of Object.keys(U)) {
-      if (name !== "service") this.chr[name] = await step(`characteristic ${name}`, () => svc.getCharacteristic(U[name]));
+      if (name === "service") continue;
+      // A characteristic of newer firmware may be missing: older firmware still connects.
+      if (SC.OPTIONAL.includes(name)) {
+        try { this.chr[name] = await svc.getCharacteristic(U[name]); } catch { delete this.chr[name]; }
+        continue;
+      }
+      this.chr[name] = await step(`characteristic ${name}`, () => svc.getCharacteristic(U[name]));
     }
   }
+  has(name) { return !!this.chr[name]; }
   op(fn) { const job = this.queue.then(fn); this.queue = job.catch(() => {}); return job; }
   read(name) {
     return this.op(async () => { const v = await this.chr[name].readValue(); return new Uint8Array(v.buffer, v.byteOffset, v.byteLength); });
@@ -104,6 +112,7 @@ export class ScrlLink extends LinkBase {
     this.board = { info: null, status: null, statusAt: 0, settings: null, live: null, flags: 0 };
     this.updating = false; this.expectRestart = false; this.pollTimer = 0;
     this.otaWaiters = []; this.otaCredit = 0; this.otaStopped = null;
+    this.capture = null; this.captureLive = false; this.captureSubscribed = false; this.captureEmit = 0;
     transport.onDisconnect = () => this.onGone();
   }
   setChunk(n) { this.chunk = n; store("tsl6.h2chunk", String(n)); }
@@ -127,6 +136,7 @@ export class ScrlLink extends LinkBase {
   async session() {
     const t = this.t, B = this.board;
     B.info = null; B.status = null; B.live = null; B.flags = 0;
+    this.captureSubscribed = false; // a new GATT connection needs a new subscription
     try { B.info = JSON.parse(dec.decode(await t.read("info"))); this.log(`board: Info read ${this.since()}`); }
     catch (e) { this.log(`board: Info read failed ${this.since()}: ${errText(e)}`, "warn"); }
     h2SetIntervalMax(SC.intervalMax(B.info));
@@ -172,6 +182,8 @@ export class ScrlLink extends LinkBase {
 
   onGone() {
     clearInterval(this.pollTimer);
+    // The board stops a capture when the link drops. The frames that came stay: the page saves them as a part file.
+    if (this.captureLive) { this.captureLive = false; this.log("board: link lost, the capture stopped", "warn"); this.emitCapture(true); }
     for (const w of this.otaWaiters.splice(0)) w.resolve(null);
     if (this.expectRestart) { this.connected = false; return; } // the update reconnects
     if (this.connected) this.log("disconnected", "warn");
@@ -293,6 +305,51 @@ export class ScrlLink extends LinkBase {
     if (!B.status) return 0;
     const up = B.status.uptime + Math.floor((Date.now() - B.statusAt) / 1000);
     return Math.max(0, O.CONFIRM_MS / 1000 - up);
+  }
+
+  // ---- capture (firmware 0.4.0, TWAI boards): the board stays in Listen-Only while it runs
+  get canCapture() {
+    const b = SC.boardOf(this.board.info);
+    return !!(this.t.has && this.t.has("capture")) && !!b && b.can === "twai";
+  }
+  async captureStart(mode, ids = []) {
+    if (!this.canCapture) throw new Error("this board has no capture (firmware 0.4.0 and a TWAI board)");
+    const cmd = captureStartCommand(mode, ids);
+    if (!this.captureSubscribed) {
+      await this.t.subscribe("capture", b => this.onCapture(b));
+      this.captureSubscribed = true;
+    }
+    this.capture = new CaptureRecorder({ board: SC.boardName(this.board.info), fw: this.board.info && this.board.info.fw, mode });
+    this.captureLive = true;
+    this.log(`board: capture start, mode ${mode}`);
+    try { await this.t.write("command", cmd); } catch (e) { this.captureLive = false; this.emitCapture(true); throw e; }
+    this.emitCapture(true);
+  }
+  async captureStop() {
+    this.log("board: capture stop");
+    await this.t.write("command", captureStopCommand());
+  }
+  async captureMark(step) {
+    await this.t.write("command", captureMarkCommand(step));
+  }
+  onCapture(bytes) {
+    const rec = this.capture;
+    if (!rec) return;
+    try {
+      const p = rec.add(bytes);
+      if (p.type === CAP.STATE && !p.state.running && this.captureLive) {
+        this.captureLive = false;
+        this.log(`board: capture stopped, ${rec.frames} frames`);
+        this.emitCapture(true);
+        return;
+      }
+    } catch (e) { this.log(`board: ${e.message}`, "warn"); }
+    this.emitCapture(false);
+  }
+  // At most 2 page updates per second: the packets come up to 100 times per second.
+  emitCapture(now) {
+    if (now) { clearTimeout(this.captureEmit); this.captureEmit = 0; this.emit("capture", this.capture); return; }
+    if (!this.captureEmit) this.captureEmit = setTimeout(() => { this.captureEmit = 0; this.emit("capture", this.capture); }, 500);
   }
 
   // ---- firmware update (protocol: scrl_ota.h in the firmware)

@@ -97,7 +97,7 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2", {}, async page => {
   assert.equal(await page.isVisible("[data-id=set-mianSwitch]"), false, "no master switch");
   assert.equal(await page.isVisible("[data-id=set-lab]"), false, "no lab rows");
   await tab(page, "tools");
-  assert.deepEqual(await ids(page, "[data-id^=tool-]", "data-id"), ["tool-board", "tool-boardfw", "tool-log", "tool-reset"]);
+  assert.deepEqual(await ids(page, "[data-id^=tool-]", "data-id"), ["tool-board", "tool-boardfw", "tool-capture", "tool-log", "tool-reset"]);
   await tab(page, "me");
   assert.equal(await page.isDisabled("[data-id=pref-hwType]"), true, "the type picker is locked for a board");
   assert.match(await text(page, "[data-id=pref-hwType]"), /BLE board: M5Stack NanoH2/);
@@ -197,6 +197,54 @@ await scenario("board-without-imax-keeps-the-10-s-limit", "mock=h2&noimax", {}, 
   await board(page);
   await page.click("[data-id=board-interval_ms]");
   assert.match(await text(page, ".dlg"), /1000 to 10000 ms/);
+});
+
+const capturePage = async page => { await tab(page, "tools"); await page.click("[data-id=tool-capture]"); await page.waitForSelector("[data-page=capture]"); };
+const capKv = (page, row) => text(page, `[data-page=capture] [data-row=${row}] .kv`);
+
+await scenario("capture-start-mark-stop-save", "mock=h2", {}, async page => {
+  await connect(page);
+  await capturePage(page);
+  assert.equal(await page.isDisabled("[data-id=cap-stop]"), true);
+  assert.equal(await page.locator("[data-page=capture] [data-id^=cap-step-]").count(), 21, "21 steps");
+  await page.click("[data-id=cap-start]");
+  await toastIs(page, /Listen-Only/);
+  await page.waitForFunction(() => /\d+ \(\d+\/s\)/.test(document.querySelector("[data-page=capture] [data-row=frames] .kv").textContent), null, { timeout: 8000 });
+  assert.equal(await page.isDisabled("[data-id=cap-start]"), true, "no second start");
+  // The board reports the capture: no Active, no tick.
+  await page.click("[data-id=cap-step-1]");
+  await page.waitForFunction(() => /✓/.test(document.querySelector("[data-id=cap-step-1]").textContent), null, { timeout: 8000 });
+  await page.waitForFunction(() => /0x118/.test(document.querySelector("[data-id=cap-ids]").textContent), null, { timeout: 8000 });
+  await page.waitForTimeout(1200);
+  await page.click("[data-id=cap-stop]");
+  await page.waitForFunction(() => /Stopped after/.test(document.querySelector("[data-page=capture] [data-row=state] .kv").textContent), null, { timeout: 8000 });
+  assert.match(await capKv(page, "lost"), /^0 \/ 0 \/ 0$/);
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("[data-id=cap-save]")]);
+  assert.match(dl.suggestedFilename(), /^scrl-capture-\d{8}-\d{4}\.log$/);
+  const file = fs.readFileSync(await dl.path(), "utf8");
+  assert.match(file, /^# BLE board capture/);
+  assert.match(file, /# step 1 at [\d.]+: Touch nothing for 60 s/);
+  assert.match(file, /\n\([\d.]+\) can0 118#[0-9A-F]{16}\n/);
+  assert.match(file, /# id 400 /, "the ID table has the IDs that do not stream");
+  assert.doesNotMatch(file, /can0 400#/, "plan mode streams only the plan IDs");
+  await board(page);
+  assert.doesNotMatch(await text(page, "[data-page=board]"), /Listen-Only build/);
+});
+
+await scenario("capture-needs-firmware-0-4-0", "mock=h2&nocap", {}, async page => {
+  await connect(page);
+  await capturePage(page);
+  assert.match(await text(page, "[data-page=capture]"), /No capture on this board/);
+});
+
+await scenario("capture-link-drop-keeps-the-frames", "mock=h2&capdrop=2", {}, async page => {
+  await connect(page);
+  await capturePage(page);
+  await page.click("[data-id=cap-start]");
+  await page.waitForFunction(() => /\d+ \(\d+\/s\)/.test(document.querySelector("[data-page=capture] [data-row=frames] .kv")?.textContent || ""), null, { timeout: 8000 });
+  await page.waitForFunction(() => /Stopped after/.test(document.querySelector("[data-page=capture] [data-row=state] .kv")?.textContent || ""), null, { timeout: 10000 });
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("[data-id=cap-save]")]);
+  assert.match(fs.readFileSync(await dl.path(), "utf8"), /can0 3C2#/);
 });
 
 await scenario("board-without-ported-settings-keeps-the-old-rows", "mock=h2&nofeat", {}, async page => {

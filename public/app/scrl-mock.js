@@ -6,6 +6,8 @@
 //   ?mock=h2&nopair   the pairing never works: the board drops the link
 //   ?mock=h2&board=ID the board type (default nanoh2-minican)    ?mock=h2&can=mcp2515   its CAN controller (default twai)
 //   ?mock=h2&bad=settings   the Settings JSON has a number for "enabled"   ?mock=h2&bad=log   the Log subscribe fails
+//   ?mock=h2&nocap    firmware before 0.4.0: no Capture characteristic   ?mock=h2&capdrop=N   the link drops N s into a capture
+// The capture frames are made up (synthetic IDs and data). They are not from a car.
 import * as SC from "../lib/scrl.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -36,6 +38,7 @@ export class MockH2Transport {
   get name() { return "SCRL-MOCK"; }
   detach() { this.onDisconnect = () => {}; }
   get connected() { return this.up; }
+  has(name) { return name !== "capture" || !(this.q.has("nocap") || this.q.has("nofeat")); }
   uptime() { return Math.floor((Date.now() - this.boot) / 1000); }
   say(text) {
     const t = Date.now() - this.boot;
@@ -54,6 +57,7 @@ export class MockH2Transport {
     if (this.pending) f |= F.IMAGE_PENDING;
     if (this.ota) f |= F.BLE_OTA;
     if (this.uptime() < 300) f |= F.PAIRING_OPEN;
+    if (this.cap && this.cap.running) { f |= F.CAPTURE; f &= ~(F.ACTIVE | F.TX_ALLOWED | F.TIMER_ARMED); }
     return f;
   }
   tick() {
@@ -85,6 +89,7 @@ export class MockH2Transport {
   async pick() {}
   async open() { await sleep(250); if (this.down) throw new Error("the board does not advertise"); this.up = true; this.subs = {}; this.refused = 0; }
   drop(downMs) {
+    this.capEnd(false);
     this.up = false; this.subs = {}; this.ota = null;
     if (downMs) { this.down = true; setTimeout(() => { this.down = false; }, downMs); }
     setTimeout(() => this.onDisconnect(), 0);
@@ -158,7 +163,15 @@ export class MockH2Transport {
       this.say("CMD  passkey changed");
       return;
     }
+    if (b[0] === C.CAPTURE_START) return this.capStart(b);
+    if (b[0] === C.CAPTURE_MARK) {
+      if (b.length !== 2) throw new Error("GATT Error: invalid attribute length");
+      if (!this.cap || !this.cap.running) throw new Error("GATT Error: value not allowed");
+      this.cap.marks.push([this.capNow(), b[1]]);
+      return;
+    }
     if (b.length !== 1) throw new Error("GATT Error: invalid attribute length");
+    if (b[0] === C.CAPTURE_STOP) { this.capEnd(true); return; }
     if (b[0] === C.RESET_COUNTERS) { this.sent = 0; this.rx = 0; this.say("CMD  counters reset"); }
     else if (b[0] === C.REBOOT) { this.say("CMD  restart"); setTimeout(() => { this.boot = Date.now(); this.drop(1500); }, 300); }
     else if (b[0] === C.FORGET_BONDS) { this.say("BLE  bonds deleted"); setTimeout(() => this.drop(0), 100); }
@@ -169,6 +182,91 @@ export class MockH2Transport {
     else if (b[0] === C.CONFIRM_IMAGE) { if (this.pending) { this.pending = false; this.say("UPD  image confirmed"); } }
     else throw new Error("GATT Error: value not allowed");
   }
+  // ---- capture (packets as in scrl_capture.h, made up frames)
+  capNow() { return Date.now() - this.boot; }
+  capStart(b) {
+    if (b.length < 2 || !this.has("capture") || this.can !== "twai") throw new Error("GATT Error: value not allowed");
+    if (!this.subs.capture || (this.cap && this.cap.active)) throw new Error("GATT Error: value not allowed");
+    if (b[1] > 2 || (b[1] !== 2 && b.length !== 2)) throw new Error("GATT Error: value not allowed");
+    this.cap = { active: true, running: true, mode: b[1], seq: 0, frames: [], marks: [], ids: new Map(), rxAll: 0, n: 0,
+      t0: this.capNow(), stateAt: 0, idsAt: this.capNow() };
+    this.say(`CAP  started, mode ${b[1]}: Listen-Only until it stops`);
+    this.cap.timer = setInterval(() => this.capTick(), 20);
+    const drop = Number(this.q.get("capdrop")) || 0;
+    if (drop) setTimeout(() => { if (this.cap && this.cap.running) this.drop(0); }, drop * 1000);
+  }
+  capEnd(sendState) {
+    const c = this.cap;
+    if (!c || !c.active) return;
+    c.running = false;
+    clearInterval(c.timer);
+    if (sendState) { this.capFlush(); this.capIds(); this.capSend(4, this.capState()); this.say(`CAP  stopped: ${c.rxAll} frames, 0 lost in the ring`); }
+    c.active = false;
+  }
+  // 20 ms of a made-up bus: 0x118 and 0x129 at 100/s, 0x257 at 50/s, 0x3C2 at 10/s, and 0x400-0x40F only in the table.
+  capTick() {
+    const c = this.cap;
+    if (!c || !c.running || !this.up) return;
+    const t = this.capNow();
+    const plan = [[0x118, 1], [0x129, 1], [0x257, 2], [0x3C2, 5]];
+    c.n++;
+    for (const [id, every] of plan) {
+      if (c.n % every) continue;
+      const data = [c.n & 0xFF, (c.n >> 8) & 0xFF, id & 0xFF, 0x10, 0x20, 0x30, 0x40, c.n & 0x0F];
+      c.frames.push([t, id, data]);
+      this.capSeen(id, t, data);
+    }
+    for (let k = 0; k < 4; k++) this.capSeen(0x400 + ((c.n * 4 + k) % 16), t, [k, 0, 0, 0, 0, 0, 0, 0]);
+    this.capFlush();
+    if (t - c.stateAt >= 1000) { c.stateAt = t; this.capSend(4, this.capState()); }
+    if (t - c.idsAt >= 5000 || c.n === 1) { c.idsAt = t; this.capIds(); }
+    while (c.marks.length) { const [mt, step] = c.marks.shift(); const r = new Uint8Array(8); new DataView(r.buffer).setUint32(0, mt, true); r[4] = step; this.capSend(3, [r]); }
+  }
+  capSeen(id, t, data) {
+    const c = this.cap;
+    c.rxAll++;
+    const e = c.ids.get(id) || { id, frames: 0, first: t, last: t, data };
+    e.frames++; e.last = t; e.data = data;
+    c.ids.set(id, e);
+  }
+  capFlush() {
+    const c = this.cap;
+    while (c.frames.length) {
+      const recs = c.frames.splice(0, 10).map(([t, id, data]) => {
+        const r = new Uint8Array(16), v = new DataView(r.buffer);
+        v.setUint32(0, t, true); v.setUint16(4, id, true); r[6] = 8; r.set(data, 8);
+        return r;
+      });
+      this.capSend(1, recs);
+    }
+  }
+  capIds() {
+    const all = [...this.cap.ids.values()];
+    for (let i = 0; i < all.length; i += 7) {
+      this.capSend(2, all.slice(i, i + 7).map(e => {
+        const r = new Uint8Array(24), v = new DataView(r.buffer);
+        v.setUint16(0, e.id, true); r[2] = 8; v.setUint32(4, e.frames, true); v.setUint32(8, e.first, true); v.setUint32(12, e.last, true);
+        r.set(e.data, 16);
+        return r;
+      }));
+    }
+  }
+  capState() {
+    const c = this.cap, r = new Uint8Array(20), v = new DataView(r.buffer);
+    v.setUint32(0, this.capNow(), true); r[4] = c.running ? 1 : 0; r[5] = c.mode; r[6] = Math.min(255, c.ids.size);
+    v.setUint32(8, c.rxAll, true); v.setUint32(12, 0, true); v.setUint32(16, 0, true);
+    return [r];
+  }
+  capSend(type, recs) {
+    const c = this.cap;
+    const body = recs.reduce((n, r) => n + r.length, 0), b = new Uint8Array(8 + body);
+    b[0] = type; b[1] = type === 3 || type === 4 ? 1 : recs.length;
+    new DataView(b.buffer).setUint16(2, c.seq & 0xFFFF, true);
+    let o = 8; for (const r of recs) { b.set(r, o); o += r.length; }
+    c.seq++;
+    if (this.up && this.subs.capture) this.subs.capture(b);
+  }
+
   async otaCtrl(b) {
     const O = SC.OTA, E = SC.OTA_ERR;
     if (b[0] === O.OP_BEGIN) {

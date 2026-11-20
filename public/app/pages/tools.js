@@ -24,11 +24,12 @@ async function serviceMode() {
 
 // [id, icon, chip color, en, zh, sub en, sub zh, action]
 // Tools that the BLE board has. Every other tool is hidden for the board.
-const H2_TOOLS = ["board", "boardfw", "log", "reset"];
+const H2_TOOLS = ["board", "boardfw", "capture", "log", "reset"];
 const GROUPS = [
   { en: "BLE board", zh: "BLE模块", h2: true, items: [
     ["board", "cpu", "", "Board", "模块", "State, op mode, counters, pairing", "状态、运行模式、计数器、配对", () => go("board")],
     ["boardfw", "hard-drive-download", "", "Board firmware", "模块固件", "Update over Bluetooth", "通过蓝牙更新", () => go("boardfw")],
+    ["capture", "activity", "", "Capture", "采集", "Record Vehicle CAN to a file", "将车辆CAN记录到文件", () => go("capture")],
   ] },
   { en: "Car features", zh: "车辆功能", items: [
     ["shortcuts", "workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
