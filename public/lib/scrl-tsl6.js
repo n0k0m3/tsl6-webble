@@ -8,8 +8,8 @@
 // Only the board fields (h2Fields()) and the rows in H2_ROWS mean something. Every other bit is 0.
 // A command or a change that the board does not have is refused: the adapter fails closed.
 
-import { H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES } from "./h2-menus.js";
-import { BY_ID, decodeSettings } from "./tsl6-settings.js";
+import { H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES, h2HasTsl6, h2Tsl6Field, H2_TSL6_FACTORY } from "./h2-menus.js";
+import { BY_ID, FIELDS, decodeSettings } from "./tsl6-settings.js";
 import { FLAG } from "./scrl.js";
 
 export const H2_STATUS_LEN = 76;
@@ -18,6 +18,12 @@ export const H2_STATUS_LEN = 76;
 const MARK = [0x48, 0x32, 0x2d, 0x2d]; // "H2--"
 
 const hexBytes = s => (String(s || "").match(/[0-9a-f]{2}/gi) || []).map(x => parseInt(x, 16));
+const toHex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+// Status bytes of the 28 "tsl6" bytes: 24-35, then 59-74.
+const TSL6_AT = [...Array(12).keys()].map(i => 24 + i).concat([...Array(16).keys()].map(i => 59 + i));
+// The TSL6 fields that the board's engine takes (none without "tsl6").
+const tsl6Fields = () => FIELDS.filter(f => !h2Fields().includes(f.id) && h2Tsl6Field(f));
+const fieldMask = f => (((1 << f.width) - 1) << f.shift) & 0xFF;
 
 // Menu value of each board field, or H2_CUSTOM when no menu entry holds the board value.
 export function h2MenuValues(settings) {
@@ -69,11 +75,12 @@ export function h2Status({ info, status, settings, flags }) {
   if (flags & FLAG.ENABLED) u[19] |= 1;
   // Bit 0 of byte 23 is "CAN1 connected": the controller runs and frames arrive.
   if ((flags & FLAG.CAN_RUNNING) && status && status.rx.all > 0) u[23] |= 1;
-  // Settings.
+  // Settings. With the TSL6 engine, its bytes first; the board's own fields then replace their bits.
+  if (h2HasTsl6()) hexBytes(settings.tsl6).forEach((b, i) => { u[TSL6_AT[i]] = b; });
   const m = h2MenuValues(settings);
   for (const id of h2Fields()) {
     const f = BY_ID[id];
-    u[f.byte] |= (m[id] << f.shift) & (((1 << f.width) - 1) << f.shift);
+    u[f.byte] = (u[f.byte] & ~fieldMask(f)) | ((m[id] << f.shift) & fieldMask(f));
   }
   // A board without "rand" (firmware 0.2.0) always uses random times.
   if (!h2Has("rand")) u[BY_ID.rand.byte] |= 1 << BY_ID.rand.shift;
@@ -93,11 +100,15 @@ export function h2SettingsWrite(base, payload) {
     if (before[id] === after[id]) continue;
     Object.assign(out, h2SettingChange(id, after[id]));
   }
+  // TSL6 engine fields: the board takes the 28 bytes as they are. The bits of the board's own fields go with them
+  // (the engine does not send ticks), and every bit that the page does not show keeps its board value.
+  const engine = tsl6Fields();
+  if (engine.some(f => before[f.id] !== after[f.id])) out.tsl6 = toHex(TSL6_AT.map(i => payload[i]));
   // Compare the bytes with the allowed fields masked out. Bytes 18-23 are live state: the page sets them to 0.
   const strip = p => {
     const u = Uint8Array.from(p);
     for (let i = 18; i < 24; i++) u[i] = 0;
-    for (const id of fields) { const f = BY_ID[id]; u[f.byte] &= ~((((1 << f.width) - 1) << f.shift)); }
+    for (const f of [...fields.map(id => BY_ID[id]), ...engine]) u[f.byte] &= ~fieldMask(f);
     return u;
   };
   const a = strip(base), b = strip(payload);
@@ -108,7 +119,7 @@ export function h2SettingsWrite(base, payload) {
 // Board defaults for "Restore defaults": Scroll Ack off and Listen-Only, as after a factory reset. The bonds and
 // the passkey stay. settingsDiff() writes a ported feature only when the board has it.
 export const H2_DEFAULTS = Object.freeze({ enabled: false, mode: 0, pattern: 0, delay_ms: 600, gap_ms: 100, interval_ms: 2500, op_mode: 0,
-  lr: 0, rand: 1 });
+  lr: 0, rand: 1, tsl6: H2_TSL6_FACTORY });
 
 // Live prompt state for the Car tab, in the shape of promptDiag() in lib/tsl6-gauge.js (the TSL6 prompt build
 // sends it in the gauge stream). The board sends it in its Live record, so the page needs no gauge stream.

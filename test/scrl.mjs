@@ -190,9 +190,62 @@ M.h2SetBoardSettings(defaults);
 await test("the firmware reports the ported features, and the app knows each one", () => {
   assert.deepEqual(M.H2_FEATURES.map(([id]) => id).filter(id => id in defaults), M.H2_FEATURES.map(([id]) => id),
     "every app feature is in the firmware defaults");
-  for (const k of Object.keys(defaults)) assert.ok(SC.SETTING_KEYS.includes(k) || M.h2FeatureMax(k) !== undefined, `app knows ${k}`);
+  for (const k of Object.keys(defaults)) assert.ok(SC.SETTING_KEYS.includes(k) || k === "tsl6" || M.h2FeatureMax(k) !== undefined, `app knows ${k}`);
   assert.deepEqual(M.h2Fields(), ["time", "jg", "jj", "lr", "rand"]);
   assert.equal(M.h2Order(), M.H2_ORDER_TSL6);
+});
+
+await test("the TSL6 engine (firmware 0.5.0): the factory bytes, the rows and the status bytes", () => {
+  assert.equal(defaults.tsl6, M.H2_TSL6_FACTORY, "the firmware factory bytes are the app's");
+  assert.ok(M.h2HasTsl6());
+  const shown = T.FIELDS.filter(f => T.appliesTo(f, M.H2_TYPE)).map(f => f.id);
+  for (const f of T.FIELDS) {
+    const want = M.h2Fields().includes(f.id) || (["car", "lab"].includes(f.group) && !M.H2_TSL6_HIDDEN.includes(f.id) && (!f.types || f.types.includes(6)));
+    assert.equal(shown.includes(f.id), want, f.id);
+  }
+  for (const id of ["mianSwitch", "KERS", "stoppingMode", "beep", "led", "automdr"]) assert.ok(!shown.includes(id), `${id} not shown`);
+  for (const id of ["fsd", "autoSportMode", "airAutoArid", "steerAssistanceLighting", "pluseHorn"]) assert.ok(shown.includes(id), `${id} shown`);
+  // The engine bytes go to status bytes 24-35 and 59-74. The board's own fields keep their bits.
+  const bytes = Array.from({ length: 28 }, (_, i) => (i * 37 + 11) & 0xFF);
+  const s = { ...defaults, tsl6: bytes.map(b => b.toString(16).padStart(2, "0")).join("") };
+  const p = statusOf(s);
+  const at = i => (i < 12 ? 24 + i : 59 + i - 12);
+  for (let i = 0; i < 28; i++) {
+    let keep = 0xFF;
+    for (const id of M.h2Fields()) { const f = T.BY_ID[id]; if (f.byte === at(i)) keep &= ~(((1 << f.width) - 1) << f.shift); }
+    assert.equal(p[at(i)] & keep, bytes[i] & keep, `byte ${at(i)}`);
+  }
+  const v = T.decodeSettings(p);
+  assert.deepEqual(M.h2Fields().map(id => v[id]), M.h2Fields().map(id => A.h2MenuValues(s)[id]), "board fields from the board settings");
+});
+
+await test("an A3 write of a TSL6 engine row sends the 28 bytes; a hidden row is refused", () => {
+  const base = statusOf(defaults);
+  const set = (id, raw) => T.encodeSettings(base, { [id]: raw }, M.H2_TYPE, id);
+  for (const [id, raw] of [["fsd", 1], ["autoSportMode", 3], ["airAutoArid", 2], ["pluseHorn", 1]]) {
+    const out = A.h2SettingsWrite(base, set(id, raw));
+    assert.deepEqual(Object.keys(out), ["tsl6"], id);
+    const after = statusOf({ ...defaults, tsl6: out.tsl6 });
+    assert.equal(T.decodeSettings(after)[id], raw, `${id} reads back`);
+    assert.ok(T.settingsEchoMatches(set(id, raw), after), `${id}: the echo matches`);
+  }
+  // fsd = 1 also sets apAutoOpenType = 0 (vendor rule): one write.
+  // A board row alone sends no "tsl6".
+  assert.deepEqual(Object.keys(A.h2SettingsWrite(base, set("jg", 3))), ["gap_ms"]);
+  for (const [id, raw] of [["mianSwitch", 1], ["KERS", 1], ["stoppingMode", 1], ["beep", 5], ["led", 1]]) {
+    assert.throws(() => A.h2SettingsWrite(base, set(id, raw)), /not a setting/, id);
+  }
+});
+
+await test("the firmware takes the tsl6 writes of the app", () => {
+  const w = FX.writes.filter(x => JSON.parse(x.write).tsl6);
+  assert.ok(w.length >= 6);
+  for (const x of w) {
+    assert.equal(x.result, 0, x.write);
+    assert.equal(SC.parseSettings(JSON.stringify(x.settings)).tsl6, JSON.parse(x.write).tsl6);
+  }
+  assert.throws(() => SC.parseSettings(JSON.stringify({ ...defaults, tsl6: "00" })), /bad tsl6/);
+  assert.throws(() => SC.parseSettings(JSON.stringify({ ...defaults, tsl6: 5 })), /bad tsl6/);
 });
 
 await test("a board without ported features (firmware 0.2.0) keeps the old menus", () => {
@@ -211,7 +264,15 @@ await test("a board without ported features (firmware 0.2.0) keeps the old menus
 });
 
 await test("type filter: the board has exactly its own fields, and no TSL6 type changes", () => {
-  assert.deepEqual(T.FIELDS.filter(f => T.appliesTo(f, M.H2_TYPE)).map(f => f.id).sort(), M.h2Fields().sort());
+  // A board without the TSL6 engine (firmware 0.4.x). With the engine, see the TSL6 engine test above.
+  const { tsl6, ...noEngine } = defaults;
+  M.h2SetBoardSettings(noEngine);
+  try {
+    assert.ok(!M.h2HasTsl6());
+    assert.deepEqual(T.FIELDS.filter(f => T.appliesTo(f, M.H2_TYPE)).map(f => f.id).sort(), M.h2Fields().sort());
+  } finally {
+    M.h2SetBoardSettings(defaults);
+  }
   for (const type of [...T.TSL_TYPES, 9]) {
     for (const f of T.FIELDS) assert.equal(T.appliesTo(f, type), !f.types || f.types.includes(type), `${f.id} for type ${type}`);
     assert.ok(!T.TSL_TYPES.includes(M.H2_TYPE));
@@ -289,11 +350,17 @@ await test("the status in the TSL6 layout passes the checks of the TSL6 pages", 
   const off = decodeLiveState(statusOf(defaults, 0), M.H2_TYPE);
   assert.equal(off.assistActive, false);
   assert.deepEqual(off.can, [false, false, false]);
-  // Every bit outside the board fields, the live bytes and the fixed marks is 0.
+  // Every bit outside the board fields, the live bytes and the fixed marks is the TSL6 engine factory value
+  // (bytes 24-35 and 59-74), else 0.
   const z = Uint8Array.from(statusOf(defaults, 0));
-  for (const id of M.h2Fields()) { const f = T.BY_ID[id]; z[f.byte] &= ~(((1 << f.width) - 1) << f.shift); }
-  for (let i = 24; i < 36; i++) assert.equal(z[i], 0, `settings byte ${i}`);
-  for (let i = 40; i < 76; i++) assert.equal(z[i], 0, `byte ${i}`);
+  const want = new Uint8Array(76);
+  fromHex(M.H2_TSL6_FACTORY).forEach((b, i) => { want[i < 12 ? 24 + i : 59 + i - 12] = b; });
+  for (const id of M.h2Fields()) {
+    const f = T.BY_ID[id], m = ~(((1 << f.width) - 1) << f.shift);
+    z[f.byte] &= m; want[f.byte] &= m;
+  }
+  for (let i = 24; i < 36; i++) assert.equal(z[i], want[i], `settings byte ${i}`);
+  for (let i = 40; i < 76; i++) assert.equal(z[i], want[i], `byte ${i}`);
 });
 
 // One save as the Settings page does it: encode, translate, let the board apply it, read back, compare the echo.
@@ -363,7 +430,7 @@ await test("board values that no menu holds stay when another field is saved", (
 await test("the adapter refuses each change that the board does not have", () => {
   const base = statusOf(defaults);
   for (const f of T.FIELDS) {
-    if (M.h2Fields().includes(f.id) || f.layout76 === false) continue;
+    if (M.h2Fields().includes(f.id) || M.h2Tsl6Field(f) || f.layout76 === false) continue; // the TSL6 engine rows: see above
     const cur = (base[f.byte] >> f.shift) & ((1 << f.width) - 1);
     const payload = T.encodeSettings(base, { [f.id]: cur ^ 1 }, 6, f.id);
     if (payload.every((v, i) => v === base[i] || (i >= 18 && i < 24))) continue; // a rule of the codec undid the change

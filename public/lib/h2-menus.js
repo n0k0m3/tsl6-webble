@@ -16,10 +16,30 @@ export const H2_FEATURES = Object.freeze([["lr", 2], ["rand", 1]]);
 
 // Feature keys of the connected board. The board link sets them after each Settings read.
 let boardKeys = new Set();
+let boardTsl6 = false;
 export function h2SetBoardSettings(settings) {
   boardKeys = new Set(H2_FEATURES.map(([id]) => id).filter(id => settings && Number.isInteger(settings[id])));
+  boardTsl6 = !!settings && typeof settings.tsl6 === "string" && /^[0-9a-f]{56}$/i.test(settings.tsl6);
 }
 export const h2Has = id => boardKeys.has(id);
+
+// TSL6 car features engine (firmware 0.5.0): the board runs the TSL6 car code. Its Settings JSON has "tsl6", the
+// 28 settings bytes of the TSL6 (A3 status bytes 24-35, then 59-74) as hex. The board then shows the TSL6 car and
+// lab rows of device type H2_TSL6_TYPE. Not shown:
+//   - the "basic" rows (buzzer, LED, BLE power): the board has none of them,
+//   - the "scroll" rows other than the board's own: the board's Scroll Ack sends the ticks,
+//   - mianSwitch: the board has its op mode (Board page) for that,
+//   - KERS and stoppingMode: the TSL6 code writes 0x334 bits that differ from the 2026-11-20 car capture
+//     (stopping mode at d3 bits 3:2, regen at d0 bit 7). Not shown until the engine writes the right bits.
+export const h2HasTsl6 = () => boardTsl6;
+export const H2_TSL6_TYPE = 6;
+export const H2_TSL6_GROUPS = Object.freeze(["car", "lab"]);
+export const H2_TSL6_HIDDEN = Object.freeze(["mianSwitch", "KERS", "stoppingMode", "frontLeftBuckle", "frontRightBuckle", "rearBuckle"]);
+// Factory "tsl6" value of the board: every car feature off.
+export const H2_TSL6_FACTORY = "0000ff010100000001010000" + "0".repeat(32);
+// True for a TSL6 settings field that the board's engine takes. f = a field of lib/tsl6-settings.js.
+export const h2Tsl6Field = f => boardTsl6 && H2_TSL6_GROUPS.includes(f.group) && !H2_TSL6_HIDDEN.includes(f.id) &&
+  (!f.types || f.types.includes(H2_TSL6_TYPE));
 // Highest board value of a ported feature, or undefined for another field.
 export const h2FeatureMax = id => (H2_FEATURES.find(([k]) => k === id) || [])[1];
 // Every settings field of the connected board.

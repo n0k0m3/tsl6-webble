@@ -68,7 +68,7 @@ Pick `SCRL-xxxx` in the Bluetooth list. The app then shows the board as one more
 | Tab | What shows for the board |
 |---|---|
 | Car | The AP assist switch (scroll ticks on or off), the live prompt state, and the board warnings |
-| Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the op mode |
+| Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the op mode. Firmware 0.5.0: also the TSL6 car and lab rows |
 | Tools | Board, Board firmware, Log, Restore defaults |
 | Device | Device type ("BLE board: " and the board name; every board has the same rows), board type, chip, CAN controller, board ID, firmware version, restart |
 
@@ -88,9 +88,11 @@ Differences from the TSL6:
 - **The listen-only build** (`esp32-generic-twai-sniffer`) never sends. The Board page says so and locks Active.
 - **Restore defaults** turns the scroll ticks off and puts the board in Listen-Only. The bonds and the passkey stay.
 
+**TSL6 car features (firmware 0.5.0).** The board runs the car code of the TSL6. Its Settings JSON then has the key `tsl6`: the 28 TSL6 settings bytes (A3 bytes 24-35 and 59-74) as hex. For such a board the Settings tab also shows the TSL6 car and lab rows of device type 6, and each change writes the 28 bytes. Not shown: the module rows (buzzer, LED, BLE power), the AP assist rows that the board does its own way, the master switch (the board has its op mode), and `KERS` and `stoppingMode` (the TSL6 writes `0x334` bits that differ from a car capture). The board sends these frames only in Active. An app older than this version cannot read the Settings of firmware 0.5.0: update the app first.
+
 How it works: the link to the board (`public/app/scrl-link.js`) gives the pages a status in the TSL6 layout and takes the TSL6 commands that the board can do. It refuses every other command, and it refuses a settings write that changes a bit that the board does not have (`public/lib/scrl-tsl6.js`).
 
-To test without a board, open the app with `?mock=h2`. Options: `&pair` (pairing delay), `&nopair` (pairing fails), `&lock` (bus-off lock), `&pending` (unconfirmed image), `&cut=N` (writes longer than N bytes are cut), `&lo` (scroll ticks off, Listen-Only), `&board=ID` (board type, for example `lilygo-t2can`), `&can=mcp2515` (its CAN controller), `&nofeat` (firmware 0.2.0: no ported TSL6 settings), `&noimax` (firmware 0.3.1 and older: Timer interval up to 10 s), `&nocap` (firmware before 0.4.0: no Capture), `&capdrop=N` (the link drops N s into a capture). The mock capture frames are made up.
+To test without a board, open the app with `?mock=h2`. Options: `&pair` (pairing delay), `&nopair` (pairing fails), `&lock` (bus-off lock), `&pending` (unconfirmed image), `&cut=N` (writes longer than N bytes are cut), `&lo` (scroll ticks off, Listen-Only), `&board=ID` (board type, for example `lilygo-t2can`), `&can=mcp2515` (its CAN controller), `&nofeat` (firmware 0.2.0: no ported TSL6 settings), `&noimax` (firmware 0.3.1 and older: Timer interval up to 10 s), `&nocap` (firmware before 0.4.0: no Capture), `&notsl6` (firmware before 0.5.0: no TSL6 car features), `&capdrop=N` (the link drops N s into a capture). The mock capture frames are made up.
 
 ## Firmware images (flasher, step 1)
 
@@ -208,7 +210,7 @@ PLAYWRIGHT_CORE=<path>/playwright-core/index.mjs CHROME=<path of chrome> node te
 ```
 
 - `test/scrl.mjs` checks the app against `test/fixtures/scrl-protocol.json`. That file holds what the board firmware defines and does: its constants, its board list and board descriptor, the output of its status packers, and the answer of its settings reader to each write that the app can send. `node tools/scrl-fixture.mjs <firmware repo>` writes it. Run that again after each change of the board protocol, and look at `git diff`.
-- `test/h2-ui.mjs` runs 18 scenarios. It serves `public/` on 127.0.0.1 itself. It skips without `playwright-core`. Three of the scenarios put a fake `navigator.bluetooth` in, so the real connect path runs: two with a board behind it, one with a TSL6 behind it. All scenarios answer from the mocks in the app.
+- `test/h2-ui.mjs` runs the scenarios. It serves `public/` on 127.0.0.1 itself. It skips without `playwright-core`. Three of the scenarios put a fake `navigator.bluetooth` in, so the real connect path runs: two with a board behind it, one with a TSL6 behind it. All scenarios answer from the mocks in the app.
 
 ## Deploy
 

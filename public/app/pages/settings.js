@@ -2,7 +2,7 @@
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
 import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton, extendHelp } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword, isH2, go } from "../app.js";
-import { h2Options, h2Has } from "../../lib/h2-menus.js";
+import { h2Options, h2Has, h2Fields, h2HasTsl6 } from "../../lib/h2-menus.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, TIME_PROMPT_ZH } from "../../lib/tsl6-settings.js";
 
 let ZH = null;
@@ -76,9 +76,11 @@ definePage("settings", () => {
   // Display names that differ from the codec label (the Car tab uses "AP resume" for the live switch).
   const EN_NAME = { apAutoOpenType: "AP resume mode" };
   const label = id => ({ en: EN_NAME[id] || BY_ID[id].label, zh: ZH && ZH[id] ? ZH[id].zh : null });
+  // A row of the H2 board's own menus (lib/h2-menus.js). The rows of its TSL6 engine use the TSL6 menus and help.
+  const boardRow = id => isH2() && h2Fields().includes(id);
   function options(id, vals) {
     // The H2 board has its own menus, with their own Chinese text (lib/h2-menus.js).
-    if (isH2()) return h2Options(id, vals[id], vals).map(([v, en, zh]) => [v, L(en, zh)]);
+    if (boardRow(id)) return h2Options(id, vals[id], vals).map(([v, en, zh]) => [v, L(en, zh)]);
     const en = optionsFor(BY_ID[id], vals, S.hwType, EXTRA);
     let zh = ZH && ZH[id] && ZH[id].options;
     if (id === "lr" && [6, 8, 19].includes(S.hwType) && ZH) zh = ZH._lr68.options;
@@ -124,8 +126,8 @@ definePage("settings", () => {
     if (picking) return;
     picking = true;
     let v;
-    // The help texts describe the TSL6. They are not shown for the H2 board.
-    try { v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help: isH2() ? null : help }); } finally { picking = false; }
+    // The help texts describe the TSL6. They are not shown for the board's own rows.
+    try { v = await chooseOption({ title: L(label(id)), options: options(id, vals), value: vals[id], help: boardRow(id) ? null : help }); } finally { picking = false; }
     if (v == null || v === vals[id]) return;
     setTimeout(() => save(id, Number(v)), 0); // run the save after the sheet is gone
   }
@@ -174,7 +176,7 @@ definePage("settings", () => {
       if (subId) { const s = item(subId, vals, { sub: true, off: parentOff }); if (s) items.push(s); }
     }
     if (!items.length) return [];
-    const help = isH2() ? null : groupHelpButton(title, rows.map(r => r[0]).filter(id => BY_ID[id] && appliesTo(BY_ID[id], S.hwType) && vals[id] !== undefined).map(id => [L(label(id)), "help_" + id]));
+    const help = isH2() && rows.some(([id]) => h2Fields().includes(id)) ? null : groupHelpButton(title, rows.map(r => r[0]).filter(id => BY_ID[id] && appliesTo(BY_ID[id], S.hwType) && vals[id] !== undefined).map(id => [L(label(id)), "help_" + id]));
     return [h("section", { class: "grp" }, h("div", { class: "sec-label" }, h("span", { class: "sec-title" }, h("span", null, L(title)), help)),
       h("div", { class: "card" }, items), foot ? h("p", { class: "sec-foot" }, L(foot)) : null)];
   }
@@ -207,7 +209,7 @@ definePage("settings", () => {
       return;
     }
     const vals = decodeSettings(p);
-    const moduleOff = vals.mianSwitch === 1;
+    const moduleOff = vals.mianSwitch === 1 && !isH2(); // the board has its op mode instead (the engine switch bit is not shown)
 
     // Master switch first. While the module is off, the vendor app hides every other row.
     const master = h("div", { class: "card lead master" }, (() => {
@@ -242,14 +244,16 @@ definePage("settings", () => {
     // A board with the "rand" row uses the exact timer interval when that row is Off.
     const exactNote = h2Has("rand") ? { en: " (exact when Random interval is Off)", zh: "（滚轮随机时间关闭时为精确值）" } : { en: "", zh: "" };
     const H2_FOOT = { en: `The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %${exactNote.en}. Exact values: Tools > Board.`, zh: `模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%${exactNote.zh}。精确值：工具 > 模块。` };
-    for (const g of GROUPS) el.append(...group(g, g.rows, vals, isH2() ? H2_FOOT : g.foot));
+    // The board foot is about the board's own rows. The TSL6 engine groups have no foot.
+    const footOf = g => (!isH2() ? g.foot : g.rows.some(([id]) => h2Fields().includes(id)) ? H2_FOOT : null);
+    for (const g of GROUPS) el.append(...group(g, g.rows, vals, footOf(g)));
     if (query) {
       if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;
     }
 
-    if (isH2()) { // no Lab rows for the board
+    if (isH2() && !h2HasTsl6()) { // no Lab rows for a board without the TSL6 engine
       el.append(h("p", { class: "foot span" }, L("Each change saves to the board at once.", "每项修改会立即保存到模块。")));
       return;
     }
