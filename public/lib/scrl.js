@@ -254,6 +254,16 @@ function checkImage(b, target = null) {
   if (!info.hashAppended) errors.push("The image has no SHA-256 at its end.");
   return { errors, warnings, info };
 }
+// Flash site of the board firmware (repo flipper-tesla-fsd, ble-board/tools/make-flash-site.py). Its builds.json
+// lists each build with its board ID, CAN controller ("can_id", since 0.5.0), version, app image and SHA-256.
+const FW_SITE = "https://scrl-flash-preview.surge.sh";
+// The build of builds.json for the connected board (boardOf(info)), or null. Board ID and CAN controller must match:
+// on a T-2CAN the other controller is the other channel. A list without "can_id" (before 0.5.0) is the TWAI build.
+function pickBuild(list, target) {
+  if (!list || !Array.isArray(list.builds) || !target) return null;
+  return list.builds.find(b => b && b.board === target.id && (b.can_id || "twai") === target.can && typeof b.app === "string"
+    && /^scrl-[\w-]+\.bin$/.test(b.app) && /^[0-9a-f]{64}$/.test(b.app_sha256 || "")) || null;
+}
 async function sha256(b) { return new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", b)); }
 // An ESP-IDF image ends with the SHA-256 of all bytes before it. A damaged download fails here.
 async function appendedHashOk(b) {
@@ -271,6 +281,6 @@ export {
   UUIDS, OPTIONAL, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
   SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
-  creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, otaWriteWithResponse, isAppleMobile, otaWriteMode, OTA_IOS_TEXT, IMG, checkImage, sha256, appendedHashOk, hex,
+  FW_SITE, pickBuild, creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, otaWriteWithResponse, isAppleMobile, otaWriteMode, OTA_IOS_TEXT, IMG, checkImage, sha256, appendedHashOk, hex,
   uptimeText, BOARDS, CHIP_IDS, CAN_NAMES, boardOf, boardName, boardListenOnly,
 };

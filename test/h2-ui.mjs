@@ -406,6 +406,39 @@ await scenario("passkey-forget-factory", "mock=h2", {}, async page => {
   await page.waitForSelector("[data-id=connect]", { timeout: 8000 });
 });
 
+// The flash site is served from the test: builds.json and the image of the mock board.
+async function fakeSite(page, image, sha = crypto.createHash("sha256").update(image.buffer).digest("hex")) {
+  await page.route("https://scrl-flash-preview.surge.sh/**", route => {
+    const u = new URL(route.request().url());
+    if (u.pathname === "/builds.json") {
+      return route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" },
+        body: JSON.stringify({ version: "9.9.9", builds: [{ id: "nanoh2-minican", board: "nanoh2-minican", can_id: "twai", version: "9.9.9", app: "scrl-nanoh2-minican.bin", app_sha256: sha }] }) });
+    }
+    if (u.pathname === "/firmware/scrl-nanoh2-minican.bin") return route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, body: image.buffer });
+    return route.fulfill({ status: 404, body: "" });
+  });
+}
+
+await scenario("update-image-from-the-flash-site", "mock=h2", {}, async page => {
+  await fakeSite(page, BIN);
+  await connect(page);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-boardfw]");
+  await page.click("[data-id=bfw-site]");
+  await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.isDisabled("[data-id=bfw-start]"), false, "the image can be sent");
+});
+
+await scenario("flash-site-image-with-a-wrong-hash-is-refused", "mock=h2", {}, async page => {
+  await fakeSite(page, BIN, "00".repeat(32));
+  await connect(page);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-boardfw]");
+  await page.click("[data-id=bfw-site]");
+  await page.waitForFunction(() => /does not match the SHA-256/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.isDisabled("[data-id=bfw-start]"), true);
+});
+
 await scenario("update-and-confirm", "mock=h2", {}, async page => {
   await connect(page);
   await tab(page, "tools");
