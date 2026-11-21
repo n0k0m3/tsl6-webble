@@ -115,6 +115,11 @@ function parseSettings(text) {
     if (!Number.isInteger(j[k]) || j[k] < 0) throw new Error(`Settings JSON: bad ${k}`);
     out[k] = j[k];
   }
+  // Settings of the TSL6 car features engine (firmware 0.5.0 and later): 28 bytes as 56 hex digits.
+  if ("tsl6" in j) {
+    if (typeof j.tsl6 !== "string" || !/^[0-9a-f]{56}$/i.test(j.tsl6)) throw new Error("Settings JSON: bad tsl6");
+    out.tsl6 = j.tsl6.toLowerCase();
+  }
   // Ported TSL6 features (firmware 0.3.0 and later): more keys, each a small integer.
   for (const [k, v] of Object.entries(j)) {
     if (k in out) continue;

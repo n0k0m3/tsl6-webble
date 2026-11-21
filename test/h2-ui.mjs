@@ -87,7 +87,7 @@ const board = async page => { await tab(page, "tools"); await page.click("[data-
 const kv = (page, row) => text(page, `[data-page=board] [data-row=${row}] .kv`);
 
 // ---------------------------------------------------------------- group 1: the mock board
-await scenario("rows-are-exactly-the-board-rows", "mock=h2", {}, async page => {
+await scenario("rows-are-exactly-the-board-rows", "mock=h2&notsl6", {}, async page => {
   await connect(page);
   assert.deepEqual(await ids(page, "[data-page=car] [data-row]", "data-row"), ["vehicleType", "apAssist"]);
   assert.equal(await page.isVisible("[data-id=open-gauges]"), false, "no gauges for the board");
@@ -106,6 +106,20 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2", {}, async page => {
   assert.match(await text(page, "[data-page=device]"), /Board type\s*nanoh2-minican[\s\S]*Chip\s*esp32h2[\s\S]*CAN controller\s*TWAI/);
   // a paired phone gets no pairing hint
   assert.doesNotMatch(await page.locator("#toast").textContent().catch(() => ""), /passkey/);
+});
+
+await scenario("tsl6-engine-rows", "mock=h2", {}, async page => {
+  await connect(page);
+  await tab(page, "settings");
+  const rows = await ids(page, "[data-page=settings] [data-id^=set-]", "data-id");
+  for (const id of ["set-opmode", "set-lr", "set-time", "set-fsd", "set-autoSportMode", "set-pluseHorn", "set-lab"]) assert.ok(rows.includes(id), `${id} shown`);
+  for (const id of ["set-mianSwitch", "set-KERS", "set-stoppingMode", "set-beep", "set-led", "set-automdr"]) assert.ok(!rows.includes(id), `${id} not shown`);
+  await page.click("[data-id=set-autoSportMode]");
+  await page.click('.opt[data-v="1"]');
+  await toastIs(page, /Saved/);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-log]");
+  await page.waitForFunction(() => /settings write \{"tsl6":"01/.test(document.querySelector("#page").textContent), null, { timeout: 8000 });
 });
 
 await scenario("ap-assist-switch-and-settings-menus", "mock=h2", {}, async page => {

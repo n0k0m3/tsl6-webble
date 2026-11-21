@@ -8,6 +8,7 @@
 //   ?mock=h2&bad=settings   the Settings JSON has a number for "enabled"   ?mock=h2&bad=log   the Log subscribe fails
 //   ?mock=h2&nocap    firmware before 0.4.0: no Capture characteristic   ?mock=h2&capdrop=N   the link drops N s into a capture
 //   ?mock=h2&capdup   each capture packet arrives two times (seen with a real phone, 2026-11-20)
+//   ?mock=h2&notsl6   firmware before 0.5.0: no TSL6 engine ("tsl6" settings key)
 // The capture frames are made up (synthetic IDs and data). They are not from a car.
 import * as SC from "../lib/scrl.js";
 
@@ -29,6 +30,8 @@ export class MockH2Transport {
     this.otaw = !q.has("nootaw");
     // "&bluefy": OTA data writes without response never arrive, as seen in Bluefy on iOS (2026-11-20).
     this.bluefy = q.has("bluefy");
+    // TSL6 car features engine (firmware 0.5.0): its 28 settings bytes, factory value.
+    if (!q.has("nofeat") && !q.has("notsl6")) this.settings.tsl6 = "0000ff010100000001010000" + "0".repeat(32);
     this.passkey = ""; this.refused = 0;
     this.lock = q.has("lock"); this.pending = q.has("pending"); this.authFails = q.has("pair") ? 3 : 0;
     this.cut = Number(q.get("cut")) || 0;
@@ -144,6 +147,10 @@ export class MockH2Transport {
     try { j = JSON.parse(text); } catch { throw new Error("GATT Error: value not allowed"); }
     const s = { ...this.settings };
     for (const [k, v] of Object.entries(j)) {
+      if (k === "tsl6" && "tsl6" in s) {
+        if (typeof v !== "string" || !/^[0-9a-f]{56}$/i.test(v)) throw new Error("GATT Error: value not allowed");
+        s.tsl6 = v.toLowerCase(); continue;
+      }
       if (k in this.features) {
         const max = this.features[k];
         if (v === true || v === false) { if (max !== 1) throw new Error("GATT Error: value not allowed"); s[k] = +v; continue; }

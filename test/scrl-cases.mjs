@@ -1,6 +1,6 @@
 // The settings writes and the passkeys that the app can send to the BLE board. tools/scrl-fixture.mjs runs each one
 // through the firmware code and stores the answer. test/scrl.mjs builds the same list and checks the answers.
-import { H2_GAP, H2_FEATURES, h2Order, h2SetBoardSettings, h2SetIntervalMax, h2Times } from "../public/lib/h2-menus.js";
+import { H2_GAP, H2_FEATURES, H2_TSL6_FACTORY, h2Order, h2SetBoardSettings, h2SetIntervalMax, h2Times } from "../public/lib/h2-menus.js";
 import { h2SettingChange, H2_DEFAULTS } from "../public/lib/scrl-tsl6.js";
 import { limitsFor, intervalMax } from "../public/lib/scrl.js";
 
@@ -22,6 +22,10 @@ function writes(defaultsJson, limits) {
     for (const [id, max] of H2_FEATURES) {
       if (!(id in JSON.parse(defaultsJson))) continue;
       for (let v = 0; v <= max; v++) out.push([current, JSON.stringify(h2SettingChange(id, v))]);
+    }
+    // Settings tab, TSL6 engine rows (firmware 0.5.0): the 28 bytes. Factory, every bit, A3 byte 24 bit 5.
+    if ("tsl6" in JSON.parse(defaultsJson)) {
+      for (const hex of [H2_TSL6_FACTORY, "ff".repeat(28), "20" + H2_TSL6_FACTORY.slice(2)]) out.push([current, JSON.stringify({ tsl6: hex })]);
     }
     // Car tab: AP assist on and off.
     out.push([current, '{"enabled":true}'], [current, '{"enabled":false}']);
