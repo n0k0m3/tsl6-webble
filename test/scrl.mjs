@@ -195,6 +195,24 @@ await test("the firmware reports the ported features, and the app knows each one
   assert.equal(M.h2Order(), M.H2_ORDER_TSL6);
 });
 
+await test("the image of the connected board from the flash site", () => {
+  const sha = "ab".repeat(32);
+  const list = { version: "0.5.0", builds: [
+    { id: "lilygo-t2can", board: "lilygo-t2can", can_id: "twai", app: "scrl-lilygo-t2can.bin", app_sha256: sha },
+    { id: "lilygo-t2can-can1", board: "lilygo-t2can", can_id: "mcp2515", app: "scrl-lilygo-t2can-can1.bin", app_sha256: sha },
+    { id: "nanoh2-minican", board: "nanoh2-minican", app: "scrl-nanoh2-minican.bin", app_sha256: sha }, // no can_id: TWAI
+    { id: "bad", board: "waveshare-s3-can", can_id: "twai", app: "../x.bin", app_sha256: sha },
+  ] };
+  const pick = info => (SC.pickBuild(list, SC.boardOf(info)) || {}).id;
+  assert.equal(pick({ board: "lilygo-t2can", chip: "esp32s3", can: "twai" }), "lilygo-t2can");
+  assert.equal(pick({ board: "lilygo-t2can", chip: "esp32s3", can: "mcp2515" }), "lilygo-t2can-can1");
+  assert.equal(pick({}), "nanoh2-minican", "0.1.0 Info: the NanoH2");
+  assert.equal(pick({ board: "waveshare-s3-can", chip: "esp32s3", can: "twai" }), undefined, "a bad file name is never fetched");
+  assert.equal(pick({ board: "esp32-mcp2515", chip: "esp32", can: "mcp2515" }), undefined);
+  assert.equal(SC.pickBuild(null, SC.boardOf({})), null);
+  assert.match(SC.FW_SITE, /^https:\/\//);
+});
+
 await test("the TSL6 engine (firmware 0.5.0): the factory bytes, the rows and the status bytes", () => {
   assert.equal(defaults.tsl6, M.H2_TSL6_FACTORY, "the firmware factory bytes are the app's");
   assert.ok(M.h2HasTsl6());

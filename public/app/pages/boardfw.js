@@ -12,7 +12,7 @@ import * as SC from "../../lib/scrl.js";
 import { boardBanner } from "./board.js";
 
 // The session lives at module scope: a language change mounts a new page, and an update must go on.
-const U = { image: null, raw: null, checkedFor: "", fileName: "", errors: [], warnings: [], running: false, canAbort: false, abortAsked: false, sent: 0, size: 0, text: "", tone: "" };
+const U = { image: null, raw: null, checkedFor: "", fileName: "", errors: [], warnings: [], running: false, canAbort: false, abortAsked: false, sent: 0, size: 0, text: "", tone: "", fetching: false };
 const board = () => (isH2() && S.link.connected ? S.link.board : null);
 let redraw = () => {};
 
@@ -32,12 +32,41 @@ function recheck() {
   else U.image = { bytes: U.raw.bytes, sha: U.raw.sha, info };
 }
 
-async function loadFile(file) {
-  U.raw = null; U.fileName = file.name; U.text = ""; U.tone = "";
-  const bytes = new Uint8Array(await file.arrayBuffer());
+async function loadBytes(name, bytes) {
   U.raw = { bytes, sha: await SC.sha256(bytes), hashOk: bytes.length > 32 && await SC.appendedHashOk(bytes) };
+  U.fileName = name;
   recheck();
   redraw();
+}
+
+async function loadFile(file) {
+  U.raw = null; U.fileName = file.name; U.text = ""; U.tone = "";
+  await loadBytes(file.name, new Uint8Array(await file.arrayBuffer()));
+}
+
+// The image of the connected board from the flash site. The SHA-256 of builds.json must match the download.
+async function loadHosted() {
+  const t = target();
+  if (!t || U.running) return;
+  U.raw = null; U.image = null; U.errors = []; U.warnings = []; U.fileName = ""; U.text = ""; U.tone = "";
+  U.fetching = true; redraw();
+  try {
+    const get = async (url, what) => {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`${what}: HTTP ${r.status}`);
+      return r;
+    };
+    const list = await (await get(`${SC.FW_SITE}/builds.json`, "builds.json")).json();
+    const b = SC.pickBuild(list, t);
+    if (!b) throw new Error(`The flash site has no image for ${t.id} with CAN ${SC.CAN_NAMES[t.can] || t.can}.`);
+    const bytes = new Uint8Array(await (await get(`${SC.FW_SITE}/firmware/${b.app}`, b.app)).arrayBuffer());
+    if (SC.hex(await SC.sha256(bytes)) !== b.app_sha256) throw new Error(`${b.app}: the download does not match the SHA-256 of the flash site.`);
+    await loadBytes(`${b.app} (${b.version})`, bytes);
+  } catch (e) {
+    U.raw = null; U.errors = [L(`No image from the flash site: ${e.message}`, `无法从刷写网站获取固件：${e.message}`)];
+  } finally {
+    U.fetching = false; redraw();
+  }
 }
 
 async function start() {
@@ -90,6 +119,7 @@ definePage("boardfw", () => {
   const fileIn = h("input", { type: "file", accept: ".bin,application/octet-stream", "data-id": "bfw-file",
     onchange: e => { const f = e.target.files[0]; if (f) loadFile(f).catch(err => { U.errors = [err.message]; redraw(); }); } });
   const imgOut = h("div", { class: "out", "data-id": "bfw-image" });
+  const siteBtn = h("button", { class: "btn", type: "button", "data-id": "bfw-site", onclick: loadHosted }, L("Get the image from the flash site", "从刷写网站获取固件"));
   const prog = h("progress", { max: 1, value: 0 });
   const msgOut = h("div", { class: "out", "data-id": "bfw-msg" });
   const startBtn = h("button", { class: "btn danger-fill", type: "button", "data-id": "bfw-start", onclick: start }, L("Start update", "开始更新"));
@@ -125,6 +155,8 @@ definePage("boardfw", () => {
     startBtn.disabled = !B || !U.image || U.running || pending;
     abortBtn.hidden = !(U.running && U.canAbort);
     fileIn.disabled = U.running;
+    siteBtn.disabled = U.running || U.fetching || !B;
+    siteBtn.textContent = U.fetching ? L("Loading...", "加载中...") : L("Get the image from the flash site", "从刷写网站获取固件");
   }
 
   clear(el).append(
@@ -135,8 +167,9 @@ definePage("boardfw", () => {
         h("p", { class: "row-note fw-note" }, L("Park the car and keep it awake. After the update the board restarts. The app connects again by itself. Then confirm the new image within 10 minutes, or the board goes back to the old image.",
           "请停好车并保持唤醒。更新后模块会重启，应用会自动重新连接。请在10分钟内确认新固件，否则模块会回退到旧固件。")))),
     h("div", { class: "sec-label" }, L("1. Image file", "1. 固件文件")),
-    h("div", { class: "card" }, h("div", { class: "form" }, fileIn, imgOut,
-      h("p", { class: "row-note fw-note" }, L("The file is scrl-<build>.bin from build/out of the firmware build (tools/build-boards.sh), for the board that is connected. Not the -full.bin file. The app checks it before it sends a byte.", "文件为固件编译（tools/build-boards.sh）在 build/out 中生成的 scrl-<build>.bin，须与所连模块一致。不要用 -full.bin 文件。发送前应用会先检查文件。")))),
+    h("div", { class: "card" }, h("div", { class: "form" }, h("div", { class: "btns" }, siteBtn), fileIn, imgOut,
+      h("p", { class: "row-note fw-note" }, L(`The button gets the newest image for the connected board from ${SC.FW_SITE.replace("https://", "")}. Or pick a file: scrl-<build>.bin from build/out of the firmware build (tools/build-boards.sh), not the -full.bin file. The app checks the image before it sends a byte.`,
+        `按钮会从 ${SC.FW_SITE.replace("https://", "")} 获取所连模块的最新固件。也可选择文件：固件编译（tools/build-boards.sh）在 build/out 中生成的 scrl-<build>.bin，不要用 -full.bin 文件。发送前应用会先检查固件。`)))),
     h("div", { class: "sec-label" }, L("2. Update", "2. 更新")),
     h("div", { class: "card" }, h("div", { class: "form" }, h("div", { class: "btns" }, startBtn, abortBtn), prog, msgOut, chunkOut)),
     h("p", { class: "sec-foot" }, h("button", { class: "linkish", type: "button", onclick: () => switchTab("status") }, icon("chevron-left", 16), L("Car tab", "车辆页"))));
