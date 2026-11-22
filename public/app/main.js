@@ -11,7 +11,9 @@ const mockH2 = query.get("mock") === "h2"; // ?mock=h2: a mock H2 board instead 
 const loads = PAGES.map(p => import(`./pages/${p}.js`).catch(e => log(`page ${p} did not load: ${e.message}`, "bad")));
 let MockLink = null, MockH2Transport = null;
 if (mockH2) {
+  // The mock board runs the mock TSL6 module behind its TSL6 characteristic (the engine link, firmware 0.6.0).
   ({ MockH2Transport } = await import("./scrl-mock.js"));
+  await Promise.all(MOCKS.map(m => import(`./mock/${m}.js`).catch(e => log(`mock ${m} did not load: ${e.message}`, "warn"))));
 } else if (mock) {
   ({ MockLink } = await import("./mock.js"));
   await Promise.all(MOCKS.map(m => import(`./mock/${m}.js`).catch(e => log(`mock ${m} did not load: ${e.message}`, "warn"))));

@@ -2,7 +2,7 @@
 // Two tabs: zone link (tab 0) and whole-car effect (tab 1). Each tab is one 256-byte rule table.
 // Every change writes the whole table at once. There is no save button.
 import { h, L, row, toggle, picker, btn, icon, toast, dialog, helpButton, pressable, clear } from "../ui.js";
-import { S, definePage, onBus, ask, gate, funlist, log } from "../app.js";
+import { S, definePage, onBus, ask, gate, funlist, log, isH2 } from "../app.js";
 import { openFnPicker, fnLabel } from "../fnpicker.js";
 import {
   TYPE_RGB, TAB, TABS, TABLE_LEN, SLOT_COUNT, RULE0_NAME, optionsFor, rowsFor, canTry, rulesFromTable, encodeTable,
@@ -361,6 +361,11 @@ definePage("rgb", () => {
     el.append(h("p", { class: "foot" }, L(
       "Each change is written to the module at once. Long press a rule name to move the rule.",
       "每次修改会立即写入模块。长按指令名称可移动顺序。")));
+    // The BLE board sends the whole-car rules to the car (CAN 0x679). The zone link goes to the light receivers on
+    // the TSL6 2.4 GHz radio, which the board does not have: the board keeps those rules, and sends nothing.
+    if (isH2() && st.tab === TAB.ZONE) el.append(h("p", { class: "foot", "data-id": "rgb-board-zone" }, L(
+      "The BLE board keeps these rules but cannot send them: the zone link needs the 2.4 GHz radio of the TSL6. The whole-car rules work.",
+      "BLE模块会保存这些规则，但无法发送：分区联动需要TSL6的2.4GHz无线。整车效果可正常使用。")));
   }
 
   return {

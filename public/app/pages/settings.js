@@ -2,7 +2,7 @@
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
 import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton, extendHelp } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword, isH2, go } from "../app.js";
-import { h2Options, h2Has, h2Fields, h2HasTsl6 } from "../../lib/h2-menus.js";
+import { h2Options, h2Has, h2Fields, h2HasTsl6, h2HasEngine } from "../../lib/h2-menus.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, TIME_PROMPT_ZH } from "../../lib/tsl6-settings.js";
 
 let ZH = null;
@@ -209,7 +209,10 @@ definePage("settings", () => {
       return;
     }
     const vals = decodeSettings(p);
-    const moduleOff = vals.mianSwitch === 1 && !isH2(); // the board has its op mode instead (the engine switch bit is not shown)
+    // A board with the engine link has the TSL6 master switch (the TSL6 car features), as a TSL6. Other boards have
+    // only their op mode.
+    const engine = isH2() && h2HasEngine();
+    const moduleOff = vals.mianSwitch === 1 && (!isH2() || engine);
 
     // Master switch first. While the module is off, the vendor app hides every other row.
     const master = h("div", { class: "card lead master" }, (() => {
@@ -221,7 +224,8 @@ definePage("settings", () => {
         h("div", { class: "li-trail" }, h("span", { class: "val" }, valueText(f, vals)), h("span", { class: "chev" }, icon("chevron-right", 18))));
     })());
     if (topRow.parentNode !== el) el.prepend(topRow);
-    // The H2 board has no master switch. Its op mode (Active or Listen-Only) is on the Board page, with a confirm.
+    // The H2 board's op mode (Active or Listen-Only) is on the Board page, with a confirm. With the engine link the
+    // TSL6 master switch comes after it.
     const B = isH2() ? S.link.board : null;
     const opCard = B && B.status ? h("div", { class: "card lead master" },
       h("button", { class: "li first", type: "button", "data-id": "set-opmode", onclick: () => go("board") },
@@ -229,7 +233,7 @@ definePage("settings", () => {
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Op mode", "运行模式"))),
           h("div", { class: "li-sub" }, B.status.opMode === 1 ? L("The board sends scroll ticks on Vehicle CAN", "模块向车辆CAN发送滚轮操作") : L("The board never sends", "模块从不发送"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, B.status.opMode === 1 ? L("Active", "主动") : L("Listen-Only", "只听")), h("span", { class: "chev" }, icon("chevron-right", 18))))) : null;
-    masterSlot.replaceChildren(opCard || master);
+    masterSlot.replaceChildren(...(opCard ? (engine ? [opCard, master] : [opCard]) : [master]));
     findBox.hidden = moduleOff;
     if (moduleOff) {
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));

@@ -17,6 +17,11 @@ export const H2_FEATURES = Object.freeze([["lr", 2], ["rand", 1]]);
 // Feature keys of the connected board. The board link sets them after each Settings read.
 let boardKeys = new Set();
 let boardTsl6 = false;
+// The board has the TSL6 characteristic (firmware 0.6.0): the TSL6 app protocol goes to its TSL6 engine. The board
+// link sets it after the connect.
+let boardEngine = false;
+export function h2SetEngine(on) { boardEngine = !!on; }
+export const h2HasEngine = () => boardEngine;
 export function h2SetBoardSettings(settings) {
   boardKeys = new Set(H2_FEATURES.map(([id]) => id).filter(id => settings && Number.isInteger(settings[id])));
   boardTsl6 = !!settings && typeof settings.tsl6 === "string" && /^[0-9a-f]{56}$/i.test(settings.tsl6);
@@ -28,18 +33,35 @@ export const h2Has = id => boardKeys.has(id);
 // lab rows of device type H2_TSL6_TYPE. Not shown:
 //   - the "basic" rows (buzzer, LED, BLE power): the board has none of them,
 //   - the "scroll" rows other than the board's own: the board's Scroll Ack sends the ticks,
-//   - mianSwitch: the board has its op mode (Board page) for that,
-//   - KERS and stoppingMode: the TSL6 code writes 0x334 bits that differ from the 2026-11-20 car capture
-//     (stopping mode at d3 bits 3:2, regen at d0 bit 7). Not shown until the engine writes the right bits.
-export const h2HasTsl6 = () => boardTsl6;
+//   - mianSwitch without the engine link (0.5.0): the board has its op mode (Board page) for that,
+//   - the seat-belt rows: the TSL6 app does not show them either (vendor admin).
+// KERS and stoppingMode show as on a TSL6: the engine writes the same 0x334 fields as the TSL6 (regen level in
+// data[2] bits 4:0, stopping mode request in data[3] bits 7:6). The 2026-11-20 capture shows the car's own UI
+// settings in other bits (data[0] bit 7, data[3] bits 3:2); the TSL6 fields may be separate requests. Not checked
+// on the car.
+export const h2HasTsl6 = () => boardTsl6 || boardEngine;
 export const H2_TSL6_TYPE = 6;
 export const H2_TSL6_GROUPS = Object.freeze(["car", "lab"]);
-export const H2_TSL6_HIDDEN = Object.freeze(["mianSwitch", "KERS", "stoppingMode", "frontLeftBuckle", "frontRightBuckle", "rearBuckle"]);
+// mianSwitch shows with the engine link (0.6.0): it turns the TSL6 car features off, as on a TSL6.
+const HIDDEN_ALWAYS = ["frontLeftBuckle", "frontRightBuckle", "rearBuckle"];
+export const H2_TSL6_HIDDEN = Object.freeze(["mianSwitch", ...HIDDEN_ALWAYS]);
+const hiddenNow = () => (boardEngine ? HIDDEN_ALWAYS : H2_TSL6_HIDDEN);
 // Factory "tsl6" value of the board: every car feature off.
 export const H2_TSL6_FACTORY = "0000ff010100000001010000" + "0".repeat(32);
 // True for a TSL6 settings field that the board's engine takes. f = a field of lib/tsl6-settings.js.
-export const h2Tsl6Field = f => boardTsl6 && H2_TSL6_GROUPS.includes(f.group) && !H2_TSL6_HIDDEN.includes(f.id) &&
-  (!f.types || f.types.includes(H2_TSL6_TYPE));
+// With the engine link, BLEPWR (BLE signal strength) shows too: the board sets its radio power from it at the next
+// start (0.6.0). The other module rows (beep, led) need TSL6 hardware.
+const H2_ENGINE_BASIC = ["BLEPWR"];
+export const h2Tsl6Field = f => h2HasTsl6() && (H2_TSL6_GROUPS.includes(f.group) || (boardEngine && H2_ENGINE_BASIC.includes(f.id))) &&
+  !hiddenNow().includes(f.id) && (!f.types || f.types.includes(H2_TSL6_TYPE));
+// Car tab rows of a board: its own (H2_ROWS), and with the engine link every row of device type H2_TSL6_TYPE.
+export const h2ShowsRow = r => !!r && (H2_ROWS.includes(r.id) || (boardEngine && (!r.types || r.types.includes(H2_TSL6_TYPE))));
+// Tools of a board: its own, and with the engine link the TSL6 tools. Not with the engine: password (the board
+// pairs), firmware (the TSL6 flasher; the board has Board firmware). Ambient light: the whole-car records go to the
+// car on CAN 0x679; the zone-link records need the TSL6 2.4 GHz radio, which the board does not have.
+export const H2_TOOLS = Object.freeze(["board", "boardfw", "capture", "log", "reset"]);
+export const H2_ENGINE_TOOLS = Object.freeze(["shortcuts", "blebtn", "rgb", "gauge", "battery", "backup", "blehost", "debug", "service"]);
+export const h2Tools = () => (boardEngine ? [...H2_TOOLS, ...H2_ENGINE_TOOLS] : [...H2_TOOLS]);
 // Highest board value of a ported feature, or undefined for another field.
 export const h2FeatureMax = id => (H2_FEATURES.find(([k]) => k === id) || [])[1];
 // Every settings field of the connected board.

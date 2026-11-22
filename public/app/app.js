@@ -241,7 +241,8 @@ export async function connect({ all = false } = {}) {
       log("no status reply after connect: the module sent nothing back", "bad");
       toast(L("The module does not answer. See Tools > Log and capture.", "模块无应答，请查看「工具 > 日志与抓包」"), "bad", 4000);
     }
-    if (S.prefs.autoGauge && S.hwType && !S.blank && !link.boot && link.kind !== "h2") go("gauge");
+    // A board with the TSL6 engine link has the gauge stream too (firmware 0.6.0).
+    if (S.prefs.autoGauge && S.hwType && !S.blank && !link.boot && (link.kind !== "h2" || link.engineLink)) go("gauge");
   } catch (e) {
     if (e && e.name === "NotFoundError") return; // user closed the chooser
     log(`connect failed: ${e.name || ""} ${e.message}`, "bad");

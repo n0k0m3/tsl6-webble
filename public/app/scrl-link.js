@@ -6,10 +6,10 @@
 //
 // The board needs Bluetooth pairing. Its first protected read starts it: the phone asks for the 6-digit passkey.
 // This app never sees the passkey at pairing.
-import { LinkBase, platformChunk } from "./ble.js";
+import { LinkBase, platformChunk, encode } from "./ble.js";
 import * as SC from "../lib/scrl.js";
-import { h2Status, h2SettingsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
-import { h2SetBoardSettings, h2SetIntervalMax } from "../lib/h2-menus.js";
+import { h2Status, h2SettingsWrite, h2EngineStatus, h2BoardFieldsWrite, H2_DEFAULTS } from "../lib/scrl-tsl6.js";
+import { h2SetBoardSettings, h2SetIntervalMax, h2SetEngine } from "../lib/h2-menus.js";
 import { CAP, CaptureRecorder, captureStartCommand, captureStopCommand, captureMarkCommand } from "../lib/scrl-capture.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -107,6 +107,10 @@ export class GattTransport {
 }
 
 // ---------------------------------------------------------------- link
+// Commands that the board does itself, also with the engine link: A1 (AP assist = the board's Scroll Ack) and A5
+// (restart the board). A0, A3 and A4 go to the board and to the engine. Every other command goes to the engine.
+const BOARD_CMDS = new Set([0xa0, 0xa1, 0xa3, 0xa4, 0xa5]);
+
 export class ScrlLink extends LinkBase {
   constructor(transport) {
     super();
@@ -118,6 +122,8 @@ export class ScrlLink extends LinkBase {
     this.updating = false; this.expectRestart = false; this.pollTimer = 0;
     this.otaWaiters = []; this.otaCredit = 0; this.otaStopped = null;
     this.capture = null; this.captureLive = false; this.captureSubscribed = false; this.captureEmit = 0;
+    this.engineLink = false; // the board has the TSL6 characteristic (firmware 0.6.0)
+    this.engine = null;      // the last A0 status of the TSL6 engine
     transport.onDisconnect = () => this.onGone();
   }
   setChunk(n) { this.chunk = n; store("tsl6.h2chunk", String(n)); }
@@ -176,6 +182,11 @@ export class ScrlLink extends LinkBase {
     await step("Live subscribe", () => t.subscribe("live", b => { try { this.takeLive(SC.parseLive(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } }));
     await step("Log subscribe", () => t.subscribe("log", b => this.log(`board: ${dec.decode(b)}`)));
     await step("Update subscribe", () => t.subscribe("otaCtrl", b => { try { this.onOtaEvent(SC.parseOtaEvent(b)); } catch (e) { this.log(`board: ${e.message}`, "warn"); } }));
+    // The TSL6 engine (0.6.0): the subscribe opens its TSL6 link, and it sends its A0 status at once.
+    this.engine = null;
+    this.engineLink = t.has("tsl6");
+    h2SetEngine(this.engineLink);
+    if (this.engineLink) await step("TSL6 subscribe", () => t.subscribe("tsl6", b => this.receive(b)));
     this.connected = true;
     this.authed = true;
     this.log(`connected: ${this.name} (${SC.boardName(B.info)}${B.info && B.info.fw ? `, firmware ${B.info.fw}` : ""})`, "ok");
@@ -223,7 +234,7 @@ export class ScrlLink extends LinkBase {
   pushStatus(force) {
     const B = this.board;
     if (B.status && B.settings) {
-      const p = h2Status(B);
+      const p = this.engine ? h2EngineStatus(this.engine, B) : h2Status(B);
       const same = this.status && p.length === this.status.length && p.every((v, i) => v === this.status[i]);
       if (force || !same) { this.status = p; this.emit("status", p); }
     }
@@ -242,6 +253,52 @@ export class ScrlLink extends LinkBase {
     try { return await this.refresh(); } catch (e) { this.log(`board: status read failed: ${e.message}`, "bad"); return null; }
   }
 
+  // ---- TSL6 engine link (firmware 0.6.0): the TSL6 frames, as to a TSL6
+  // A frame of the engine. Its status goes to the pages with the board fields on top.
+  onFrame(fr) {
+    if ((fr.cmd === 0xa0 || fr.cmd === 0xa1 || fr.cmd === 0xa3) && fr.payload.length >= 18) {
+      this.engine = fr.payload;
+      const B = this.board;
+      if (B.status && B.settings) {
+        fr = { cmd: fr.cmd, payload: h2EngineStatus(this.engine, B) };
+        this.status = fr.payload;
+        this.emit("status", fr.payload);
+      }
+    } else if (this.verbose && fr.cmd !== 0xb0 && fr.cmd !== 0xc0) {
+      this.log(`rx ${fr.cmd.toString(16).toUpperCase()} (${fr.payload.length})`);
+    }
+    for (let i = 0; i < this.waiters.length; i++) {
+      const w = this.waiters[i];
+      if (w.cmds.includes(fr.cmd) && (!w.accept || w.accept(fr))) { this.waiters.splice(i, 1); w.resolve(fr); break; }
+    }
+    this.emit("frame", fr);
+    this.emit(`frame:${fr.cmd}`, fr);
+  }
+  toEngine(cmd) { return this.engineLink && !BOARD_CMDS.has(cmd); }
+  // One frame to the engine, in writes with response (iOS drops no write with response).
+  async engineSend(cmd, payload = new Uint8Array(0)) {
+    if (!this.connected) throw new Error("not connected");
+    const f = encode(cmd, payload instanceof Uint8Array ? payload : Uint8Array.from(payload || []));
+    const job = this.queue.then(async () => {
+      for (let i = 0; i < f.length; i += this.chunk) await this.t.write("tsl6", f.slice(i, i + this.chunk));
+    });
+    this.queue = job.catch(() => {});
+    return job;
+  }
+  // Send to the engine and wait for a reply frame, as LinkBase.request does. {cmd, payload} or null.
+  async engineRequest(cmd, payload = new Uint8Array(0), { timeout = 2000, tries = 1, reply = [cmd], accept = null } = {}) {
+    for (let a = 1; a <= tries; a++) {
+      let w;
+      const got = new Promise(resolve => { w = { cmds: reply, accept, resolve }; this.waiters.push(w); });
+      await this.engineSend(cmd, payload);
+      const res = await Promise.race([got, sleep(timeout).then(() => null)]);
+      if (res) return res;
+      this.waiters = this.waiters.filter(x => x !== w);
+      if (tries > 1) this.log(`TSL6 ${cmd.toString(16).toUpperCase()}: no reply (try ${a}/${tries})`, "warn");
+    }
+    return null;
+  }
+
   // ---- TSL6 commands that the board can do
   frame(cmd, payload) {
     const fr = { cmd, payload: payload instanceof Uint8Array ? payload : Uint8Array.from(payload || []) };
@@ -252,17 +309,33 @@ export class ScrlLink extends LinkBase {
   async exec(cmd, payload = new Uint8Array(0)) {
     if (!this.connected) throw new Error("not connected");
     switch (cmd) {
-      case 0xa0: { const p = await this.refresh(); return this.frame(0xa0, p); }
+      case 0xa0: {
+        const p = await this.refresh();
+        if (this.engineLink) {
+          const r = await this.engineRequest(0xa0, new Uint8Array(0), { timeout: 3000, tries: 2, reply: [0xa0] });
+          if (r) return r;
+        }
+        return this.frame(0xa0, p);
+      }
       case 0xa1: // AP assist on/off = Scroll Ack on/off
         await this.writeSettings({ enabled: payload[0] === 1 });
         return this.frame(0xa1, payload);
       case 0xa3: { // settings write: only the fields that the board has
+        if (this.engineLink) {
+          // The board's own fields to the board, the whole write to the engine (it replies with its status).
+          const change = h2BoardFieldsWrite(this.status, payload);
+          if (Object.keys(change).length) await this.writeSettings(change);
+          const r = await this.engineRequest(0xa3, payload, { timeout: 3000, reply: [0xa3, 0xa0] });
+          return r || this.frame(0xa0, this.status);
+        }
         const change = h2SettingsWrite(this.status, payload);
         if (Object.keys(change).length) await this.writeSettings(change); else await this.refresh();
         return this.frame(0xa0, this.status);
       }
       case 0xa4: // restore defaults: the settings only. The bonds and the passkey stay.
         await this.writeSettings(SC.settingsDiff(this.board.settings, H2_DEFAULTS));
+        // The engine: its factory reset (settings and tables), as A4 does on a TSL6. It checks the UID14.
+        if (this.engineLink) await this.engineRequest(0xa4, payload, { timeout: 3000, reply: [0xa4] });
         return this.frame(0xa4, payload);
       case 0xa5: // restart
         await this.command(SC.CMD.REBOOT);
@@ -273,8 +346,8 @@ export class ScrlLink extends LinkBase {
         throw new Error(`the board has no command ${cmd.toString(16).toUpperCase()}`);
     }
   }
-  async send(cmd, payload) { await this.exec(cmd, payload); }
-  async request(cmd, payload) { return this.exec(cmd, payload); }
+  async send(cmd, payload) { if (this.toEngine(cmd)) return this.engineSend(cmd, payload); await this.exec(cmd, payload); }
+  async request(cmd, payload, opts) { return this.toEngine(cmd) ? this.engineRequest(cmd, payload, opts) : this.exec(cmd, payload); }
   // The board has no BLE password. The phone pairs with it.
   async sendPassword() { return true; }
   savedPassword() { return ""; }

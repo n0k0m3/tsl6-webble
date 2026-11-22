@@ -8,9 +8,12 @@
 //   ?mock=h2&bad=settings   the Settings JSON has a number for "enabled"   ?mock=h2&bad=log   the Log subscribe fails
 //   ?mock=h2&nocap    firmware before 0.4.0: no Capture characteristic   ?mock=h2&capdrop=N   the link drops N s into a capture
 //   ?mock=h2&capdup   each capture packet arrives two times (seen with a real phone, 2026-11-20)
-//   ?mock=h2&notsl6   firmware before 0.5.0: no TSL6 engine ("tsl6" settings key)
+//   ?mock=h2&notsl6   firmware before 0.5.0: no TSL6 engine ("tsl6" settings key, no TSL6 characteristic)
+//   ?mock=h2&noengine firmware 0.5.0: the "tsl6" settings key, but no TSL6 characteristic
+// The TSL6 characteristic (0.6.0) runs the mock TSL6 module of the app (mock.js), with the board ID as its UID14.
 // The capture frames are made up (synthetic IDs and data). They are not from a car.
 import * as SC from "../lib/scrl.js";
+import { MockLink } from "./mock.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const enc = new TextEncoder(), dec = new TextDecoder();
@@ -46,7 +49,23 @@ export class MockH2Transport {
   get name() { return "SCRL-MOCK"; }
   detach() { this.onDisconnect = () => {}; }
   get connected() { return this.up; }
-  has(name) { return name !== "capture" || !(this.q.has("nocap") || this.q.has("nofeat")); }
+  has(name) {
+    if (name === "tsl6") return !(this.q.has("notsl6") || this.q.has("nofeat") || this.q.has("noengine"));
+    return name !== "capture" || !(this.q.has("nocap") || this.q.has("nofeat"));
+  }
+  // The TSL6 engine: the mock TSL6 module, authorized (the board pairing stands for A8). It sends its status at once.
+  engineOpen() {
+    const m = new MockLink();
+    m.connected = true; m.auth = true;
+    // UID14 = "SCRL-H2", 0, the board ID reversed (as the firmware).
+    m.state.set([0x53, 0x43, 0x52, 0x4c, 0x2d, 0x48, 0x32, 0x00, 0x01, 0x00, 0x00, 0xfe, 0xda, 0x74], 4);
+    m.receive = bytes => { if (this.up && this.subs.tsl6) this.subs.tsl6(bytes); };
+    m.log = () => {};
+    m.timer = setInterval(() => m.tick(), 100);
+    this.engine = m;
+    m.reply(0xa0, m.statusPayload());
+  }
+  engineClose() { if (this.engine) { clearInterval(this.engine.timer); this.engine.connected = false; this.engine = null; } }
   uptime() { return Math.floor((Date.now() - this.boot) / 1000); }
   say(text) {
     const t = Date.now() - this.boot;
@@ -98,6 +117,7 @@ export class MockH2Transport {
   async open() { await sleep(250); if (this.down) throw new Error("the board does not advertise"); this.up = true; this.subs = {}; this.refused = 0; }
   drop(downMs) {
     this.capEnd(false);
+    this.engineClose();
     this.up = false; this.subs = {}; this.ota = null;
     if (downMs) { this.down = true; setTimeout(() => { this.down = false; }, downMs); }
     setTimeout(() => this.onDisconnect(), 0);
@@ -123,6 +143,7 @@ export class MockH2Transport {
     if (name === "log" && this.q.get("bad") === "log") throw new Error("GATT Error: Not supported.");
     this.subs[name] = cb;
     if (name === "log") for (const l of this.lines) cb(enc.encode(l));
+    if (name === "tsl6" && this.has("tsl6") && !this.engine) this.engineOpen();
   }
   otaEvent(event, status) {
     const b = new Uint8Array(6); b[0] = event; b[1] = status;
@@ -135,6 +156,7 @@ export class MockH2Transport {
     if (name === "settings") return this.writeSettings(dec.decode(bytes));
     if (name === "command") return this.command(bytes);
     if (name === "otaCtrl") return this.otaCtrl(bytes);
+    if (name === "tsl6") { if (!this.engine) throw new Error("write not permitted"); return this.engine.rawWrite(bytes); }
     if (name === "otaData") {
       if (!noResponse && !this.otaw) throw new Error("write not permitted"); // older firmware: write without response only
       if (noResponse && this.bluefy) return undefined; // the browser takes the write, the board never gets it

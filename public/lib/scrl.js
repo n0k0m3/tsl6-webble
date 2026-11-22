@@ -7,9 +7,11 @@
 
 const uuid = n => `e591${n.toString(16).padStart(4, "0")}-51ba-4d0b-8422-5cb9dc778552`;
 const UUIDS = { service: uuid(1), info: uuid(2), status: uuid(3), live: uuid(4), settings: uuid(5),
-  command: uuid(6), log: uuid(7), otaCtrl: uuid(8), otaData: uuid(9), capture: uuid(10) };
+  command: uuid(6), log: uuid(7), otaCtrl: uuid(8), otaData: uuid(9), capture: uuid(10), tsl6: uuid(11) };
 // Characteristics that older firmware does not have. The link connects without them.
-const OPTIONAL = ["capture"];
+// Newer characteristics: an older board connects without them. capture: 0.4.0. tsl6 (the TSL6 app protocol to
+// the TSL6 car features engine): 0.6.0.
+const OPTIONAL = ["capture", "tsl6"];
 
 // SCRL_FLAG_* in scrl_status.h. The Live record carries only the low byte.
 const FLAG = { TX_ALLOWED: 1 << 0, TIMER_ARMED: 1 << 1, ACTIVE: 1 << 2, WRONG_BUS: 1 << 3, OTA_BLIND: 1 << 4,

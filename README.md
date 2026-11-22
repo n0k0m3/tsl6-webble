@@ -67,9 +67,9 @@ Pick `SCRL-xxxx` in the Bluetooth list. The app then shows the board as one more
 
 | Tab | What shows for the board |
 |---|---|
-| Car | The AP assist switch (scroll ticks on or off), the live prompt state, and the board warnings |
-| Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the op mode. Firmware 0.5.0: also the TSL6 car and lab rows |
-| Tools | Board, Board firmware, Log, Restore defaults |
+| Car | The AP assist switch (scroll ticks on or off), the live prompt state, and the board warnings. Firmware 0.6.0: every TSL6 row |
+| Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the op mode. Firmware 0.5.0: also the TSL6 car and lab rows. 0.6.0: also the master switch and BLE signal strength |
+| Tools | Board, Board firmware, Capture, Log, Restore defaults. Firmware 0.6.0: also the TSL6 tools (see below) |
 | Device | Device type ("BLE board: " and the board name; every board has the same rows), board type, chip, CAN controller, board ID, firmware version, restart |
 
 What only the board has is on the **Board** page (Tools > Board):
@@ -88,7 +88,13 @@ Differences from the TSL6:
 - **The listen-only build** (`esp32-generic-twai-sniffer`) never sends. The Board page says so and locks Active.
 - **Restore defaults** turns the scroll ticks off and puts the board in Listen-Only. The bonds and the passkey stay.
 
-**TSL6 car features (firmware 0.5.0).** The board runs the car code of the TSL6. Its Settings JSON then has the key `tsl6`: the 28 TSL6 settings bytes (A3 bytes 24-35 and 59-74) as hex. For such a board the Settings tab also shows the TSL6 car and lab rows of device type 6, and each change writes the 28 bytes. Not shown: the module rows (buzzer, LED, BLE power), the AP assist rows that the board does its own way, the master switch (the board has its op mode), and `KERS` and `stoppingMode` (the TSL6 writes `0x334` bits that differ from a car capture). The board sends these frames only in Active. An app older than this version cannot read the Settings of firmware 0.5.0: update the app first.
+**TSL6 functions (firmware 0.6.0).** The board runs the TSL6 code, and its characteristic TSL6 carries the TSL6 app protocol. The app then talks to the board as to a TSL6: the same pages, the rows of device type 6, the same commands. The board keeps its own Scroll Ack (AP assist, the scroll rows, the op mode) and its Board pages. What works:
+- Car tab: every TSL6 row and action, the detected car, the Gauges button.
+- Settings: the TSL6 car and lab rows, the master switch (the TSL6 functions), BLE signal strength (the board radio power, from the next start).
+- Tools: shortcuts, BLE buttons, BLE host pairing (up to 3 BLE remotes), ambient light (the whole-car rules; the zone link needs the TSL6 2.4 GHz radio), gauges, battery, backup, CAN debug, Tesla service mode, restore defaults (board and TSL6).
+- Not on the board: beep volume and LED (no buzzer, no LED), TSL6 password (the board pairs), TSL6 firmware (the board has Board firmware).
+
+Firmware 0.5.0 had only the TSL6 car settings, through the Settings key `tsl6` (28 bytes as hex). An app older than 0.5.0 support cannot read the Settings of a 0.5.0 or newer board: update the app first. The mock board has the TSL6 link; `&noengine` acts as 0.5.0, `&notsl6` as older firmware.
 
 How it works: the link to the board (`public/app/scrl-link.js`) gives the pages a status in the TSL6 layout and takes the TSL6 commands that the board can do. It refuses every other command, and it refuses a settings write that changes a bit that the board does not have (`public/lib/scrl-tsl6.js`).
 

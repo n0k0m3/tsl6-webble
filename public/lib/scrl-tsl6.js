@@ -8,7 +8,7 @@
 // Only the board fields (h2Fields()) and the rows in H2_ROWS mean something. Every other bit is 0.
 // A command or a change that the board does not have is refused: the adapter fails closed.
 
-import { H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES, h2HasTsl6, h2Tsl6Field, H2_TSL6_FACTORY } from "./h2-menus.js";
+import { H2_GAP, H2_CUSTOM, h2Order, h2Fields, h2Has, h2FeatureMax, h2Times, H2_FEATURES, h2HasTsl6, h2HasEngine, h2Tsl6Field, H2_TSL6_FACTORY } from "./h2-menus.js";
 import { BY_ID, FIELDS, decodeSettings } from "./tsl6-settings.js";
 import { FLAG } from "./scrl.js";
 
@@ -86,6 +86,33 @@ export function h2Status({ info, status, settings, flags }) {
   if (!h2Has("rand")) u[BY_ID.rand.byte] |= 1 << BY_ID.rand.shift;
   u.set(MARK, 36);
   return u;
+}
+
+// Status of a board with the engine link (firmware 0.6.0): the A0 status of its TSL6 engine, with the board's own
+// fields on top. The engine has the TSL6 layout already (UID14 = "SCRL-H2" and the MAC, live state, settings). The
+// board adds the settings that its Scroll Ack keeps (time, jg, jj, lr, rand) and "AP assist active" (byte 19 bit 0):
+// the board sends the ticks, the TSL6 tick of the engine stays off.
+export function h2EngineStatus(engine, { settings, flags }) {
+  const u = new Uint8Array(H2_STATUS_LEN);
+  u.set(engine.subarray(0, Math.min(engine.length, H2_STATUS_LEN)));
+  const m = h2MenuValues(settings);
+  for (const id of h2Fields()) {
+    const f = BY_ID[id];
+    u[f.byte] = (u[f.byte] & ~fieldMask(f)) | ((m[id] << f.shift) & fieldMask(f));
+  }
+  if (!h2Has("rand")) u[BY_ID.rand.byte] |= 1 << BY_ID.rand.shift;
+  u[19] = (u[19] & ~1) | (flags & FLAG.ENABLED ? 1 : 0);
+  return u;
+}
+
+// The board settings that an A3 write changes on a board with the engine link: only the board's own fields. The
+// whole write also goes to the engine, which takes every bit as a TSL6 does.
+export function h2BoardFieldsWrite(base, payload) {
+  if (payload.length !== H2_STATUS_LEN || base.length !== H2_STATUS_LEN) throw new Error("settings write: wrong length");
+  const before = decodeSettings(base), after = decodeSettings(payload);
+  const out = {};
+  for (const id of h2Fields()) if (before[id] !== after[id]) Object.assign(out, h2SettingChange(id, after[id]));
+  return out;
 }
 
 // What an A3 write changes on the board. base = the status that the page built the write from.

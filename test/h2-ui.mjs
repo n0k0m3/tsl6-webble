@@ -108,12 +108,49 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2&notsl6", {}, async pa
   assert.doesNotMatch(await page.locator("#toast").textContent().catch(() => ""), /passkey/);
 });
 
-await scenario("tsl6-engine-rows", "mock=h2", {}, async page => {
+// Firmware 0.6.0: the TSL6 characteristic runs the TSL6 app protocol to the board's TSL6 engine. The pages are the
+// TSL6 pages of device type 6; the board keeps its op mode, its Scroll Ack rows and its own tools.
+await scenario("engine-link-gives-the-tsl6-pages", "mock=h2", {}, async page => {
+  await connect(page);
+  await page.waitForSelector("[data-row=pulseHorn]", { timeout: 8000 });
+  const rows = await ids(page, "[data-page=car] [data-row]", "data-row");
+  for (const id of ["vehicleType", "apAssist", "batteryHeat", "chargeDoor", "pulseHorn", "sportMode"]) assert.ok(rows.includes(id), `Car row ${id}`);
+  assert.match(await text(page, ".vehicle-name"), /Tesla Model Y/, "the engine detects the car");
+  assert.equal(await page.isVisible("[data-id=open-gauges]"), true, "the TSL6 Gauges button");
+  await tab(page, "settings");
+  const set = await ids(page, "[data-page=settings] [data-id^=set-]", "data-id");
+  for (const id of ["set-opmode", "set-mianSwitch", "set-lr", "set-time", "set-fsd", "set-autoSportMode", "set-lab"]) assert.ok(set.includes(id), `${id} shown`);
+  for (const id of ["set-KERS", "set-stoppingMode"]) assert.ok(set.includes(id), `${id} shown, as on a TSL6`);
+  assert.ok(set.includes("set-BLEPWR"), "BLE signal strength: the board radio power");
+  for (const id of ["set-beep", "set-led", "set-automdr"]) assert.ok(!set.includes(id), `${id} not shown`);
+  // A TSL6 row goes to the engine (A3), not to the board settings.
+  await page.click("[data-id=set-autoSportMode]");
+  await page.click('.opt[data-v="1"]');
+  await toastIs(page, /Saved/);
+  await tab(page, "tools");
+  const tools = await ids(page, "[data-id^=tool-]", "data-id");
+  for (const id of ["tool-board", "tool-boardfw", "tool-capture", "tool-shortcuts", "tool-blebtn", "tool-gauge", "tool-battery", "tool-backup", "tool-blehost", "tool-debug", "tool-log", "tool-reset"]) assert.ok(tools.includes(id), `${id} shown`);
+  assert.ok(tools.includes("tool-rgb"), "ambient light: the whole-car records go to CAN 0x679");
+  for (const id of ["tool-password", "tool-firmware"]) assert.ok(!tools.includes(id), `${id} not shown`);
+  await page.click("[data-id=tool-shortcuts]");
+  await page.waitForTimeout(1500);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-battery]");
+  await page.waitForTimeout(1500);
+  await tab(page, "tools");
+  await page.click("[data-id=tool-log]");
+  const log = await text(page, "#page");
+  assert.doesNotMatch(log, /settings write \{"tsl6"/, "the TSL6 bytes go to the engine, not to the board settings");
+  assert.match(log, /rx AB \(256\)/, "the shortcut table came from the engine");
+  assert.match(log, /rx D0/, "the battery info came from the engine");
+});
+
+await scenario("tsl6-settings-key-rows-without-the-engine-link", "mock=h2&noengine", {}, async page => {
   await connect(page);
   await tab(page, "settings");
   const rows = await ids(page, "[data-page=settings] [data-id^=set-]", "data-id");
   for (const id of ["set-opmode", "set-lr", "set-time", "set-fsd", "set-autoSportMode", "set-pluseHorn", "set-lab"]) assert.ok(rows.includes(id), `${id} shown`);
-  for (const id of ["set-mianSwitch", "set-KERS", "set-stoppingMode", "set-beep", "set-led", "set-automdr"]) assert.ok(!rows.includes(id), `${id} not shown`);
+  for (const id of ["set-mianSwitch", "set-beep", "set-led", "set-automdr"]) assert.ok(!rows.includes(id), `${id} not shown`);
   await page.click("[data-id=set-autoSportMode]");
   await page.click('.opt[data-v="1"]');
   await toastIs(page, /Saved/);
@@ -364,7 +401,7 @@ await scenario("restore-defaults-and-restart", "mock=h2", {}, async page => {
   await connect(page);
   await tab(page, "tools");
   await page.click("[data-id=tool-reset]");
-  assert.match(await text(page, ".dlg"), /Scroll Ack goes off and the board goes to Listen-Only\. The bonds and the passkey stay/);
+  assert.match(await text(page, ".dlg"), /Scroll Ack goes off and the board goes to Listen-Only\. The TSL6 car features go back to their factory settings, with the shortcuts and the BLE buttons\. The bonds and the passkey stay/);
   await dlgOk(page);
   await toastIs(page, /Defaults restored/);
   await tab(page, "settings");
@@ -512,7 +549,7 @@ await scenario("update-cut-write-steps-down", "mock=h2&cut=200", {}, async page 
   await page.waitForFunction(() => /The new image runs/.test(document.querySelector("[data-id=bfw-msg]").textContent), null, { timeout: 90000 });
 });
 
-await scenario("t2can-refuses-other-boards-and-warns-on-can-change", "mock=h2&board=lilygo-t2can", {}, async page => {
+await scenario("t2can-refuses-other-boards-and-warns-on-can-change", "mock=h2&board=lilygo-t2can&noengine", {}, async page => {
   await connect(page);
   assert.match(await text(page, ".vehicle-name"), /LilyGO T-2CAN/);
   await tab(page, "tools");
@@ -545,7 +582,7 @@ await scenario("t2can-refuses-other-boards-and-warns-on-can-change", "mock=h2&bo
   await page.waitForFunction(() => /TWAI. The board now uses MCP2515/.test(document.querySelector("[data-id=bfw-image]").textContent));
 });
 
-await scenario("listen-only-build-locks-active", "mock=h2&board=esp32-generic-twai-sniffer&lo", {}, async page => {
+await scenario("listen-only-build-locks-active", "mock=h2&board=esp32-generic-twai-sniffer&lo&noengine", {}, async page => {
   await connect(page);
   assert.match(await text(page, ".vehicle-name"), /ESP32 DevKit \(listen only\)/);
   await board(page);

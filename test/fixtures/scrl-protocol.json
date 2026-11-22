@@ -1,6 +1,6 @@
 {
  "about": "Protocol of the BLE board, from its firmware. Written by tools/scrl-fixture.mjs. Do not edit.",
- "firmware_commit": "f7ec3d7",
+ "firmware_commit": "9979b27",
  "flags": {
   "TX_ALLOWED": 1,
   "TIMER_ARMED": 2,
@@ -68,7 +68,8 @@
   "log": "e5910007-51ba-4d0b-8422-5cb9dc778552",
   "otaCtrl": "e5910008-51ba-4d0b-8422-5cb9dc778552",
   "otaData": "e5910009-51ba-4d0b-8422-5cb9dc778552",
-  "capture": "e591000a-51ba-4d0b-8422-5cb9dc778552"
+  "capture": "e591000a-51ba-4d0b-8422-5cb9dc778552",
+  "tsl6": "e591000b-51ba-4d0b-8422-5cb9dc778552"
  },
  "slot_size": 1966080,
  "boards": {

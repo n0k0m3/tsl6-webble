@@ -221,7 +221,8 @@ await test("the TSL6 engine (firmware 0.5.0): the factory bytes, the rows and th
     const want = M.h2Fields().includes(f.id) || (["car", "lab"].includes(f.group) && !M.H2_TSL6_HIDDEN.includes(f.id) && (!f.types || f.types.includes(6)));
     assert.equal(shown.includes(f.id), want, f.id);
   }
-  for (const id of ["mianSwitch", "KERS", "stoppingMode", "beep", "led", "automdr"]) assert.ok(!shown.includes(id), `${id} not shown`);
+  for (const id of ["mianSwitch", "frontLeftBuckle", "beep", "led", "automdr"]) assert.ok(!shown.includes(id), `${id} not shown`);
+  for (const id of ["KERS", "stoppingMode"]) assert.ok(shown.includes(id), `${id} shown, as on a TSL6`);
   for (const id of ["fsd", "autoSportMode", "airAutoArid", "steerAssistanceLighting", "pluseHorn"]) assert.ok(shown.includes(id), `${id} shown`);
   // The engine bytes go to status bytes 24-35 and 59-74. The board's own fields keep their bits.
   const bytes = Array.from({ length: 28 }, (_, i) => (i * 37 + 11) & 0xFF);
@@ -250,9 +251,46 @@ await test("an A3 write of a TSL6 engine row sends the 28 bytes; a hidden row is
   // fsd = 1 also sets apAutoOpenType = 0 (vendor rule): one write.
   // A board row alone sends no "tsl6".
   assert.deepEqual(Object.keys(A.h2SettingsWrite(base, set("jg", 3))), ["gap_ms"]);
-  for (const [id, raw] of [["mianSwitch", 1], ["KERS", 1], ["stoppingMode", 1], ["beep", 5], ["led", 1]]) {
+  for (const [id, raw] of [["mianSwitch", 1], ["frontLeftBuckle", 1], ["beep", 5], ["led", 1]]) {
     assert.throws(() => A.h2SettingsWrite(base, set(id, raw)), /not a setting/, id);
   }
+});
+
+await test("engine link (firmware 0.6.0): the engine status with the board fields on top", () => {
+  M.h2SetEngine(true);
+  try {
+    const engine = new Uint8Array(76);
+    for (let i = 0; i < 76; i++) engine[i] = (i * 29 + 3) & 0xff;
+    const s = { ...defaults, enabled: true, mode: 1, interval_ms: 5000, gap_ms: 300, pattern: 1, lr: 2, rand: 0 };
+    const on = A.h2EngineStatus(engine, { settings: s, flags: SC.FLAG.ENABLED });
+    const off = A.h2EngineStatus(engine, { settings: s, flags: 0 });
+    assert.equal(on[19] & 1, 1, "AP assist = the board's Scroll Ack");
+    assert.equal(off[19] & 1, 0);
+    const v = T.decodeSettings(on), m = A.h2MenuValues(s);
+    for (const id of M.h2Fields()) assert.equal(v[id], m[id], `${id} from the board`);
+    // Every other bit is the engine's.
+    const keep = new Uint8Array(76).fill(0xff);
+    keep[19] &= ~1;
+    for (const id of M.h2Fields()) { const f = T.BY_ID[id]; keep[f.byte] &= ~(((1 << f.width) - 1) << f.shift); }
+    for (let i = 0; i < 76; i++) assert.equal(on[i] & keep[i], engine[i] & keep[i], `byte ${i}`);
+    // An A3 write: the board gets only its own fields; the engine bits do not throw.
+    const set = (id, raw) => T.encodeSettings(on, { [id]: raw }, M.H2_TYPE, id);
+    assert.deepEqual(A.h2BoardFieldsWrite(on, set("jg", 5)), { gap_ms: 500 });
+    assert.deepEqual(A.h2BoardFieldsWrite(on, set("mianSwitch", 1)), {});
+    assert.deepEqual(A.h2BoardFieldsWrite(on, set("KERS", 1)), {});
+    // Rows, tools and settings rows of the engine link.
+    assert.ok(M.h2ShowsRow(ROW_BY_ID.pulseHorn) && M.h2ShowsRow(ROW_BY_ID.apAssist));
+    assert.ok(M.h2Tools().includes("shortcuts") && M.h2Tools().includes("blehost") && M.h2Tools().includes("rgb"));
+    assert.ok(!M.h2Tools().includes("password") && !M.h2Tools().includes("firmware"));
+    assert.ok(T.appliesTo(T.BY_ID.mianSwitch, M.H2_TYPE), "the TSL6 master switch with the engine link");
+    assert.ok(T.appliesTo(T.BY_ID.KERS, M.H2_TYPE) && !T.appliesTo(T.BY_ID.beep, M.H2_TYPE) && !T.appliesTo(T.BY_ID.rearBuckle, M.H2_TYPE));
+  } finally {
+    M.h2SetEngine(false);
+  }
+  assert.ok(!M.h2ShowsRow(ROW_BY_ID.pulseHorn), "no engine link: the board rows only");
+  assert.ok(!M.h2Tools().includes("shortcuts"));
+  assert.ok(!T.appliesTo(T.BY_ID.mianSwitch, M.H2_TYPE));
+  assert.ok(SC.OPTIONAL.includes("tsl6") && SC.UUIDS.tsl6 === FX.uuids.tsl6);
 });
 
 await test("the firmware takes the tsl6 writes of the app", () => {

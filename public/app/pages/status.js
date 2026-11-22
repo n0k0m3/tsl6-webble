@@ -3,7 +3,7 @@
 import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab, isH2 } from "../app.js";
 import { boardName } from "../../lib/scrl.js";
-import { H2_TYPE, H2_ROWS, h2Has } from "../../lib/h2-menus.js";
+import { H2_TYPE, H2_TSL6_TYPE, h2Has, h2HasEngine, h2ShowsRow } from "../../lib/h2-menus.js";
 import { h2PromptDiag } from "../../lib/scrl-tsl6.js";
 import { boardBanner } from "./board.js";
 import { WebLink } from "../ble.js";
@@ -27,7 +27,9 @@ function promptOf(p) {
   return promptTime(p);
 }
 
-const shown = r => r && (S.hwType === H2_TYPE ? H2_ROWS.includes(r.id) : (!r.types || r.types.includes(S.hwType)));
+const shown = r => r && (S.hwType === H2_TYPE ? h2ShowsRow(r) : (!r.types || r.types.includes(S.hwType)));
+// The device type for the TSL6 rows: a board with the TSL6 engine link has the rows of type H2_TSL6_TYPE.
+const tslType = () => (S.hwType === H2_TYPE && h2HasEngine() ? H2_TSL6_TYPE : S.hwType);
 // Display names that say what the switch does (the codec keeps the vendor names for its tests).
 const NAME = { apAutoState: { en: "AP resume", zh: "AP恢复" }, vehicleAPState: { en: "Autopilot", zh: "车辆AP" } };
 
@@ -157,7 +159,7 @@ definePage("status", () => {
   async function vehicleLongPress() {
     // Vendor: read the status, then show CAN1-3 from it (types 6, 7, 8, 19).
     const r = await ask(0xa0, new Uint8Array(0), { reply: [0xa0, 0xa1, 0xa3], read: true });
-    if (r && [6, 7, 8, 19].includes(S.hwType)) {
+    if (r && [6, 7, 8, 19].includes(tslType())) {
       const t = canStateText(r.payload[23] || 0);
       alertBox(L(t.en, t.zh.replace(/\r/g, "")));
     }
@@ -253,11 +255,12 @@ definePage("status", () => {
       h("div", { class: "cl-head vehicle" },
         h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })]
           : h("span", { class: "vehicle-name" }, isH2() ? L(boardName(S.link.board && S.link.board.info), boardName(S.link.board && S.link.board.info, true)) : "TSL6")),
-        // The board has no gauges: its button opens the Board page (state, counters, board actions).
-        isH2() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
+        // A board without the engine link has no gauges: its button opens the Board page (state, counters, board
+        // actions). With the engine link the Car tab has the Gauges button of the TSL6; the Board page is in Tools.
+        isH2() && !h2HasEngine() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
           : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
       refs.pills, refs.tt);
-    if (!isH2()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
+    if (!isH2() || h2HasEngine()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
     // Board warnings come first on the landing tab: an unconfirmed image has a 10-minute limit.
     refs.banner = isH2() ? h("div", { class: "span", "data-id": "board-banner" }) : null;
     if (refs.banner) { el.append(refs.banner); boardBanner(refs.banner); }
@@ -294,7 +297,7 @@ definePage("status", () => {
       const [en, zh] = DOOR_LABEL[b.btn] || [b.en, b.info || b.en];
       return h("button", { class: "act", type: "button", "data-id": `tap-${b.btn}`, onclick: () => onTap(r, b) }, icon(DOOR_ICON[b.btn] || "circle-dot", 26), h("span", null, L(en, zh)));
     };
-    const ctlButtons = ctl && shown(ctl) ? ctl.buttons.filter(b => (!b.types || b.types.includes(S.hwType)) && !b.vendorGate) : [];
+    const ctlButtons = ctl && shown(ctl) ? ctl.buttons.filter(b => (!b.types || b.types.includes(tslType())) && !b.vendorGate) : [];
     // One plan-view grid: doors at the four corners, frunk and trunk on the centre line (CSS places each button).
     const taps = [...(shown(doorRow) ? doorRow.buttons.map(b => tapBtn(doorRow, b)) : []), ...ctlButtons.map(b => tapBtn(ctl, b))];
     const doorHelp = groupHelpButton({ en: "Doors and access", zh: "车门与开启" }, [doorRow, ctl].filter(shown).map(r => [L(r.en, r.zh), r.help]));
@@ -357,7 +360,7 @@ definePage("status", () => {
 
   function update(p) {
     if (!p || S.blank) return;
-    const live = decodeLiveState(p, S.hwType);
+    const live = decodeLiveState(p, tslType());
     for (const [id, s] of Object.entries(switches)) {
       const on = live.blank ? null : live.toggles[id];
       s.sw.set(on);
@@ -369,7 +372,7 @@ definePage("status", () => {
       clear(refs.pills);
       // A bus with data is a solid lit lane; a bus without data is a dashed dark lane.
       // As in the vendor app: CAN state only for types 6, 7, 8, 19; the harness warning only where the vehicle row shows.
-      if ([6, 7, 8, 19].includes(S.hwType)) live.can.forEach((on, i) => {
+      if ([6, 7, 8, 19].includes(tslType())) live.can.forEach((on, i) => {
         const name = on ? L(`CAN${i + 1} connected`, `CAN${i + 1} 已连接`) : L(`CAN${i + 1} not connected`, `CAN${i + 1} 未连接`);
         refs.pills.append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, `CAN${i + 1}`, h("i")));
       });
