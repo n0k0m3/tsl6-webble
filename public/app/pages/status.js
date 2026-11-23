@@ -107,8 +107,8 @@ definePage("status", () => {
     if (refs.op && B.status) {
       // Green only while the board really sends; amber for Listen-Only and for Active that a lock holds back.
       const active = B.status.opMode === 1 && !!(B.flags & FLAG.ACTIVE);
-      const text = boardListenOnly(B.info) ? L("Listen-only build", "只听版本")
-        : B.status.opMode !== 1 ? L("Listen-Only", "只听模式") : active ? L("Active", "主动模式") : L("Held in Listen-Only", "保持只听");
+      const text = boardListenOnly(B.info) ? L("Mode: listen-only build", "模式：只听版本")
+        : B.status.opMode !== 1 ? L("Mode: Listen-Only", "模式：只听") : active ? L("Mode: Active", "模式：主动") : L("Mode: held in Listen-Only", "模式：保持只听");
       refs.op.classList.toggle("on", active);
       refs.op.querySelector("span").textContent = text;
       refs.op.setAttribute("aria-label", L(`Op mode: ${text}. Open the board page`, `运行模式：${text}。打开模块页面`));
@@ -211,9 +211,9 @@ definePage("status", () => {
     el.append(
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("bluetooth", 24)),
-        h("h2", { class: "sec-title" }, h("span", null, L("Connect to TSL6 or a BLE board", "连接 TSL6 或 BLE模块")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
+        h("h2", { class: "sec-title" }, h("span", null, L("Connect a device", "连接设备")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
         h("p", null, supported
-          ? L("Pick it in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择它。")
+          ? L("Pick TSL6 or SCRL-xxxx in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6 或 SCRL-xxxx。")
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
             "此浏览器不支持网页蓝牙。请在安卓或电脑上使用 Chrome / Edge，iPhone 请使用 Bluefy。")),
         supported ? btn({ en: "Connect", zh: "连接" }, () => connect({ all }), { kind: "primary" }) : null,
@@ -227,7 +227,7 @@ definePage("status", () => {
         h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("TSL6 module", "TSL6 模块"))),
             h("div", { class: "li-sub" }, L("Pick TSL6. Close the vendor Mini App, or turn off Bluetooth on that phone. The default password is 1234.", "选择 TSL6。关闭原厂小程序，或关闭那部手机的蓝牙。默认密码为 1234。")))),
-        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("radio", 22)),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("circuit-board", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("BLE board", "BLE模块"))),
             h("div", { class: "li-sub" }, L("NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware: pick ", "NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板：选择 "), h("span", { class: "nowrap" }, "SCRL-xxxx"),
               L(". At the first connection, type the passkey from the label on the board.", "。首次连接时，输入模块标签上的配对码。"))))));
@@ -280,7 +280,7 @@ definePage("status", () => {
           : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘"))),
         toolsShown(["battery"]).length ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-battery", onclick: () => go("battery") }, icon("battery-medium", 18), h("span", null, L("Battery", "电池"))) : null));
     // H2 board: can the board send on the bus now? The telltale opens the Board page, where the op mode changes.
-    refs.op = isH2() ? h("button", { class: "cl-op", type: "button", "data-id": "cl-opmode", onclick: () => go("board") }, h("i"), h("span")) : null;
+    refs.op = isH2() ? h("button", { class: "cl-op", type: "button", "data-id": "cl-opmode", onclick: () => go("board") }, h("i"), h("span"), icon("chevron-right", 14)) : null;
     if (!isH2() || h2HasEngine()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
     // Board warnings come first on the landing tab: an unconfirmed image has a 10-minute limit.
     refs.banner = isH2() ? h("div", { class: "span", "data-id": "board-banner" }) : null;

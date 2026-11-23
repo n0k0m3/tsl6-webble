@@ -165,7 +165,7 @@ definePage("board", () => {
     refs.opSw.dataset.id = "board-op";
     refs.opSub = h("div", { class: "li-sub" });
     el.append(grp(h("div", { class: "sec-label" }, L("Op mode", "运行模式")), h("div", { class: "card" },
-      h("div", { class: "li first" }, h("span", { class: "chip" }, icon("radio", 22)),
+      h("div", { class: "li first" }, h("span", { class: "chip" }, icon("send", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Active (send on Vehicle CAN)", "主动模式（向车辆CAN发送）"))), refs.opSub), refs.opSw)),
     h("p", { class: "sec-foot" }, L("Listen-Only: the board never sends. Active: the board sends scroll ticks when AP assist is on.", "只听模式：模块从不发送。主动模式：AP辅助开启时模块发送滚轮操作。"))));
 

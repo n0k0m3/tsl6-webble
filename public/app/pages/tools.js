@@ -32,7 +32,7 @@ async function serviceMode() {
 // A row keeps its data-id "tool-<id>", its gate and its confirm on every tab.
 // [icon, chip color, en, zh, sub en, sub zh, action]
 const TOOLS = {
-  board: ["cpu", "", "Board", "模块", "Op mode, live state, counters, pairing", "运行模式、实时状态、计数器、配对", () => go("board")],
+  board: ["circuit-board", "", "Board", "模块", "Op mode, live state, counters, pairing", "运行模式、实时状态、计数器、配对", () => go("board")],
   boardfw: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")],
   capture: ["activity", "", "Capture", "采集", "Record Vehicle CAN to a file", "将车辆CAN记录到文件", () => go("capture")],
   shortcuts: ["workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
@@ -47,7 +47,7 @@ const TOOLS = {
   reset: ["rotate-ccw", "red", "Restore defaults", "恢复默认", "Resets every module setting", "重置模块所有设置", restoreDefaults],
   blehost: ["bluetooth-searching", "", "BLE host pairing", "蓝牙配对", "Devices that the module connects to", "模块连接的蓝牙设备", () => go("blehost")],
   debug: ["terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
-  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Car in P, driving-system controls on", "P档，并允许驾驶系统控制", serviceMode],
+  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving-system controls allowed", "需要P档，并允许驾驶系统控制", serviceMode],
 };
 // The tools that the old Me tab showed. They stay while the module is off; the other tools hide, as in the vendor app.
 const WHEN_OFF = ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"];
@@ -64,7 +64,7 @@ export function toolRows(ids) {
     return h("button", { class: "li" + (color === "red" ? " danger" : color === "amber" ? " caution" : ""), type: "button", "data-id": `tool-${id}`, onclick: fn },
       h("span", { class: "chip " + color }, icon(ico, 22)),
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub" }, L(sen, szh))),
-      h("span", { class: "chev" }, icon("chevron-right", 18)));
+      fn === restoreDefaults || fn === serviceMode ? null : h("span", { class: "chev" }, icon("chevron-right", 18)));
   });
 }
 // One titled group of tool rows (and extra rows), or null when the device has none of them.

@@ -230,7 +230,7 @@ definePage("settings", () => {
     const B = isH2() ? S.link.board : null;
     const opCard = B && B.status ? h("div", { class: "card lead master" },
       h("button", { class: "li first", type: "button", "data-id": "set-opmode", onclick: () => go("board") },
-        h("span", { class: "chip" + (B.status.opMode === 1 ? " on" : "") }, icon("radio", 24)),
+        h("span", { class: "chip" + (B.status.opMode === 1 ? " on" : "") }, icon("send", 24)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Op mode", "运行模式"))),
           h("div", { class: "li-sub" }, B.status.opMode === 1 ? L("The board sends scroll ticks on Vehicle CAN", "模块向车辆CAN发送滚轮操作") : L("The board never sends", "模块从不发送"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, B.status.opMode === 1 ? L("Active", "主动") : L("Listen-Only", "只听")), h("span", { class: "chev" }, icon("chevron-right", 18))))) : null;

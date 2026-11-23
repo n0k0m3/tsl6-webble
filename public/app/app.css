@@ -630,3 +630,20 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .cluster .cl-btns .cl-gauge { height: 36px; font-size: 13.5px; }
 /* A device name such as SCRL-xxxx does not break at its hyphen. */
 .nowrap { white-space: nowrap; }
+/* round 2 (unslop 2) */
+/* Barlow's space is narrow: "TSL6 (mock)" read as "TSL6(mock)". */
+body { word-spacing: .05em; }
+.li-sub { text-wrap: pretty; }
+/* The empty-state title wraps as text; its help button follows the last word. */
+.empty-state h2.sec-title { display: block; text-wrap: balance; }
+.empty-state h2.sec-title .help-btn { display: inline-grid; vertical-align: middle; margin-left: 2px; }
+/* Cluster readouts: text buttons, lighter than the telltales; 44 px hit area. */
+.cl-btns { gap: 4px; margin: 10px 0 -6px -10px; }
+.cluster .cl-btns .cl-gauge { flex: none; border: 0; background: none; height: 44px; padding: 0 10px; color: var(--cl-fg); }
+.cluster .cl-btns .cl-gauge svg { color: var(--cl-muted); }
+@media (min-width: 1180px) { .cl-btns { margin: 0 -10px 0 auto; } }
+/* Op mode: a telltale with a noun and a chevron, no box. */
+.cl-op { border: 0; padding: 0 4px; gap: 6px; color: var(--cl-fg); }
+.cl-op svg { color: var(--cl-muted); margin-left: -2px; }
+/* Desktop: the lit telltales stay on one row. */
+@media (min-width: 1180px) { .cluster { gap: 12px 24px; } .cluster .cl-tt { padding-left: 20px; gap: 6px 12px; } }

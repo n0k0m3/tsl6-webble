@@ -100,6 +100,18 @@ definePage("me", () => {
     const m = S.status ? meInfo(S.status) : null;
     el.append(grp(h("div", { class: "sec-label" }, L("Connection", "连接")), connectionCard()));
 
+    // Upkeep of the module: one Firmware row (the runtime of a TSL6, the image of a board), password, restart, defaults.
+    const restartRow = h("button", { class: "li", type: "button", "data-id": "restart", onclick: restart },
+      h("span", { class: "chip" }, icon("refresh-cw", 22)),
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))));
+    el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
+      ...toolRows(["firmware", "boardfw", "password"]), restartRow, ...toolRows(["reset"]))));
+    el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
+    el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
+    const off = offNote(["backup", "service"]);
+    if (off) el.append(off);
+
+    // The module or board details come after the actions: the actions are the jobs of this tab, the details a lookup.
     const info = isH2() && S.link.board ? S.link.board.info : null;
     if (info) {
       // BLE board: its own Info, not the TSL6 status bytes.
@@ -124,17 +136,6 @@ definePage("me", () => {
       infoRow("App build", "应用版本", APP_BUILD)),
     h("p", { class: "sec-foot" }, L("The module reports the firmware version. The vendor app may show another number.",
       "版本号由模块报告。原厂小程序可能显示其他版本号。"))));
-
-    // Upkeep of the module: one Firmware row (the runtime of a TSL6, the image of a board), password, restart, defaults.
-    const restartRow = h("button", { class: "li", type: "button", "data-id": "restart", onclick: restart },
-      h("span", { class: "chip" }, icon("refresh-cw", 22)),
-      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))), chev());
-    el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
-      ...toolRows(["firmware", "boardfw", "password"]), restartRow, ...toolRows(["reset"]))));
-    el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
-    el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
-    const off = offNote(["backup", "service"]);
-    if (off) el.append(off);
 
     const lang = h("div", { class: "seg" },
       ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
