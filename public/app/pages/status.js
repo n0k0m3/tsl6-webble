@@ -47,7 +47,7 @@ const DOOR_LABEL = {
 const ARROW = { "shangxiazuoyou-3": "chevron-left", "shangxiazuoyou-": "chevron-right", "shangxiazuoyou-2": "chevron-up", "shangxiazuoyou-1": "chevron-down", ok: "check" };
 const MEM_ICON = { louying: "tent", lingzhongli: "crown" };
 const MEM_LABEL = { louying: ["Camp", "露营"], lingzhongli: ["Queen", "女王"] };
-// Telltale colour, as on the instrument cluster: green = active, blue = high beam, amber = a driving system is changed.
+// Telltale tone. A lit telltale is blue, as its switch (app.css); amber = a driving system is changed.
 const TONE = { pulseHighBeam: "t-blue", sportMode: "t-amber", offRearMotor: "t-amber", offFrontMotor: "t-amber", offESP: "t-amber" };
 
 definePage("status", () => {
@@ -78,7 +78,9 @@ definePage("status", () => {
     if (!diag) return;
     const line = diag.noData
       ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
-      : [L(...PROMPT_PHASE[diag.phase]), " · ", L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`)]; // the raw states are on the Board page
+      : [L(...PROMPT_PHASE[diag.phase]), " · ", L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`),
+        // A TSL6 has no Board page: its raw states stay here. (The H2 line drops them; its Board page shows them.)
+        h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`))];
     refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, line));
   }
 

@@ -1,6 +1,6 @@
 // Device tab: the hardware and its upkeep. Connection, the module or board, firmware, data files, maintenance,
 // advanced tools and preferences. The tool rows come from tools.js and keep their data-id "tool-<id>".
-import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, helpButton } from "../ui.js";
+import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go, isH2 } from "../app.js";
 import { toolRows, toolGroup, offNote } from "./tools.js";
 import { CHUNK_STEPS, resetReasonName, boardName, boardOf, CAN_NAMES } from "../../lib/scrl.js";
@@ -134,7 +134,11 @@ definePage("me", () => {
     // Shown as a positive switch: on = warn. The stored preference stays "skipUntested" (on = no warning).
     const [skipRow, skipSw] = switchRow("skipUntested", "triangle-alert", "Warn before untested commands", "未测试指令前提示", null, null, !S.prefs.skipUntested,
       async v => { savePref("skipUntested", !v); skipSw.set(v); });
+    const lang = h("div", { class: "seg" },
+      ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
     el.append(grp(h("div", { class: "sec-label" }, L("Preferences", "偏好设置")), h("div", { class: "card" },
+      h("div", { class: "li" }, h("span", { class: "chip" }, icon("languages", 22)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Language", "语言")))), lang),
       // An H2 board sets the type by itself: plain text, not a picker. The picker is for the TSL6 only.
       isH2() ? h("div", { class: "li", "data-id": "pref-hwType" }, h("span", { class: "chip" }, icon("cpu", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
