@@ -44,7 +44,7 @@ function warnings() {
   if (has(F.WRONG_BUS)) list.push(["wrongbus", "bad", L("This bus carries 0x370, so it is not Vehicle CAN. The board does not send on it.", "此总线上有0x370，不是车辆CAN。模块不会在此发送。")]);
   if (B.info && SC.boardListenOnly(B.info)) {
     list.push(["listenonly", "", L("This is the listen-only build. It never sends, whatever the mode says. To send, flash the esp32-generic-twai build.",
-      "这是只听版本固件，无论运行模式如何都不会发送。如需发送，请刷写 esp32-generic-twai 版本。")]);
+      "这是只听版本固件，无论模式如何都不会发送。如需发送，请刷写 esp32-generic-twai 版本。")]);
   }
   if (!has(F.PINS_CHECKED)) {
     list.push(["pins", "", L(`This firmware build does not name the CAN pins, so it cannot go to Active.${st.rxPin >= 0 ? ` It listens on GPIO${st.rxPin} now.` : ""} Set the pin choice in the build after the continuity check.`,
@@ -56,7 +56,7 @@ function warnings() {
   if (has(F.AUTOPARK)) list.push(["autopark", "", L("Autopark runs. The board does not send.", "自动泊车进行中，模块不发送。")]);
   if (has(F.TESLA_OTA)) list.push(["teslaota", "", L("A Tesla software update runs. The board does not send.", "特斯拉软件更新进行中，模块不发送。")]);
   if (st.opMode === 1 && !has(F.ACTIVE) && !list.some(a => ["pending", "lock", "pins", "listenonly"].includes(a[0]))) {
-    list.push(["held", "", L("The mode setting is Active, but the board is in Listen-Only now.", "运行模式设为主动，但模块当前处于只听模式。")]);
+    list.push(["held", "", L("The mode setting is Active, but the board is in Listen-Only now.", "模式设为主动，但模块当前处于只听模式。")]);
   }
   return list;
 }
