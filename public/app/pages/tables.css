@@ -47,8 +47,7 @@
 .sc-card .tpick.unknown { border-color: transparent; background: var(--warn-soft); padding-left: 8px; }
 .sc-card > .ibtn.flat { width: 40px; height: 44px; justify-self: center; }
 .sc-card > .sc-try.span2 { grid-row: span 2; }
-/* Try runs a car action: an outlined icon button, muted at rest, so the rule text leads. */
-.sc-card > .sc-try { color: var(--muted); border: 1px solid var(--btn-b); background: var(--btn); border-radius: var(--r-sm); height: 40px; }
+.sc-card > .sc-try { color: var(--accent-text); }
 /* iOS: a quick second tap on Try must not zoom the page */
 .sc-card > .ibtn.flat { touch-action: manipulation; }
 .sc-card > .sc-try:hover { color: var(--accent-text); background: var(--accent-soft); }
