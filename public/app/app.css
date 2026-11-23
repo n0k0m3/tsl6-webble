@@ -658,3 +658,13 @@ body { word-spacing: .05em; }
 .li > .btn.small { flex: none; pointer-events: none; }
 .btn.small.danger-text { color: var(--bad); }
 .kv .mono { font-family: var(--mono); font-size: 13.5px; }
+/* round 4 (unslop 2) */
+.card + .card-apart { margin-top: 12px; }
+.li.danger .li-title { color: inherit; } /* red only on the trailing button and the icon */
+.li.danger .chip { color: var(--bad); }
+.es-note { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+/* Cluster buttons: a border with 3:1 contrast on the panel. */
+.cluster .cl-btns .cl-gauge { border-color: var(--cl-off); }
+/* Dark theme: the cluster is darker than the page, as a display set into the dash. */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cl-bg: #090c10; --cl-line: #2c3644; } }
+:root[data-theme="dark"] { --cl-bg: #090c10; --cl-line: #2c3644; }

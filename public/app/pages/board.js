@@ -86,14 +86,22 @@ definePage("board", () => {
   const refs = {};
 
   // Values in the text face with tabular figures. Mono only for hex IDs (Board ID is on the Device tab).
+  // A long value under its label: the firmware name in mono, its meaning after it.
+  const stack = (key, en, zh) => {
+    refs[key] = h("div", { class: "li-sub kv-sub" }, "—");
+    return h("div", { class: "li stack", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), refs[key]));
+  };
   const kv = (key, en, zh, mono = false) => {
     refs[key] = h("span", { class: "kv" + (mono ? " mono" : "") }, "—");
     return h("div", { class: "li", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh)))), refs[key]);
   };
+  // A row that opens a page has a chevron. A row that acts (behind a confirm or a prompt) has a trailing button.
+  const ACT = { counters: ["Reset", "清零"], passkey: ["Change", "修改"], forget: ["Forget", "删除"], factory: ["Reset", "重置"] };
   const action = (id, ico, en, zh, sen, szh, fn, danger = false) =>
     h("button", { class: "li" + (danger ? " danger" : ""), type: "button", "data-id": `board-${id}`, onclick: fn },
       h("span", { class: "chip" + (danger ? " red" : "") }, icon(ico, 22)),
-      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), sen ? h("div", { class: "li-sub" }, L(sen, szh)) : null), chev());
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), sen ? h("div", { class: "li-sub" }, L(sen, szh)) : null),
+      ACT[id] ? h("span", { class: "btn small" + (danger ? " danger-text" : ""), "aria-hidden": "true" }, L(...ACT[id])) : chev());
 
   async function setOpMode(active) {
     if (active && !(await confirmBox({
@@ -166,11 +174,11 @@ definePage("board", () => {
     refs.opSub = h("div", { class: "li-sub" });
     el.append(grp(h("div", { class: "sec-label" }, L("Op mode", "运行模式")), h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip" }, icon("send", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Active (send on Vehicle CAN)", "主动模式（向车辆CAN发送）"))), refs.opSub), refs.opSw)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Send on Vehicle CAN", "向车辆CAN发送"))), refs.opSub), refs.opSw)),
     h("p", { class: "sec-foot" }, L("Listen-Only: the board never sends. Active: the board sends scroll ticks when AP assist is on.", "只听模式：模块从不发送。主动模式：AP辅助开启时模块发送滚轮操作。"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Live state", "实时状态")), h("div", { class: "card" },
-      kv("phase", "Phase", "阶段", false), kv("block", "Block", "阻止原因", false), kv("ap", "AP state", "AP状态", false), kv("hands", "Hands-on state", "手扶状态"),
+      kv("phase", "Phase", "阶段", false), stack("block", "Block", "阻止原因"), kv("ap", "AP state", "AP状态", false), kv("hands", "Hands-on state", "手扶状态"),
       kv("sent", "Ticks sent", "已拨动次数"), kv("aborted", "Pairs aborted", "中止的组数"), kv("native", "Native frame age", "原车帧延迟"), kv("das", "DAS age", "DAS数据延迟"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Exact times", "精确时间")), h("div", { class: "card" },
@@ -191,9 +199,9 @@ definePage("board", () => {
 
     el.append(grp(h("div", { class: "sec-label" }, L("Pairing and firmware", "配对与固件")), h("div", { class: "card" },
       action("passkey", "key-round", "Change the passkey", "修改配对码", "The 6-digit number for a new pairing", "新配对时使用的6位数字", changePasskey),
-      action("fw", "hard-drive-download", "Board firmware", "模块固件", "Update over Bluetooth", "通过蓝牙更新", () => go("boardfw")),
+      action("fw", "hard-drive-download", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")),
       action("forget", "trash-2", "Forget bonds", "删除配对", "Removes every paired phone", "移除所有已配对手机", forgetBonds, true),
-      action("factory", "rotate-ccw", "Factory reset", "恢复出厂设置", "Settings, counters and bonds. The passkey stays", "设置、计数器和配对。配对码保留", factoryReset, true))));
+      action("factory", "eraser", "Factory reset", "恢复出厂设置", "Settings, counters and bonds. The passkey stays", "设置、计数器和配对。配对码保留", factoryReset, true))));
     draw();
   }
 
@@ -209,7 +217,7 @@ definePage("board", () => {
     refs.opSw.disabled = never && st.opMode !== 1;
     refs.opSub.textContent = never ? L("Listen-only build: never sends", "只听版本：从不发送")
       : st.opMode !== 1 ? L("Listen-Only", "只听模式")
-      : has(F.ACTIVE) ? L("Active now", "当前为主动模式") : L("Set to Active, held in Listen-Only (see the warnings)", "已设为主动，但被保持在只听模式（见上方提示）");
+      : has(F.ACTIVE) ? L("Active", "主动模式") : L("Set to Active, held in Listen-Only (see the warnings)", "已设为主动，但被保持在只听模式（见上方提示）");
     const phase = lv ? SC.PHASES[lv.phase] || `code ${lv.phase}` : st.phase;
     const block = lv ? SC.BLOCKS[lv.block] || `code ${lv.block}` : st.block;
     const ap = lv ? lv.apState : st.apState, hands = lv ? lv.handsOn : st.handsOn;

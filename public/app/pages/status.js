@@ -217,13 +217,11 @@ definePage("status", () => {
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
             "此浏览器不支持网页蓝牙。请在安卓或电脑上使用 Chrome / Edge，iPhone 请使用 Bluefy。")),
         supported ? btn({ en: "Connect", zh: "连接" }, () => connect({ all }), { kind: "primary" }) : null,
-        supported ? h("label", { class: "check" }, allBox, L("Show all devices", "显示所有设备")) : null)),
+        supported ? h("label", { class: "check" }, allBox, L("Show all devices", "显示所有设备")) : null,
+        h("p", { class: "es-note" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
       // One note per device, so the user reads only the steps of their own device.
       sec("Before you connect", "连接前"),
       h("div", { class: "card" },
-        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("bluetooth", 22)),
-          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Every device", "所有设备"))),
-            h("div", { class: "li-sub" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
         h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("TSL6 module", "TSL6 模块"))),
             h("div", { class: "li-sub" }, L("Pick TSL6. Close the vendor Mini App, or turn off Bluetooth on that phone. The default password is 1234.", "选择 TSL6。关闭原厂小程序，或关闭那部手机的蓝牙。默认密码为 1234。")))),
@@ -296,7 +294,6 @@ definePage("status", () => {
     switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
     promptNow = promptOf(S.status);
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
-    if (promptNow != null) switches.apAssist.name = L("AP assist (on prompt)", "AP辅助（手扶提示时）");
     el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),
       h("div", { class: "card lead" },
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
@@ -424,7 +421,8 @@ definePage("status", () => {
       const draw = () => {
         clear(refs.apSub);
         if (live.assistActive) refs.apSub.append(L("On, next tick in ", "开启，"), h("b", null, L(`${countdown.toFixed(1)} s`, `${countdown.toFixed(1)} 秒后拨动`)));
-        else refs.apSub.append(L("Off", "关闭"));
+        // Off: say what turns it on. With "AP auto assist" on Follow AP, it comes on with Autopilot.
+        else refs.apSub.append(decodeSettings(p).automdr === 1 && !isH2() ? L("Off, turns on with Autopilot", "关闭，AP开启时自动开启") : L("Off", "关闭"));
       };
       draw();
       if (live.assistActive) timer = setInterval(() => { countdown = Math.max(0, countdown - 0.1); draw(); if (!countdown) clearInterval(timer); }, 100);

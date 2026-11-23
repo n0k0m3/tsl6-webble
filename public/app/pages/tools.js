@@ -40,17 +40,17 @@ const TOOLS = {
   rgb: ["palette", "", "Ambient light", "原厂氛围灯", "Zone rules and effects", "分区联动与整车效果", () => go("rgb")],
   gauge: ["gauge", "", "Gauges", "仪表盘", "Full-screen dashboard", "全屏仪表", () => go("gauge")],
   battery: ["battery-medium", "", "Battery", "电池信息", "Pack, cells and DC-DC", "动力电池、单体电压、DCDC", () => go("battery")],
-  backup: ["database-backup", "", "Backup and restore", "备份恢复", "Settings, shortcuts and buttons in one file", "设置、快捷指令和按钮存为一个文件", () => go("backup")],
+  backup: ["database-backup", "", "Backup and restore", "备份恢复", "Settings, shortcuts and buttons", "设置、快捷指令和按钮", () => go("backup")],
   log: ["file-text", "", "Log and capture", "日志与抓包", "Frames sent and received", "收发数据帧", () => go("log")],
   password: ["key-round", "", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
-  firmware: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块", () => go("firmware")],
-  reset: ["rotate-ccw", "red", "Restore defaults", "恢复默认", "Resets every module setting", "重置模块所有设置", restoreDefaults],
+  firmware: ["hard-drive-download", "", "Update firmware", "更新固件", "Update, or recover from boot mode", "更新，或从升级模式恢复", () => go("firmware")],
+  reset: ["eraser", "red", "Reset all settings", "重置所有设置", "Back to the factory settings", "恢复为出厂设置", restoreDefaults],
   blehost: ["bluetooth-searching", "", "BLE host pairing", "蓝牙配对", "Devices that the module connects to", "模块连接的蓝牙设备", () => go("blehost")],
   debug: ["terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
-  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving-system controls allowed", "需要P档，并允许驾驶系统控制", serviceMode],
+  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving-system controls", "需要P档和驾驶系统控制", serviceMode],
 };
 // Rows that run an action behind a confirm: the label of their trailing button.
-const ACTION = { reset: ["Restore", "恢复"], service: ["Start", "启动"] };
+const ACTION = { reset: ["Reset", "重置"], service: ["Start", "启动"] };
 // The tools that the old Me tab showed. They stay while the module is off; the other tools hide, as in the vendor app.
 const WHEN_OFF = ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"];
 export const moduleOff = () => !!S.status && !S.blank && decodeSettings(S.status).mianSwitch === 1;
@@ -74,7 +74,7 @@ export function toolRows(ids) {
 export function toolGroup(en, zh, ids, extra = []) {
   const rows = [...toolRows(ids), ...extra.filter(Boolean)];
   if (!rows.length) return null;
-  return h("section", { class: "grp" }, h("div", { class: "sec-label" }, L(en, zh)), h("div", { class: "card" }, rows));
+  return h("section", { class: "grp" }, h("div", { class: "sec-label" }, h("span", { class: "sec-title" }, h("span", null, L(en, zh)))), h("div", { class: "card" }, rows));
 }
 // The note under a tab while the module is off and some of its tools hide. ids: the tools of that tab.
 export function offNote(ids) {

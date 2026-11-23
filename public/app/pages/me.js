@@ -105,8 +105,10 @@ definePage("me", () => {
       h("span", { class: "chip" }, icon("refresh-cw", 22)),
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))),
       h("span", { class: "btn small", "aria-hidden": "true" }, L("Restart", "重启")));
+    // The reset of all settings has a card of its own, apart from Restart.
+    const resetRows = toolRows(["reset"]);
     el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
-      ...toolRows(["firmware", "boardfw", "password"]), restartRow, ...toolRows(["reset"]))));
+      ...toolRows(["firmware", "boardfw", "password"]), restartRow), resetRows.length ? h("div", { class: "card card-apart" }, resetRows) : null));
     el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
     el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
     const off = offNote(["backup", "service"]);

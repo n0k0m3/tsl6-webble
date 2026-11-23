@@ -403,7 +403,7 @@ await scenario("op-mode-needs-a-confirm-and-settings-show-in-listen-only", "mock
   await page.click("[data-id=board-op]");
   await dlgOk(page);
   await page.waitForFunction(() => document.querySelector("[data-id=board-op]").getAttribute("aria-checked") === "true");
-  await page.waitForFunction(() => /Active now/.test(document.querySelector("[data-page=board]").textContent));
+  await page.waitForFunction(() => /^Active$/.test(document.querySelector("[data-page=board] [data-id=board-op]").closest(".li").querySelector(".li-sub").textContent));
 });
 
 await scenario("bus-off-lock", "mock=h2&lock", {}, async page => {
