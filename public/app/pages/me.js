@@ -127,9 +127,13 @@ definePage("me", () => {
         h("div", { class: "li-sub" }, L("Passwords and options in this browser", "此浏览器中的密码与选项"))),
       h("span", { class: "btn small danger-text", "aria-hidden": "true" }, L("Clear", "清除")));
     const resetRows = [...toolRows(["reset"]), clearRow];
+    // The running version on the update row: the user wants it before an update.
+    // A BLE board with a newer release shows "running → newest" in amber, so the update is seen at the top of the tab.
+    const boardFw = isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null;
+    const upd = boardFw ? boardUpdate() : null;
+    const boardTrail = upd ? h("span", { class: "fw-new", "data-id": "boardfw-trail" }, `${boardFw} → ${upd.version}`) : boardFw;
     el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
-      // The running version on the update row: the user wants it before an update.
-      ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), h("div", { class: "card card-apart" }, resetRows)));
+      ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: boardTrail } }), restartRow), h("div", { class: "card card-apart" }, resetRows)));
     el.append(...[toolGroup("Data", "数据", ["backup", "log", "capture"])].filter(Boolean));
     // The vendor shows this row only for the device types of the autoGauge row; its help text stays reachable.
     const ag = ROW_BY_ID.autoGauge;
