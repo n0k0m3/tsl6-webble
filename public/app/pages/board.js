@@ -4,6 +4,7 @@
 import { h, L, toast, confirmBox, promptBox, clear, toggle, icon } from "../ui.js";
 import { S, definePage, onBus, go, isH2 } from "../app.js";
 import * as SC from "../../lib/scrl.js";
+import { boardUpdate, checkRelease } from "../board-release.js";
 
 const F = SC.FLAG;
 const board = () => (isH2() && S.link.connected ? S.link.board : null);
@@ -104,6 +105,16 @@ definePage("board", () => {
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), sen ? h("div", { class: "li-sub" }, L(sen, szh)) : null),
       ACT[id] ? h("span", { class: "btn small" + (danger ? " danger-text" : ""), "aria-hidden": "true" }, L(...ACT[id])) : chev());
 
+  // "Update firmware", with the newer release in its subtitle when there is one.
+  const fwAction = () => {
+    const upd = boardUpdate();
+    const row = action("fw", "hard-drive-download", "Update firmware", "更新固件",
+      upd ? `Release ${upd.version} is out. Update the board over Bluetooth` : "Update the board over Bluetooth", upd ? `发布版 ${upd.version} 已推出，可通过蓝牙更新模块` : "通过蓝牙更新模块",
+      () => go("boardfw", upd ? { release: true } : undefined));
+    if (upd) row.querySelector(".li-sub").classList.add("fw-new");
+    return row;
+  };
+
   async function setOpMode(active) {
     if (active && !(await confirmBox({
       en: "Go to Active? The board will send frames on Vehicle CAN.",
@@ -200,7 +211,7 @@ definePage("board", () => {
 
     el.append(grp(h("div", { class: "sec-label" }, L("Pairing and firmware", "配对与固件")), h("div", { class: "card" },
       action("passkey", "key-round", "Change the passkey", "修改配对码", "The 6-digit number for a new pairing", "新配对时使用的6位数字", changePasskey),
-      action("fw", "hard-drive-download", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")),
+      fwAction(),
       action("forget", "trash-2", "Forget bonds", "删除配对", "Removes every paired phone", "移除所有已配对手机", forgetBonds, true),
       action("factory", "eraser", "Factory reset", "恢复出厂设置", "Settings, counters and bonds. The passkey stays", "设置、计数器和配对。配对码保留", factoryReset, true))));
     draw();
@@ -248,7 +259,8 @@ definePage("board", () => {
     enter() {
       offs.push(onBus("board", draw));
       offs.push(onBus("conn", build));
-      if (board()) S.link.readStatus();
+      offs.push(onBus("release", build));
+      if (board()) { S.link.readStatus(); void checkRelease(); }
     },
     leave() { offs.splice(0).forEach(f => f()); },
   };

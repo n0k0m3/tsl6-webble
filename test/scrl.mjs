@@ -210,12 +210,40 @@ await test("the image of the connected board from the flash site", () => {
   assert.equal(pick({ board: "waveshare-s3-can", chip: "esp32s3", can: "twai" }), undefined, "a bad file name is never fetched");
   assert.equal(pick({ board: "esp32-mcp2515", chip: "esp32", can: "mcp2515" }), undefined);
   assert.equal(SC.pickBuild(null, SC.boardOf({})), null);
-  assert.match(SC.FW_SITE, /^https:\/\//);
-  assert.equal(SC.fwSiteFor("tsl6-app.surge.sh"), SC.FW_SITE_LIVE, "the live app reads the live flash site");
-  assert.equal(SC.fwSiteFor("tsl6-app-preview.surge.sh"), SC.FW_SITE_PREVIEW);
-  assert.equal(SC.fwSiteFor("127.0.0.1"), SC.FW_SITE_PREVIEW, "a test server reads the preview site");
-  assert.equal(SC.fwSiteFor(undefined), SC.FW_SITE_PREVIEW);
   assert.equal(SC.FW_SITE_LIVE, "https://scrl-flash.surge.sh");
+  assert.equal(SC.FW_SITE_PREVIEW, "https://scrl-flash-preview.surge.sh");
+  assert.deepEqual(SC.fwSitesFor("tsl6-app.surge.sh"), [SC.FW_SITE_LIVE], "the live app reads only the live flash site");
+  assert.deepEqual(SC.fwSitesFor("tsl6-app-preview.surge.sh"), [SC.FW_SITE_LIVE, SC.FW_SITE_PREVIEW], "the preview app also reads the test release");
+  assert.deepEqual(SC.fwSitesFor("127.0.0.1"), [SC.FW_SITE_LIVE, SC.FW_SITE_PREVIEW]);
+  assert.deepEqual(SC.fwSitesFor(undefined), [SC.FW_SITE_LIVE, SC.FW_SITE_PREVIEW]);
+  assert.equal(SC.releaseTag({ tag: "ble-board-v0.7.0-rc.1", version: "0.7.0-rc.1" }), "ble-board-v0.7.0-rc.1");
+  assert.equal(SC.releaseTag({ version: "0.6.1" }), "ble-board-v0.6.1", "a site from before the releases has no tag");
+  assert.equal(SC.releaseTag({}), null);
+  assert.equal(SC.releaseApiUrl("ble-board-v0.6.1"), "https://api.github.com/repos/n0k0m3/flipper-tesla-fsd/releases/tags/ble-board-v0.6.1");
+  assert.equal(SC.releasePageUrl("ble-board-v0.6.1"), "https://github.com/n0k0m3/flipper-tesla-fsd/releases/tag/ble-board-v0.6.1");
+});
+
+await test("firmware versions and release digests", () => {
+  const c = SC.cmpVersion;
+  assert.ok(c("0.6.2", "0.6.1") > 0);
+  assert.ok(c("0.10.0", "0.9.9") > 0, "numbers, not text");
+  assert.equal(c("0.6.1", "0.6.1"), 0);
+  assert.ok(c("0.6.0", "0.6.1") < 0, "a board newer than the release");
+  assert.ok(c("0.7.0-rc.1", "0.6.1") > 0);
+  assert.ok(c("0.7.0-rc.1", "0.7.0") < 0, "a test version is older than its release");
+  assert.ok(c("0.7.0-rc.2", "0.7.0-rc.1") > 0);
+  assert.ok(c("0.7.0-rc.10", "0.7.0-rc.9") > 0);
+  assert.ok(c("0.7.0-rc.1.1", "0.7.0-rc.1") > 0);
+  assert.equal(c("0.6.1", undefined), null, "no version in the Info: no update");
+  assert.equal(c("0.6.1", "0.6"), null);
+  assert.equal(c("x", "0.6.1"), null);
+  assert.equal(c("v0.6.2", "0.6.1") > 0, true, "a tag-style v is allowed");
+  const hex = "7d222a5f747487ab9c2d89b84970fbffb15121c939bbe8c8b11a15ccac9cc467";
+  const rel = { assets: [{ name: "scrl-nanoh2-minican.bin", digest: `sha256:${hex}` }, { name: "old.bin", digest: null }] };
+  assert.equal(SC.assetSha(rel, "scrl-nanoh2-minican.bin"), hex);
+  assert.equal(SC.assetSha(rel, "old.bin"), null, "an asset without a digest");
+  assert.equal(SC.assetSha(rel, "missing.bin"), null);
+  assert.equal(SC.assetSha(null, "x"), null);
 });
 
 await test("the TSL6 engine (firmware 0.5.0): the factory bytes, the rows and the status bytes", () => {

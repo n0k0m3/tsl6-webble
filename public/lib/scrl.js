@@ -256,14 +256,54 @@ function checkImage(b, target = null) {
   if (!info.hashAppended) errors.push("The image has no SHA-256 at its end.");
   return { errors, warnings, info };
 }
-// Flash site of the board firmware (repo flipper-tesla-fsd, ble-board/tools/make-flash-site.py). Its builds.json
-// lists each build with its board ID, CAN controller ("can_id", since 0.5.0), version, app image and SHA-256.
-// The live app reads the live flash site. The preview app and any other host (a test server) read the preview flash
-// site, so the owner can test a new image from the preview app before it goes live.
+// Releases of the board firmware: the GitHub releases "ble-board-v<version>" of the repo below
+// (ble-board/tools/release.sh). A browser cannot download a release asset: GitHub sends no CORS header for it. So
+// release.sh also deploys the files of each release to the flash site on surge: a stable release to the live site,
+// a test release to the preview site. builds.json there lists each build with its board ID, CAN controller
+// ("can_id"), version, app image and SHA-256, and (since the releases) the release "tag". The app checks an image
+// against the digest of its release asset (GitHub API), so the flash site must hold the files of the release.
+const FW_REPO = "n0k0m3/flipper-tesla-fsd";
 const FW_SITE_LIVE = "https://scrl-flash.surge.sh";
 const FW_SITE_PREVIEW = "https://scrl-flash-preview.surge.sh";
-const fwSiteFor = host => host === "tsl6-app.surge.sh" ? FW_SITE_LIVE : FW_SITE_PREVIEW;
-const FW_SITE = fwSiteFor(globalThis.location?.hostname);
+const FW_LIVE_HOST = "tsl6-app.surge.sh";
+// The flash sites to read. The live app reads only the live site (stable releases). The preview app and any other
+// host (a test server) also read the preview site, so the owner can test a test release before it is stable.
+const fwSitesFor = host => host === FW_LIVE_HOST ? [FW_SITE_LIVE] : [FW_SITE_LIVE, FW_SITE_PREVIEW];
+const FW_SITES = fwSitesFor(globalThis.location?.hostname);
+// The release tag of a builds.json. The sites from before the releases have no "tag".
+const releaseTag = list => (list && typeof list.tag === "string" ? list.tag : list && typeof list.version === "string" ? `ble-board-v${list.version}` : null);
+const releaseApiUrl = tag => `https://api.github.com/repos/${FW_REPO}/releases/tags/${encodeURIComponent(tag)}`;
+const releasePageUrl = tag => `https://github.com/${FW_REPO}/releases/tag/${encodeURIComponent(tag)}`;
+// "0.6.1" or "0.7.0-rc.1" -> {n: [0, 7, 0], pre: ["rc", 1]}, else null.
+function parseVersion(v) {
+  const m = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.]+))?$/.exec(typeof v === "string" ? v.trim() : "");
+  if (!m) return null;
+  return { n: [+m[1], +m[2], +m[3]], pre: m[4] ? m[4].split(".").map(p => /^\d+$/.test(p) ? +p : p) : [] };
+}
+// > 0 when a is newer than b, < 0 when older, 0 when the same. null when one of them is not a version.
+// A test version is older than its release: 0.7.0-rc.1 < 0.7.0.
+function cmpVersion(a, b) {
+  const x = parseVersion(a), y = parseVersion(b);
+  if (!x || !y) return null;
+  for (let i = 0; i < 3; i++) if (x.n[i] !== y.n[i]) return x.n[i] - y.n[i];
+  if (!x.pre.length || !y.pre.length) return y.pre.length - x.pre.length;
+  for (let i = 0; i < Math.max(x.pre.length, y.pre.length); i++) {
+    const p = x.pre[i], q = y.pre[i];
+    if (p === undefined || q === undefined) return p === undefined ? -1 : 1;
+    if (p === q) continue;
+    if (typeof p === "number" && typeof q === "number") return p - q;
+    if (typeof p === "number") return -1;
+    if (typeof q === "number") return 1;
+    return p < q ? -1 : 1;
+  }
+  return 0;
+}
+// The SHA-256 (hex) of a release asset, from the "digest" of the GitHub API ("sha256:<hex>"), or null.
+function assetSha(release, name) {
+  const a = release && Array.isArray(release.assets) ? release.assets.find(x => x && x.name === name) : null;
+  const m = a && /^sha256:([0-9a-f]{64})$/.exec(a.digest || "");
+  return m ? m[1] : null;
+}
 // The build of builds.json for the connected board (boardOf(info)), or null. Board ID and CAN controller must match:
 // on a T-2CAN the other controller is the other channel. A list without "can_id" (before 0.5.0) is the TWAI build.
 function pickBuild(list, target) {
@@ -288,6 +328,6 @@ export {
   UUIDS, OPTIONAL, FLAG, CMD, isPasskey, passkeyCommand, OTA, OTA_ERR, OTA_ERR_TEXT, otaErrText, LIVE_LEN, STATUS_MAX,
   PHASES, BLOCKS, BLOCK_TEXT, AP_STATES, RESET_REASONS, resetReasonName, parseLive, parseStatus, mergeFlags,
   SETTING_KEYS, LIMITS, intervalMax, limitsFor, parseSettings, settingsDiff, otaBegin, parseOtaEvent, mayWrite,
-  FW_SITE, FW_SITE_LIVE, FW_SITE_PREVIEW, fwSiteFor, pickBuild, creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, otaWriteWithResponse, isAppleMobile, otaWriteMode, OTA_IOS_TEXT, IMG, checkImage, sha256, appendedHashOk, hex,
+  FW_REPO, FW_SITE_LIVE, FW_SITE_PREVIEW, FW_LIVE_HOST, FW_SITES, fwSitesFor, releaseTag, releaseApiUrl, releasePageUrl, parseVersion, cmpVersion, assetSha, pickBuild, creditIsWhole, CHUNK_STEPS, nextChunk, platformChunk, otaWriteWithResponse, isAppleMobile, otaWriteMode, OTA_IOS_TEXT, IMG, checkImage, sha256, appendedHashOk, hex,
   uptimeText, BOARDS, CHIP_IDS, CAN_NAMES, boardOf, boardName, boardListenOnly,
 };
