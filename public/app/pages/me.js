@@ -7,6 +7,7 @@ import { CHUNK_STEPS, resetReasonName, boardName, boardOf, CAN_NAMES } from "../
 const linkInfo = () => (S.link && S.link.board ? S.link.board.info : null);
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
 import { meInfo, buildA5, ROW_BY_ID } from "../../lib/tsl6-status.js";
+import { boardUpdate, latestRelease, checkRelease } from "../board-release.js";
 
 export const APP_BUILD = "2026-11-18";
 const TYPES = [[6, "TSL6 (type 6)"], [8, "TSL6 (type 8)"], [19, "Type 19"], [7, "Type 7"], [5, "Type 5"], [3, "Type 3"]];
@@ -24,6 +25,19 @@ definePage("me", () => {
   // A long value (a list) goes under its label, so the label does not wrap.
   const stackRow = (en, zh, value) => h("div", { class: "li stack" },
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub kv-sub" }, value || "—")));
+  // Firmware of a BLE board, as the firmware row of the vendor Mini App: "OTA update" only when a newer release is out,
+  // then the newest release and the running version (amber when it is older).
+  const fwRow = info => {
+    const rel = latestRelease(), upd = boardUpdate();
+    const cur = info.fw || "—";
+    return h("div", { class: "li fw-row", "data-id": "board-fw-row" },
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Firmware", "固件版本")))),
+      upd ? h("button", { class: "btn primary small", type: "button", "data-id": "board-fw-update", onclick: () => go("boardfw", { release: true }) },
+        L("OTA update", "OTA升级")) : null,
+      h("div", { class: "fw-vers" },
+        h("span", { class: "kv", "data-id": "board-fw-latest" }, L(`Latest: ${rel ? rel.version : "—"}`, `最新: ${rel ? rel.version : "—"}`)),
+        h("span", { class: "kv" + (upd ? " older" : ""), "data-id": "board-fw-current" }, L(`Current: ${cur}`, `当前: ${cur}`))));
+  };
   const switchRow = (id, ico, en, zh, sen, szh, checked, onchange, tone = "") => {
     const sw = toggle({ checked, label: L(en, zh), onchange });
     sw.dataset.id = `pref-${id}`;
@@ -160,6 +174,7 @@ definePage("me", () => {
     // The module or board details come after the actions: the actions are the jobs of this tab, the details a lookup.
     const info = isH2() && S.link.board ? S.link.board.info : null;
     if (info) {
+      void checkRelease();
       // BLE board: its own Info, not the TSL6 status bytes.
       const bo = boardOf(info);
       el.append(grp(h("div", { class: "sec-label" }, L(boardName(info), boardName(info, true))), h("div", { class: "card" },
@@ -168,7 +183,8 @@ definePage("me", () => {
         infoRow("Chip", "芯片", bo.chip),
         infoRow("CAN controller", "CAN 控制器", CAN_NAMES[bo.can] || bo.can),
         infoRow("Board ID", "模块ID", info.id, false, true),
-        infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
+        fwRow(info),
+        infoRow("Build", "构建", info.build, false, true),
         infoRow("Built", "构建时间", info.built),
         infoRow("ESP-IDF", "ESP-IDF", info.idf),
         stackRow("Last reset reasons", "最近复位原因", Array.isArray(info.rst_log) ? info.rst_log.map(resetReasonName).join(", ") : null),
@@ -185,8 +201,8 @@ definePage("me", () => {
 
     el.append(grp(h("div", { class: "sec-label" }, L("About", "关于")), h("div", { class: "card pad about" },
       h("p", null, L(
-        "This app replaces the vendor WeChat Mini App. It runs in your browser and makes no network calls. Shortcut names and help texts are a copy of the vendor server data from 2026-11-13.",
-        "本应用替代原厂微信小程序，在浏览器中运行，不进行任何网络请求。快捷指令名称与帮助说明取自原厂服务器（2026-11-13）。")),
+        "This app replaces the vendor WeChat Mini App. It runs in your browser. It makes no network calls, except one: with a BLE board it looks for new board firmware on GitHub. Shortcut names and help texts are a copy of the vendor server data from 2026-11-13.",
+        "本应用替代原厂微信小程序，在浏览器中运行。除一项外不进行网络请求：连接BLE模块时，从GitHub查找新的模块固件。快捷指令名称与帮助说明取自原厂服务器（2026-11-13）。")),
       h("p", { class: "small" }, L(
         "Not affiliated with the module maker or Tesla. Use at your own risk. Work only while the car is parked.",
         "与模块厂商及特斯拉无关。风险自负。请仅在驻车时操作。")))));
@@ -196,7 +212,7 @@ definePage("me", () => {
   render();
   return {
     el,
-    enter() { offs.push(onBus("status", render)); offs.push(onBus("conn", render)); },
+    enter() { offs.push(onBus("status", render)); offs.push(onBus("conn", render)); offs.push(onBus("release", render)); void checkRelease(); },
     refresh: render, // Back from a sub-page (auto gauges) must not show a stale link card
     leave() { offs.splice(0).forEach(f => f()); },
   };

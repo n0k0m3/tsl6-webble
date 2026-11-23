@@ -10,9 +10,10 @@ import { h, L, toast, confirmBox, clear, icon } from "../ui.js";
 import { S, definePage, onBus, isH2, switchTab } from "../app.js";
 import * as SC from "../../lib/scrl.js";
 import { boardBanner } from "./board.js";
+import { boardUpdate, latestRelease, checkRelease, fetchReleaseImage } from "../board-release.js";
 
 // The session lives at module scope: a language change mounts a new page, and an update must go on.
-const U = { image: null, raw: null, checkedFor: "", fileName: "", errors: [], warnings: [], running: false, canAbort: false, abortAsked: false, sent: 0, size: 0, text: "", tone: "", fetching: false };
+const U = { image: null, raw: null, checkedFor: "", fileName: "", errors: [], warnings: [], running: false, canAbort: false, abortAsked: false, sent: 0, size: 0, text: "", tone: "", fetching: false, source: "release" };
 const board = () => (isH2() && S.link.connected ? S.link.board : null);
 let redraw = () => {};
 
@@ -44,26 +45,16 @@ async function loadFile(file) {
   await loadBytes(file.name, new Uint8Array(await file.arrayBuffer()));
 }
 
-// The image of the connected board from the flash site. The SHA-256 of builds.json must match the download.
-async function loadHosted() {
-  const t = target();
-  if (!t || U.running) return;
+// The image of the newest release (board-release.js). The app offers it only when it is newer than the board.
+async function loadRelease() {
+  const rel = boardUpdate();
+  if (!rel || U.running) return;
   U.raw = null; U.image = null; U.errors = []; U.warnings = []; U.fileName = ""; U.text = ""; U.tone = "";
   U.fetching = true; redraw();
   try {
-    const get = async (url, what) => {
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) throw new Error(`${what}: HTTP ${r.status}`);
-      return r;
-    };
-    const list = await (await get(`${SC.FW_SITE}/builds.json`, "builds.json")).json();
-    const b = SC.pickBuild(list, t);
-    if (!b) throw new Error(`The flash site has no image for ${t.id} with CAN ${SC.CAN_NAMES[t.can] || t.can}.`);
-    const bytes = new Uint8Array(await (await get(`${SC.FW_SITE}/firmware/${b.app}`, b.app)).arrayBuffer());
-    if (SC.hex(await SC.sha256(bytes)) !== b.app_sha256) throw new Error(`${b.app}: the download does not match the SHA-256 of the flash site.`);
-    await loadBytes(`${b.app} (${b.version})`, bytes);
+    await loadBytes(`${rel.build.app} (${rel.tag})`, await fetchReleaseImage(rel));
   } catch (e) {
-    U.raw = null; U.errors = [L(`No image from the flash site: ${e.message}`, `无法从刷写网站获取固件：${e.message}`)];
+    U.raw = null; U.errors = [L(`No image from the release: ${e.message}`, `无法获取发布版固件：${e.message}`)];
   } finally {
     U.fetching = false; redraw();
   }
@@ -109,17 +100,23 @@ async function start() {
   redraw();
 }
 
-definePage("boardfw", () => {
+definePage("boardfw", params => {
   if (!document.querySelector('link[data-page-css="firmware"]')) {
     document.head.append(h("link", { rel: "stylesheet", href: new URL("./firmware.css", import.meta.url).href, "data-page-css": "firmware" }));
   }
   // data-page="firmware": this page uses the styles of the TSL6 Firmware page (form, buttons, output, progress).
   const el = h("div", { class: "page narrow", "data-page": "firmware", "data-board-fw": "1" });
   const banner = h("div", { "data-id": "board-banner" });
-  const fileIn = h("input", { type: "file", accept: ".bin,application/octet-stream", "data-id": "bfw-file",
-    onchange: e => { const f = e.target.files[0]; if (f) loadFile(f).catch(err => { U.errors = [err.message]; redraw(); }); } });
+  const fileIn = h("input", { type: "file", hidden: true, accept: ".bin,application/octet-stream", "data-id": "bfw-file",
+    onchange: e => { const f = e.target.files[0]; e.target.value = ""; if (f) loadFile(f).catch(err => { U.errors = [err.message]; redraw(); }); } });
   const imgOut = h("div", { class: "out", "data-id": "bfw-image" });
-  const siteBtn = h("button", { class: "btn", type: "button", "data-id": "bfw-site", onclick: loadHosted }, L("Get the image from the flash site", "从刷写网站获取固件"));
+  // Image: one list and one button, as on the TSL6 Firmware page. The release is in the list only when it is newer
+  // than the board. The file input stays hidden; the button opens it.
+  const srcSel = h("select", { class: "text", "data-id": "bfw-source", "aria-label": L("Firmware image", "固件镜像"),
+    onchange: e => { U.source = e.target.value; draw(); } });
+  const srcNote = h("p", { class: "row-note fw-note", "data-id": "bfw-source-note" });
+  const loadBtn = h("button", { class: "btn primary", type: "button", "data-id": "bfw-load",
+    onclick: () => { if (U.source === "release" && boardUpdate()) void loadRelease(); else fileIn.click(); } });
   const prog = h("progress", { max: 1, value: 0 });
   const msgOut = h("div", { class: "out", "data-id": "bfw-msg" });
   const startBtn = h("button", { class: "btn danger-fill", type: "button", "data-id": "bfw-start", onclick: start }, L("Start update", "开始更新"));
@@ -127,8 +124,37 @@ definePage("boardfw", () => {
   const nowOut = h("p", { class: "row-note fw-note" });
   const chunkOut = h("p", { class: "row-note fw-note" });
 
+  function drawSource(B) {
+    const upd = boardUpdate(), rel = latestRelease();
+    if (U.source === "release" && !upd) U.source = "file";
+    const opts = [];
+    if (upd) opts.push(["release", L(`Release ${upd.version} (newer, recommended)`, `发布版 ${upd.version}（较新，推荐）`)]);
+    opts.push(["file", L("Image file on this device", "本机固件文件")]);
+    const want = opts.map(o => o.join("|")).join(";");
+    if (srcSel.dataset.opts !== want) {
+      clear(srcSel).append(...opts.map(([v, t]) => h("option", { value: v }, t)));
+      srcSel.dataset.opts = want;
+    }
+    srcSel.value = U.source;
+    clear(srcNote);
+    if (U.source === "release" && upd) {
+      const host = upd.site.replace("https://", "");
+      srcNote.append(L(`${upd.tag}, from ${host}. The app checks its SHA-256 against the GitHub release before it sends a byte. `, `${upd.tag}，来自 ${host}。发送前应用会按GitHub发布版核对SHA-256。`),
+        h("a", { href: upd.page, target: "_blank", rel: "noopener" }, L("Release notes", "发布说明")));
+    } else {
+      srcNote.append(!B ? L("Connect to the board: the app then looks for a newer release.", "请连接模块：应用会查找较新的发布版。")
+        : rel && SC.cmpVersion(rel.version, B.info && B.info.fw) <= 0 ? L(`The board runs the newest release (${rel.version}). `, `模块已是最新发布版（${rel.version}）。`)
+        : L("No newer release for this board. ", "此模块没有较新的发布版。"),
+        L("A file: scrl-<build>.bin from build/out of the firmware build (tools/build-boards.sh), not the -full.bin file. The app checks the image before it sends a byte.",
+          "文件：固件编译（tools/build-boards.sh）在 build/out 中生成的 scrl-<build>.bin，不要用 -full.bin 文件。发送前应用会先检查固件。"));
+    }
+    loadBtn.textContent = U.fetching ? L("Loading...", "加载中...") : U.source === "release" ? L("Load", "加载") : L("Choose file", "选择文件");
+    loadBtn.disabled = srcSel.disabled = U.running || U.fetching;
+  }
+
   function draw() {
     const B = board();
+    if (B) void checkRelease();
     if (U.raw && !U.running && U.checkedFor !== targetKey()) recheck();
     boardBanner(banner);
     const pending = !!(B && (B.flags & SC.FLAG.IMAGE_PENDING));
@@ -155,8 +181,7 @@ definePage("boardfw", () => {
     startBtn.disabled = !B || !U.image || U.running || pending;
     abortBtn.hidden = !(U.running && U.canAbort);
     fileIn.disabled = U.running;
-    siteBtn.disabled = U.running || U.fetching || !B;
-    siteBtn.textContent = U.fetching ? L("Loading...", "加载中...") : L("Get the image from the flash site", "从刷写网站获取固件");
+    drawSource(B);
   }
 
   clear(el).append(
@@ -166,21 +191,20 @@ definePage("boardfw", () => {
       h("div", { class: "form" }, nowOut,
         h("p", { class: "row-note fw-note" }, L("Park the car and keep it awake. After the update the board restarts. The app connects again by itself. Then confirm the new image within 10 minutes, or the board goes back to the old image.",
           "请停好车并保持唤醒。更新后模块会重启，应用会自动重新连接。请在10分钟内确认新固件，否则模块会回退到旧固件。")))),
-    h("div", { class: "sec-label" }, L("1. Image file", "1. 固件文件")),
-    h("div", { class: "card" }, h("div", { class: "form" }, h("div", { class: "btns" }, siteBtn), fileIn, imgOut,
-      h("p", { class: "row-note fw-note" }, L(`The button gets the newest image for the connected board from ${SC.FW_SITE.replace("https://", "")}. Or pick a file: scrl-<build>.bin from build/out of the firmware build (tools/build-boards.sh), not the -full.bin file. The app checks the image before it sends a byte.`,
-        `按钮会从 ${SC.FW_SITE.replace("https://", "")} 获取所连模块的最新固件。也可选择文件：固件编译（tools/build-boards.sh）在 build/out 中生成的 scrl-<build>.bin，不要用 -full.bin 文件。发送前应用会先检查固件。`)))),
+    h("div", { class: "sec-label" }, L("1. Firmware image", "1. 固件镜像")),
+    h("div", { class: "card" }, h("div", { class: "form" }, srcSel, srcNote, h("div", { class: "btns" }, loadBtn, fileIn), imgOut)),
     h("div", { class: "sec-label" }, L("2. Update", "2. 更新")),
     h("div", { class: "card" }, h("div", { class: "form" }, h("div", { class: "btns" }, startBtn, abortBtn), prog, msgOut, chunkOut)),
     h("p", { class: "sec-foot" }, h("button", { class: "linkish", type: "button", onclick: () => switchTab("status") }, icon("chevron-left", 16), L("Car tab", "车辆页"))));
 
   const offs = [];
   redraw = draw;
+  if (params && params.release && boardUpdate() && !U.running) { U.source = "release"; void loadRelease(); }
   draw();
   return {
     el, title: { en: "Board firmware", zh: "模块固件" },
     refresh: draw,
-    enter() { redraw = draw; offs.push(onBus("board", draw)); offs.push(onBus("conn", draw)); },
+    enter() { redraw = draw; offs.push(onBus("board", draw)); offs.push(onBus("conn", draw)); offs.push(onBus("release", draw)); },
     leave() { offs.splice(0).forEach(f => f()); },
   };
 });

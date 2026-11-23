@@ -58,13 +58,16 @@ const WAVESHARE = image("scrl-ble-board", { board: "waveshare-s3-can", chip: "es
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, headless: true });
 const results = [];
-async function scenario(name, query, { init, ...opts }, fn) {
+async function scenario(name, query, { init, allowErrors, ...opts }, fn) {
   const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, ...opts });
   const page = await ctx.newPage();
   if (init) await page.addInitScript(init[0], init[1]);
+  // No test goes to the network. The flash sites and GitHub answer "no release" unless a scenario fakes one.
+  await page.route(/^https:\/\/(scrl-flash(-preview)?\.surge\.sh|api\.github\.com)\//, route => route.fulfill({
+    status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: "{}" }));
   const errors = [];
   page.on("pageerror", e => errors.push(`pageerror: ${e.message}`));
-  page.on("console", m => { if (m.type() === "error") errors.push(`console: ${m.text()}`); });
+  page.on("console", m => { if (m.type() === "error" && !(allowErrors && allowErrors.test(m.text()))) errors.push(`console: ${m.text()}`); });
   await page.goto(`${base}?${query}`);
   await page.waitForSelector("#tabs .tab");
   try {
@@ -479,34 +482,140 @@ await scenario("passkey-forget-factory", "mock=h2", {}, async page => {
   await page.waitForSelector("[data-id=connect]", { timeout: 8000 });
 });
 
-// The flash site is served from the test: builds.json and the image of the mock board.
-async function fakeSite(page, image, sha = crypto.createHash("sha256").update(image.buffer).digest("hex")) {
-  await page.route("https://scrl-flash-preview.surge.sh/**", route => {
+// A firmware release for the mock board (fw 0.1.0, nanoh2-minican): builds.json and the image on the live flash site
+// (a test release "beta" on the preview site), and the release in the GitHub API. Later routes win over the
+// "no release" route of scenario().
+const sha256hex = b => crypto.createHash("sha256").update(b).digest("hex");
+async function fakeRelease(page, { version = "9.9.9", image = BIN, sha = sha256hex(image.buffer), digest = sha, api = 200, served = image, beta = null, notag = false } = {}) {
+  const tag = `ble-board-v${version}`;
+  const cors = { "access-control-allow-origin": "*" };
+  const site = (v, withTag) => route => {
     const u = new URL(route.request().url());
     if (u.pathname === "/builds.json") {
-      return route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" },
-        body: JSON.stringify({ version: "9.9.9", builds: [{ id: "nanoh2-minican", board: "nanoh2-minican", can_id: "twai", version: "9.9.9", app: "scrl-nanoh2-minican.bin", app_sha256: sha }] }) });
+      return route.fulfill({ status: 200, contentType: "application/json", headers: cors,
+        body: JSON.stringify({ ...(withTag ? { tag: `ble-board-v${v}` } : {}), version: v, builds: [{ id: "nanoh2-minican", board: "nanoh2-minican", can_id: "twai", version: v, app: "scrl-nanoh2-minican.bin", app_sha256: sha }] }) });
     }
-    if (u.pathname === "/firmware/scrl-nanoh2-minican.bin") return route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, body: image.buffer });
-    return route.fulfill({ status: 404, body: "" });
-  });
+    if (u.pathname === "/firmware/scrl-nanoh2-minican.bin") return route.fulfill({ status: 200, headers: cors, body: served.buffer });
+    return route.fulfill({ status: 404, headers: cors, body: "" });
+  };
+  await page.route("https://scrl-flash.surge.sh/**", site(version, !notag));
+  if (beta) await page.route("https://scrl-flash-preview.surge.sh/**", site(beta, true));
+  for (const [t, pre] of [[tag, false], ...(beta ? [[`ble-board-v${beta}`, true]] : [])]) {
+    await page.route(`https://api.github.com/repos/n0k0m3/flipper-tesla-fsd/releases/tags/${t}`, route => route.fulfill({
+      status: api, contentType: "application/json", headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({ tag_name: t, draft: false, prerelease: pre, assets: [{ name: "scrl-nanoh2-minican.bin", digest: `sha256:${digest}` }] }) }));
+  }
+}
+// The Device tab after the release lookup: the text of "Latest" and if "OTA update" shows.
+async function deviceFw(page, latest) {
+  await tab(page, "me");
+  await page.waitForFunction(v => (document.querySelector("[data-id=board-fw-latest]") || {}).textContent === `Latest: ${v}`, latest);
+  await page.waitForTimeout(300);
+  return page.locator("[data-id=board-fw-update]").count();
 }
 
-await scenario("update-image-from-the-flash-site", "mock=h2", {}, async page => {
-  await fakeSite(page, BIN);
+await scenario("newer-release-shows-ota-update-and-loads-it", "mock=h2", {}, async page => {
+  await fakeRelease(page);
   await connect(page);
-  await openTool(page, "boardfw");
-  await page.click("[data-id=bfw-site]");
+  assert.equal(await deviceFw(page, "9.9.9"), 1, "OTA update shows");
+  assert.match(await page.getAttribute("[data-id=board-fw-current]", "class"), /older/);
+  await page.click("[data-id=board-fw-update]");
   await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.inputValue("[data-id=bfw-source]"), "release");
   assert.equal(await page.isDisabled("[data-id=bfw-start]"), false, "the image can be sent");
+  await openTool(page, "board");
+  assert.match(await text(page, "[data-id=board-fw]"), /Release 9\.9\.9 is out/);
 });
 
-await scenario("flash-site-image-with-a-wrong-hash-is-refused", "mock=h2", {}, async page => {
-  await fakeSite(page, BIN, "00".repeat(32));
+await scenario("test-server-offers-a-newer-test-release", "mock=h2", {}, async page => {
+  await fakeRelease(page, { beta: "9.9.10-rc.1" });
   await connect(page);
+  assert.equal(await deviceFw(page, "9.9.10-rc.1"), 1, "a test server (as the preview app) takes the test release");
+  await page.click("[data-id=board-fw-update]");
+  await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.match(await text(page, "[data-id=bfw-source-note]"), /ble-board-v9\.9\.10-rc\.1/);
+});
+
+await scenario("older-test-release-loses-to-the-stable-release", "mock=h2", {}, async page => {
+  await fakeRelease(page, { beta: "9.9.9-rc.1" });
+  await connect(page);
+  assert.equal(await deviceFw(page, "9.9.9"), 1);
+});
+
+await scenario("board-without-info-keeps-the-board-firmware-page", "mock=h2", {}, async page => {
+  await fakeRelease(page);
+  await connect(page);
+  await page.evaluate(async () => { (await import("/app/app.js")).S.link.board.info = null; });
   await openTool(page, "boardfw");
-  await page.click("[data-id=bfw-site]");
-  await page.waitForFunction(() => /does not match the SHA-256/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  await page.waitForTimeout(500);
+  assert.deepEqual(await ids(page, "[data-id=bfw-source] option", "value"), ["file"], "no release without the Info");
+  await page.setInputFiles("[data-id=bfw-file]", HELLO);
+  await page.waitForFunction(() => /hello_world/.test(document.querySelector("[data-id=bfw-image]").textContent));
+});
+
+await scenario("flash-site-without-a-tag-uses-the-version-tag", "mock=h2", {}, async page => {
+  await fakeRelease(page, { notag: true });
+  await connect(page);
+  assert.equal(await deviceFw(page, "9.9.9"), 1, "a site from before the releases (0.6.1) still works");
+});
+
+await scenario("same-release-as-the-board-shows-no-update", "mock=h2", {}, async page => {
+  await fakeRelease(page, { version: "0.1.0" });
+  await connect(page);
+  assert.equal(await deviceFw(page, "0.1.0"), 0);
+  await openTool(page, "boardfw");
+  assert.deepEqual(await ids(page, "[data-id=bfw-source] option", "value"), ["file"], "no release in the list");
+  assert.match(await text(page, "[data-id=bfw-source-note]"), /newest release \(0\.1\.0\)/);
+});
+
+await scenario("older-release-than-the-board-shows-no-update", "mock=h2", {}, async page => {
+  await fakeRelease(page, { version: "0.0.9" });
+  await connect(page);
+  assert.equal(await deviceFw(page, "0.0.9"), 0);
+});
+
+await scenario("failed-release-lookup-is-silent", "mock=h2", { allowErrors: /status of 503/ }, async page => {
+  await page.route(/^https:\/\/scrl-flash(-preview)?\.surge\.sh\//, route => route.fulfill({ status: 503, body: "" }));
+  await connect(page);
+  await tab(page, "me");
+  await page.waitForTimeout(1500);
+  assert.equal(await text(page, "[data-id=board-fw-latest]"), "Latest: —");
+  assert.equal(await page.locator("[data-id=board-fw-update]").count(), 0);
+  await openTool(page, "boardfw");
+  await page.setInputFiles("[data-id=bfw-file]", BIN);
+  await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+});
+
+await scenario("release-api-down-offers-no-update", "mock=h2", { allowErrors: /status of 403/ }, async page => {
+  await fakeRelease(page, { api: 403 });
+  await connect(page);
+  const asked = page.waitForRequest(/api\.github\.com/);
+  await tab(page, "me");
+  await asked;
+  assert.equal(await deviceFw(page, "—"), 0, "no check against GitHub, no update");
+});
+
+await scenario("pages-copy-that-differs-from-the-release-offers-no-update", "mock=h2", {}, async page => {
+  await fakeRelease(page, { digest: "00".repeat(32) });
+  await connect(page);
+  const asked = page.waitForRequest(/api\.github\.com/);
+  await tab(page, "me");
+  await asked;
+  assert.equal(await deviceFw(page, "—"), 0, "no check against GitHub, no update");
+});
+
+await scenario("unconfirmed-image-shows-no-update", "mock=h2&pending", {}, async page => {
+  await fakeRelease(page);
+  await connect(page);
+  assert.equal(await deviceFw(page, "9.9.9"), 0);
+});
+
+await scenario("release-image-with-a-wrong-hash-is-refused", "mock=h2", {}, async page => {
+  await fakeRelease(page, { served: HELLO });
+  await connect(page);
+  assert.equal(await deviceFw(page, "9.9.9"), 1);
+  await page.click("[data-id=board-fw-update]");
+  await page.waitForFunction(() => /does not match the SHA-256 of the release/.test(document.querySelector("[data-id=bfw-image]").textContent));
   assert.equal(await page.isDisabled("[data-id=bfw-start]"), true);
 });
 
@@ -536,7 +645,7 @@ await scenario("update-and-confirm", "mock=h2", {}, async page => {
   await page.click("[data-id=warn-pending]");
   await toastIs(page, /confirmed/);
   await tab(page, "me");
-  assert.match(await text(page, "[data-page=device]"), /Firmware\s*9\.9\.9/);
+  assert.match(await text(page, "[data-page=device]"), /Firmware\s*Latest: —\s*Current: 9\.9\.9/);
 });
 
 // Bluefy on iOS delivers no OTA data write without response. An iPhone sends with response to firmware that
@@ -723,7 +832,7 @@ await fake("real-connect-path-board", { kind: "h2", name: "SCRL-FAKE" }, async p
   assert.deepEqual(await ids(page, "[data-page=car] [data-row]", "data-row"), ["vehicleType", "apAssist"]);
   // values come as DataViews with a byte offset: the numbers must still be right
   await tab(page, "me");
-  assert.match(await text(page, "[data-page=device]"), /Firmware\s*0\.1\.0 \(4d298926\)/);
+  assert.match(await text(page, "[data-page=device]"), /Firmware\s*Latest: —\s*Current: 0\.1\.0\s*Build\s*4d298926/);
   // a notification (the Live record) moves the counter on the Board page
   await board(page);
   const a = Number(await kv(page, "sent"));
