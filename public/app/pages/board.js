@@ -85,7 +85,8 @@ definePage("board", () => {
   const grp = (...kids) => h("section", { class: "grp" }, kids);
   const refs = {};
 
-  const kv = (key, en, zh, mono = true) => {
+  // Values in the text face with tabular figures. Mono only for hex IDs (Board ID is on the Device tab).
+  const kv = (key, en, zh, mono = false) => {
     refs[key] = h("span", { class: "kv" + (mono ? " mono" : "") }, "—");
     return h("div", { class: "li", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh)))), refs[key]);
   };

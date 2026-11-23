@@ -211,9 +211,9 @@ definePage("status", () => {
     el.append(
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("bluetooth", 24)),
-        h("h2", { class: "sec-title" }, h("span", null, L("Connect to your device", "连接您的设备")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
+        h("h2", { class: "sec-title" }, h("span", null, L("Connect to TSL6 or a BLE board", "连接 TSL6 或 BLE模块")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
         h("p", null, supported
-          ? L("Pick TSL6, or SCRL-xxxx for a BLE board, in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6，BLE模块请选择 SCRL-xxxx。")
+          ? L("Pick it in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择它。")
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
             "此浏览器不支持网页蓝牙。请在安卓或电脑上使用 Chrome / Edge，iPhone 请使用 Bluefy。")),
         supported ? btn({ en: "Connect", zh: "连接" }, () => connect({ all }), { kind: "primary" }) : null,
@@ -221,7 +221,7 @@ definePage("status", () => {
       // One note per device, so the user reads only the steps of their own device.
       sec("Before you connect", "连接前"),
       h("div", { class: "card" },
-        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("car", 22)),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("info", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Every device", "所有设备"))),
             h("div", { class: "li-sub" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
         h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
@@ -229,7 +229,8 @@ definePage("status", () => {
             h("div", { class: "li-sub" }, L("Pick TSL6. Close the vendor Mini App, or turn off Bluetooth on that phone. The default password is 1234.", "选择 TSL6。关闭原厂小程序，或关闭那部手机的蓝牙。默认密码为 1234。")))),
         h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("radio", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("BLE board", "BLE模块"))),
-            h("div", { class: "li-sub" }, L("NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware: pick SCRL-xxxx. At the first connection, type the passkey from the label on the board.", "NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板：选择 SCRL-xxxx。首次连接时，输入模块标签上的配对码。"))))));
+            h("div", { class: "li-sub" }, L("NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware: pick ", "NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板：选择 "), h("span", { class: "nowrap" }, "SCRL-xxxx"),
+              L(". At the first connection, type the passkey from the label on the board.", "。首次连接时，输入模块标签上的配对码。"))))));
     el.querySelector(".btn.primary")?.setAttribute("data-id", "connect");
   }
 
@@ -423,7 +424,7 @@ definePage("status", () => {
       const draw = () => {
         clear(refs.apSub);
         if (live.assistActive) refs.apSub.append(L("On, next tick in ", "开启，"), h("b", null, L(`${countdown.toFixed(1)} s`, `${countdown.toFixed(1)} 秒后拨动`)));
-        else refs.apSub.append("\u00a0");
+        else refs.apSub.append(L("Off", "关闭"));
       };
       draw();
       if (live.assistActive) timer = setInterval(() => { countdown = Math.max(0, countdown - 0.1); draw(); if (!countdown) clearInterval(timer); }, 100);

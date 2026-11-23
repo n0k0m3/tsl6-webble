@@ -149,7 +149,7 @@ definePage("shortcuts", () => {
     const hasFun = list.fun.length > 0;
     el.append(h("section", { class: "card tbl-toolbar" },
       h("span", { class: "tbl-count" }, table ? L(`${rows.length} ${rows.length === 1 ? "rule" : "rules"}, ${SHORTCUT_SLOTS - rows.length} free`, `${rows.length} 条，剩余 ${SHORTCUT_SLOTS - rows.length} 条`) : "",
-        helpButton("help_BTN", { en: "Shortcut commands", zh: "快捷指令" })),
+        helpButton("help_BTN", { en: "Shortcuts", zh: "快捷指令" })),
       h("div", { class: "tools" },
         hasFun && rows.length ? h("button", { class: "btn small", type: "button", "aria-pressed": String(editing), disabled: !ready || busy, onclick: () => { editing = !editing; render(); } },
           editing ? L("Done", "完成") : L("Edit", "编辑")) : null,
@@ -179,7 +179,7 @@ definePage("shortcuts", () => {
   render();
   return {
     el,
-    title: { en: "Shortcut commands", zh: "快捷指令设置" },
+    title: { en: "Shortcuts", zh: "快捷指令设置" },
     enter() {
       if (entered) return;
       entered = true;

@@ -72,7 +72,7 @@ definePage("me", () => {
     return h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip green" }, icon("bluetooth-connected", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, link.name)),
-          h("div", { class: "li-sub" }, link.boot ? L("Boot mode: flash a runtime with Firmware below", "升级模式：请用下方「固件」刷写运行固件")
+          h("div", { class: "li-sub" }, link.boot ? L("Boot mode: flash a runtime with Update firmware below", "升级模式：请用下方「更新固件」刷写运行固件")
             : link.authed ? L("Connected", "已连接") : L("Connected, password needed", "已连接，需要密码"))),
         h("button", { class: "btn small", type: "button", "data-id": "disconnect", onclick: () => disconnect() }, L("Disconnect", "断开"))),
       link.authed || link.boot ? null : h("div", { class: "li" }, h("span", { class: "chip amber" }, icon("key-round", 22)),

@@ -33,7 +33,7 @@ async function serviceMode() {
 // [icon, chip color, en, zh, sub en, sub zh, action]
 const TOOLS = {
   board: ["cpu", "", "Board", "模块", "Op mode, live state, counters, pairing", "运行模式、实时状态、计数器、配对", () => go("board")],
-  boardfw: ["hard-drive-download", "", "Firmware", "固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")],
+  boardfw: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")],
   capture: ["activity", "", "Capture", "采集", "Record Vehicle CAN to a file", "将车辆CAN记录到文件", () => go("capture")],
   shortcuts: ["workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
   blebtn: ["radio", "", "BLE buttons", "蓝牙按钮", "Remote buttons and their actions", "遥控按钮及其动作", () => go("blebtn")],
@@ -43,11 +43,11 @@ const TOOLS = {
   backup: ["database-backup", "", "Backup and restore", "备份恢复", "Settings, shortcuts and buttons in one file", "设置、快捷指令和按钮存为一个文件", () => go("backup")],
   log: ["file-text", "", "Log and capture", "日志与抓包", "Frames sent and received", "收发数据帧", () => go("log")],
   password: ["key-round", "", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
-  firmware: ["hard-drive-download", "", "Firmware", "固件", "Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块", () => go("firmware")],
+  firmware: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块", () => go("firmware")],
   reset: ["rotate-ccw", "red", "Restore defaults", "恢复默认", "Resets every module setting", "重置模块所有设置", restoreDefaults],
   blehost: ["bluetooth-searching", "", "BLE host pairing", "蓝牙配对", "Devices that the module connects to", "模块连接的蓝牙设备", () => go("blehost")],
   debug: ["terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
-  service: ["wrench", "red", "Tesla service mode", "特斯拉维护模式", "Car in P, driving-system controls on", "P档，并允许驾驶系统控制", serviceMode],
+  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Car in P, driving-system controls on", "P档，并允许驾驶系统控制", serviceMode],
 };
 // The tools that the old Me tab showed. They stay while the module is off; the other tools hide, as in the vendor app.
 const WHEN_OFF = ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"];
@@ -61,7 +61,7 @@ export function toolsShown(ids) {
 export function toolRows(ids) {
   return toolsShown(ids).map(id => {
     const [ico, color, en, zh, sen, szh, fn] = TOOLS[id];
-    return h("button", { class: "li" + (color === "red" ? " danger" : ""), type: "button", "data-id": `tool-${id}`, onclick: fn },
+    return h("button", { class: "li" + (color === "red" ? " danger" : color === "amber" ? " caution" : ""), type: "button", "data-id": `tool-${id}`, onclick: fn },
       h("span", { class: "chip " + color }, icon(ico, 22)),
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub" }, L(sen, szh))),
       h("span", { class: "chev" }, icon("chevron-right", 18)));

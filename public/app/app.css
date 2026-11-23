@@ -100,7 +100,7 @@ input, textarea, pre.log, pre.log * { -webkit-user-select: text; user-select: te
 .lg-title { margin: 2px 0 18px; font: 700 32px/1.1 var(--font-head); letter-spacing: -.005em; }
 #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; height: calc(var(--tab-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom); background: var(--card);
-  border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(4, 1fr); }
+  border-top: 1px solid var(--line); display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
 .tab { position: relative; background: none; border: 0; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   font-size: 13px; font-weight: 500; cursor: pointer; }
 .tab.on { color: var(--accent-text); font-weight: 600; }
@@ -622,3 +622,11 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .li.stack .kv-sub { color: var(--muted); font-variant-numeric: tabular-nums; }
 .note-dev { align-items: flex-start; }
 .note-dev .chip { margin-top: 2px; }
+/* round 1 (unslop 2) */
+/* A caution row (a driving system): amber icon, normal text. Red stays for rows that reset data. */
+.li.caution .chip { color: var(--tt-amber); }
+/* Cluster readout buttons: lighter than the telltales. */
+.cl-btns { margin-top: 12px; }
+.cluster .cl-btns .cl-gauge { height: 36px; font-size: 13.5px; }
+/* A device name such as SCRL-xxxx does not break at its hyphen. */
+.nowrap { white-space: nowrap; }
