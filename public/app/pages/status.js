@@ -2,7 +2,8 @@
 // The command logic is the same as before the redesign; only the grouping and the look changed.
 import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab, isH2 } from "../app.js";
-import { boardName } from "../../lib/scrl.js";
+import { boardName, FLAG, boardListenOnly } from "../../lib/scrl.js";
+import { toolsShown } from "./tools.js";
 import { H2_TYPE, H2_TSL6_TYPE, h2Has, h2HasEngine, h2ShowsRow } from "../../lib/h2-menus.js";
 import { h2PromptDiag } from "../../lib/scrl-tsl6.js";
 import { boardBanner } from "./board.js";
@@ -103,6 +104,15 @@ definePage("status", () => {
         : s.mode === 0 ? [L(...PROMPT_PHASE[diag.phase]), " · ", sent, raw] : [sent, raw]));
     }
     if (refs.banner) boardBanner(refs.banner);
+    if (refs.op && B.status) {
+      // Green only while the board really sends; amber for Listen-Only and for Active that a lock holds back.
+      const active = B.status.opMode === 1 && !!(B.flags & FLAG.ACTIVE);
+      const text = boardListenOnly(B.info) ? L("Listen-only build", "只听版本")
+        : B.status.opMode !== 1 ? L("Listen-Only", "只听模式") : active ? L("Active", "主动模式") : L("Held in Listen-Only", "保持只听");
+      refs.op.classList.toggle("on", active);
+      refs.op.querySelector("span").textContent = text;
+      refs.op.setAttribute("aria-label", L(`Op mode: ${text}. Open the board page`, `运行模式：${text}。打开模块页面`));
+    }
   }
 
   // ---- one hold button (seat A7 or wheel A2): press frame, then exactly one release frame
@@ -201,19 +211,25 @@ definePage("status", () => {
     el.append(
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("bluetooth", 24)),
-        h("h2", { class: "sec-title" }, h("span", null, L("Connect to your TSL6", "连接您的 TSL6")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
+        h("h2", { class: "sec-title" }, h("span", null, L("Connect to your device", "连接您的设备")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
         h("p", null, supported
-          ? L("Pick TSL6 in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6。")
+          ? L("Pick TSL6, or SCRL-xxxx for a BLE board, in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6，BLE模块请选择 SCRL-xxxx。")
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
             "此浏览器不支持网页蓝牙。请在安卓或电脑上使用 Chrome / Edge，iPhone 请使用 Bluefy。")),
         supported ? btn({ en: "Connect", zh: "连接" }, () => connect({ all }), { kind: "primary" }) : null,
         supported ? h("label", { class: "check" }, allBox, L("Show all devices", "显示所有设备")) : null)),
+      // One note per device, so the user reads only the steps of their own device.
       sec("Before you connect", "连接前"),
-      h("div", { class: "card pad" }, h("ol", { class: "steps" },
-        h("li", null, L("Keep the car awake (climate or Camp mode on).", "保持车辆唤醒（打开空调或露营模式）。")),
-        h("li", null, L("Close the vendor Mini App, or turn off Bluetooth on that phone. The module takes one phone at a time.", "关闭原厂小程序，或关闭那部手机的蓝牙。模块一次只连接一部手机。")),
-        h("li", null, L("The default BLE password is 1234.", "默认蓝牙密码为 1234。")),
-        h("li", null, L("BLE board (NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware): pick SCRL-xxxx. At the first connection the phone asks for the passkey from the label on the board.", "BLE模块（NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板）：选择 SCRL-xxxx。首次连接时，手机会要求输入模块标签上的配对码。")))));
+      h("div", { class: "card" },
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("car", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Every device", "所有设备"))),
+            h("div", { class: "li-sub" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("TSL6 module", "TSL6 模块"))),
+            h("div", { class: "li-sub" }, L("Pick TSL6. Close the vendor Mini App, or turn off Bluetooth on that phone. The default password is 1234.", "选择 TSL6。关闭原厂小程序，或关闭那部手机的蓝牙。默认密码为 1234。")))),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("radio", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("BLE board", "BLE模块"))),
+            h("div", { class: "li-sub" }, L("NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware: pick SCRL-xxxx. At the first connection, type the passkey from the label on the board.", "NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板：选择 SCRL-xxxx。首次连接时，输入模块标签上的配对码。"))))));
     el.querySelector(".btn.primary")?.setAttribute("data-id", "connect");
   }
 
@@ -254,12 +270,16 @@ definePage("status", () => {
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
         h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })]
-          : h("span", { class: "vehicle-name" }, isH2() ? L(boardName(S.link.board && S.link.board.info), boardName(S.link.board && S.link.board.info, true)) : "TSL6")),
-        // A board without the engine link has no gauges: its button opens the Board page (state, counters, board
-        // actions). With the engine link the Car tab has the Gauges button of the TSL6; the Board page is in Tools.
+          : h("span", { class: "vehicle-name" }, isH2() ? L(boardName(S.link.board && S.link.board.info), boardName(S.link.board && S.link.board.info, true)) : "TSL6"))),
+      refs.pills, refs.tt,
+      // The car readouts. A board without the engine link has none: its button opens the Board page (state,
+      // counters, board actions). The op-mode telltale also opens the Board page.
+      h("div", { class: "cl-btns" },
         isH2() && !h2HasEngine() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
-          : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
-      refs.pills, refs.tt);
+          : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘"))),
+        toolsShown(["battery"]).length ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-battery", onclick: () => go("battery") }, icon("battery-medium", 18), h("span", null, L("Battery", "电池"))) : null));
+    // H2 board: can the board send on the bus now? The telltale opens the Board page, where the op mode changes.
+    refs.op = isH2() ? h("button", { class: "cl-op", type: "button", "data-id": "cl-opmode", onclick: () => go("board") }, h("i"), h("span")) : null;
     if (!isH2() || h2HasEngine()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
     // Board warnings come first on the landing tab: an unconfirmed image has a 10-minute limit.
     refs.banner = isH2() ? h("div", { class: "span", "data-id": "board-banner" }) : null;
@@ -392,6 +412,7 @@ definePage("status", () => {
         const on = live.can[0];
         const name = on ? L("CAN connected", "CAN 已连接") : L("No CAN frames", "无CAN数据");
         clear(refs.pills).append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, "CAN", h("i")));
+        if (refs.op) refs.pills.append(refs.op);
       }
       drawBoard();
       return;

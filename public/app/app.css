@@ -604,3 +604,21 @@ button.li-text:hover .li-title > span:first-child { text-decoration: underline; 
 .act { font-weight: 500; }
 .vehicle-name.warn { color: var(--cl-amber); }
 .slot { display: contents; }
+
+/* ---------------------------------------------------------------- unslop 2 */
+/* Cluster: the readout buttons sit together at the head. */
+.cl-btns { display: flex; gap: 8px; margin-top: 14px; }
+.cl-btns .cl-gauge { flex: 1; justify-content: center; }
+@media (min-width: 1180px) { .cluster .cl-btns { order: 9; margin: 0 0 0 auto; } .cluster .cl-btns .cl-gauge { flex: none; } }
+/* H2 op-mode telltale: amber while the board cannot send, green while it sends. It opens the Board page. */
+.cl-op { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 12px 0 10px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--cl-line); background: transparent; color: var(--cl-fg); font: 600 13.5px/1 var(--font); }
+.cl-op i { width: 8px; height: 8px; border-radius: 50%; background: var(--cl-amber); }
+.cl-op.on i { background: var(--cl-green); }
+.cl-op::after { content: ""; position: absolute; inset: -6px -2px; } /* 44 px hit area */
+.cl-op:hover { background: rgba(255, 255, 255, .08); }
+.cl-op span:empty::before { content: "\2014"; }
+/* A long value goes under its label. */
+.li.stack .kv-sub { color: var(--muted); font-variant-numeric: tabular-nums; }
+.note-dev { align-items: flex-start; }
+.note-dev .chip { margin-top: 2px; }

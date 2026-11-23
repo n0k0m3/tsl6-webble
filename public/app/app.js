@@ -86,7 +86,7 @@ export async function gate(type, opts = {}) {
   const link = S.link;
   if (!link || !link.connected) { toast(L("Connect to the module first.", "请先连接蓝牙")); return false; }
   // The bootloader knows only the flash commands. Those go through the Firmware page, not through gate().
-  if (link.boot) { toast(L("The module is in boot mode. Flash a runtime first (Tools > Firmware).", "模块处于升级模式，请先刷写运行固件（工具 > 固件）。"), "warn", 3000); return false; }
+  if (link.boot) { toast(L("The module is in boot mode. Flash a runtime first (Device > Firmware).", "模块处于升级模式，请先刷写运行固件（设备 > 固件）。"), "warn", 3000); return false; }
   if (opts.danger && !S.prefs.allowDrive) {
     await alertBox({
       en: "This control changes a driving system (motor, ESP, service mode or raw CAN). It is off by default. To use it, turn on Device > Allow driving-system controls.",
@@ -239,7 +239,7 @@ export async function connect({ all = false } = {}) {
     const st = await link.readStatus();
     if (!st) {
       log("no status reply after connect: the module sent nothing back", "bad");
-      toast(L("The module does not answer. See Tools > Log and capture.", "模块无应答，请查看「工具 > 日志与抓包」"), "bad", 4000);
+      toast(L("The module does not answer. See Device > Log and capture.", "模块无应答，请查看「设备 > 日志与抓包」"), "bad", 4000);
     }
     // A board with the TSL6 engine link has the gauge stream too (firmware 0.6.0).
     if (S.prefs.autoGauge && S.hwType && !S.blank && !link.boot && (link.kind !== "h2" || link.engineLink)) go("gauge");
@@ -261,8 +261,8 @@ export async function connect({ all = false } = {}) {
       if (e.bytes) log(`board sent ${e.bytes}`, "bad");
       if (link.close) link.close();
       alertBox({
-        en: `The connection to the board stopped at this step: ${e.message}. Copy the log in Tools > Log and capture and send it to the developer.`,
-        zh: `与模块的连接在此步骤停止：${e.message}。请在「工具 > 日志与抓包」复制日志并发给开发者。`,
+        en: `The connection to the board stopped at this step: ${e.message}. Copy the log in Device > Log and capture and send it to the developer.`,
+        zh: `与模块的连接在此步骤停止：${e.message}。请在「设备 > 日志与抓包」复制日志并发给开发者。`,
       }, L("Connect failed", "连接失败"));
       return;
     }
@@ -277,7 +277,6 @@ export function definePage(id, def) { PAGES[id] = def; }
 const TABS = [
   { id: "status", icon: "car", en: "Car", zh: "车辆" },
   { id: "settings", icon: "sliders-horizontal", en: "Settings", zh: "设置" },
-  { id: "tools", icon: "wrench", en: "Tools", zh: "工具" },
   { id: "me", icon: "cpu", en: "Device", zh: "设备" },
 ];
 let stack = [];      // [{id, page}]
@@ -399,9 +398,9 @@ export async function start({ mock = false, MockLink, MockH2Transport } = {}) {
     document.body.classList.add("is-mock");
   }
   if (!S.mock && !WebLink.available()) log("Web Bluetooth is not available in this browser", "warn");
-  // #firmware opens the firmware page over Tools (tsl6-recovery.surge.sh redirects to it). #flash is the older recovery link.
-  if ((location.hash === "#firmware" || location.hash === "#flash") && PAGES.firmware) { switchTab("tools"); go("firmware"); return; }
-  switchTab({ "#settings": "settings", "#tools": "tools", "#me": "me", "#device": "me" }[location.hash] || "status");
+  // #firmware opens the firmware page over Device (tsl6-recovery.surge.sh redirects to it). #flash is the older recovery link.
+  if ((location.hash === "#firmware" || location.hash === "#flash") && PAGES.firmware) { switchTab("me"); go("firmware"); return; }
+  switchTab({ "#settings": "settings", "#tools": "me", "#me": "me", "#device": "me" }[location.hash] || "status");
 }
 
 // Small helpers for pages.

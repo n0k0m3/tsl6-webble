@@ -80,10 +80,27 @@ async function scenario(name, query, { init, ...opts }, fn) {
 const text = (page, sel) => page.locator(sel).innerText();
 const ids = (page, sel, attr) => page.$$eval(sel, (els, a) => els.map(e => e.getAttribute(a)), attr);
 const tab = async (page, id) => { await page.click(`[data-id=tab-${id}]`); await page.waitForTimeout(250); };
+// There is no Tools tab: each tool row is on the tab of its job. Battery and Gauges are buttons on the Car cluster.
+const TOOL_TAB = { shortcuts: "settings", blebtn: "settings", rgb: "settings" };
+const CLUSTER = { battery: "open-battery", gauge: "open-gauges" };
+const openTool = async (page, id) => {
+  if (CLUSTER[id]) { await tab(page, "status"); await page.click(`[data-id=${CLUSTER[id]}]`); return; }
+  await tab(page, TOOL_TAB[id] || "me"); await page.click(`[data-id=tool-${id}]`);
+};
+// Every tool that the app offers now, from all tabs, as "tool-<id>".
+const allTools = async page => {
+  const out = [];
+  for (const t of ["status", "settings", "me"]) {
+    await tab(page, t);
+    out.push(...await ids(page, "[data-id^=tool-]", "data-id"));
+    for (const [id, btn] of Object.entries(CLUSTER)) if (await page.isVisible(`[data-id=${btn}]`)) out.push(`tool-${id}`);
+  }
+  return [...new Set(out)];
+};
 const toastIs = (page, re) => page.waitForFunction(s => { const t = document.getElementById("toast"); return !!t && new RegExp(s).test(t.textContent); }, re.source, { timeout: 8000 });
 const dlgOk = page => page.click(".dlg-btn.primary");
 const connect = async page => { await page.click("[data-id=connect]"); await page.waitForSelector("[data-row=apAssist]", { timeout: 20000 }); };
-const board = async page => { await tab(page, "tools"); await page.click("[data-id=tool-board]"); await page.waitForSelector("[data-page=board] [data-row=sent]"); };
+const board = async page => { await openTool(page, "board"); await page.waitForSelector("[data-page=board] [data-row=sent]"); };
 const kv = (page, row) => text(page, `[data-page=board] [data-row=${row}] .kv`);
 
 // ---------------------------------------------------------------- group 1: the mock board
@@ -96,10 +113,9 @@ await scenario("rows-are-exactly-the-board-rows", "mock=h2&notsl6", {}, async pa
   assert.deepEqual(await ids(page, "[data-page=settings] [data-id^=set-]", "data-id"), ["set-search", "set-opmode", "set-lr", "set-time", "set-rand", "set-jg", "set-jj"]);
   assert.equal(await page.isVisible("[data-id=set-mianSwitch]"), false, "no master switch");
   assert.equal(await page.isVisible("[data-id=set-lab]"), false, "no lab rows");
-  await tab(page, "tools");
-  assert.deepEqual(await ids(page, "[data-id^=tool-]", "data-id"), ["tool-board", "tool-boardfw", "tool-capture", "tool-log", "tool-reset"]);
+  assert.deepEqual((await allTools(page)).sort(), ["tool-board", "tool-boardfw", "tool-capture", "tool-log", "tool-reset"].sort());
   await tab(page, "me");
-  assert.equal(await page.isDisabled("[data-id=pref-hwType]"), true, "the type picker is locked for a board");
+  assert.equal(await page.$eval("[data-id=pref-hwType]", e => e.tagName), "DIV", "a board sets the type: text, not a picker");
   assert.match(await text(page, "[data-id=pref-hwType]"), /BLE board: M5Stack NanoH2/);
   assert.equal(await page.isVisible("[data-id=enter-password]"), false, "the board has no BLE password");
   assert.match(await text(page, "[data-page=device]"), /Board ID\s*74dafe000001/);
@@ -127,18 +143,15 @@ await scenario("engine-link-gives-the-tsl6-pages", "mock=h2", {}, async page => 
   await page.click("[data-id=set-autoSportMode]");
   await page.click('.opt[data-v="1"]');
   await toastIs(page, /Saved/);
-  await tab(page, "tools");
-  const tools = await ids(page, "[data-id^=tool-]", "data-id");
+  const tools = await allTools(page);
   for (const id of ["tool-board", "tool-boardfw", "tool-capture", "tool-shortcuts", "tool-blebtn", "tool-gauge", "tool-battery", "tool-backup", "tool-blehost", "tool-debug", "tool-log", "tool-reset"]) assert.ok(tools.includes(id), `${id} shown`);
   assert.ok(tools.includes("tool-rgb"), "ambient light: the whole-car records go to CAN 0x679");
   for (const id of ["tool-password", "tool-firmware"]) assert.ok(!tools.includes(id), `${id} not shown`);
-  await page.click("[data-id=tool-shortcuts]");
+  await openTool(page, "shortcuts");
   await page.waitForTimeout(1500);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-battery]");
+  await openTool(page, "battery");
   await page.waitForTimeout(1500);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-log]");
+  await openTool(page, "log");
   const log = await text(page, "#page");
   assert.doesNotMatch(log, /settings write \{"tsl6"/, "the TSL6 bytes go to the engine, not to the board settings");
   assert.match(log, /rx AB \(256\)/, "the shortcut table came from the engine");
@@ -154,8 +167,7 @@ await scenario("tsl6-settings-key-rows-without-the-engine-link", "mock=h2&noengi
   await page.click("[data-id=set-autoSportMode]");
   await page.click('.opt[data-v="1"]');
   await toastIs(page, /Saved/);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-log]");
+  await openTool(page, "log");
   await page.waitForFunction(() => /settings write \{"tsl6":"01/.test(document.querySelector("#page").textContent), null, { timeout: 8000 });
 });
 
@@ -216,8 +228,7 @@ await scenario("ported-scroll-settings-wheel-and-random-interval", "mock=h2", {}
   await page.waitForFunction(() => /Every 2\.5 s/.test(document.querySelector("[data-id=set-time]").textContent), null, { timeout: 8000 });
   await tab(page, "status");
   assert.match(await text(page, ".hero-sub"), /Every 2\.5 s while AP is active/, "rand 0: the exact interval");
-  await tab(page, "tools");
-  await page.click("[data-id=tool-log]");
+  await openTool(page, "log");
   await page.waitForFunction(() => /SET {2}on=1/.test(document.querySelector("#page").textContent));
 });
 
@@ -250,7 +261,7 @@ await scenario("board-without-imax-keeps-the-10-s-limit", "mock=h2&noimax", {}, 
   assert.match(await text(page, ".dlg"), /1000 to 10000 ms/);
 });
 
-const capturePage = async page => { await tab(page, "tools"); await page.click("[data-id=tool-capture]"); await page.waitForSelector("[data-page=capture]"); };
+const capturePage = async page => { await openTool(page, "capture"); await page.waitForSelector("[data-page=capture]"); };
 const capKv = (page, row) => text(page, `[data-page=capture] [data-row=${row}] .kv`);
 
 await scenario("capture-start-mark-stop-save", "mock=h2", {}, async page => {
@@ -426,8 +437,7 @@ await scenario("unconfirmed-image-on-the-landing-tab", "mock=h2&pending", {}, as
 
 await scenario("restore-defaults-and-restart", "mock=h2", {}, async page => {
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-reset]");
+  await openTool(page, "reset");
   assert.match(await text(page, ".dlg"), /Scroll Ack goes off and the board goes to Listen-Only\. The TSL6 car features go back to their factory settings, with the shortcuts and the BLE buttons\. The bonds and the passkey stay/);
   await dlgOk(page);
   await toastIs(page, /Defaults restored/);
@@ -455,8 +465,7 @@ await scenario("passkey-forget-factory", "mock=h2", {}, async page => {
   await type("004271"); await page.waitForSelector(".dlg-input"); await type("004271");
   await toastIs(page, /has the new passkey/);
   // the app log (it offers a capture copy) names the command, never the digits
-  await tab(page, "tools");
-  await page.click("[data-id=tool-log]");
+  await openTool(page, "log");
   const logText = await text(page, "#page");
   assert.match(logText, /set-passkey command/);
   assert.match(logText, /CMD {2}passkey changed/, "the board log lines reach the app log");
@@ -486,8 +495,7 @@ async function fakeSite(page, image, sha = crypto.createHash("sha256").update(im
 await scenario("update-image-from-the-flash-site", "mock=h2", {}, async page => {
   await fakeSite(page, BIN);
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.click("[data-id=bfw-site]");
   await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
   assert.equal(await page.isDisabled("[data-id=bfw-start]"), false, "the image can be sent");
@@ -496,8 +504,7 @@ await scenario("update-image-from-the-flash-site", "mock=h2", {}, async page => 
 await scenario("flash-site-image-with-a-wrong-hash-is-refused", "mock=h2", {}, async page => {
   await fakeSite(page, BIN, "00".repeat(32));
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.click("[data-id=bfw-site]");
   await page.waitForFunction(() => /does not match the SHA-256/.test(document.querySelector("[data-id=bfw-image]").textContent));
   assert.equal(await page.isDisabled("[data-id=bfw-start]"), true);
@@ -505,8 +512,7 @@ await scenario("flash-site-image-with-a-wrong-hash-is-refused", "mock=h2", {}, a
 
 await scenario("update-and-confirm", "mock=h2", {}, async page => {
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   assert.equal(await page.isDisabled("[data-id=bfw-start]"), true);
   await page.setInputFiles("[data-id=bfw-file]", HELLO);
   await page.waitForFunction(() => /project name is "hello_world"/.test(document.querySelector("[data-id=bfw-image]").textContent));
@@ -521,8 +527,7 @@ await scenario("update-and-confirm", "mock=h2", {}, async page => {
   await tab(page, "status");
   const early = page.locator("[data-id=connect]");
   if (await early.isVisible()) { await early.click(); await toastIs(page, /connects again by itself/); }
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.waitForFunction(() => /The new image runs/.test(document.querySelector("[data-id=bfw-msg]").textContent), null, { timeout: 90000 });
   assert.match(await text(page, "[data-id=board-banner]"), /not confirmed/);
   assert.equal(await page.isDisabled("[data-id=bfw-start]"), true, "no second update before the confirm");
@@ -539,8 +544,7 @@ await scenario("update-and-confirm", "mock=h2", {}, async page => {
 const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Bluefy";
 await scenario("update-iphone-with-response", "mock=h2&bluefy", { userAgent: IPHONE_UA }, async page => {
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.setInputFiles("[data-id=bfw-file]", BIN);
   await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
   await page.click("[data-id=bfw-start]");
@@ -550,8 +554,7 @@ await scenario("update-iphone-with-response", "mock=h2&bluefy", { userAgent: IPH
 
 await scenario("update-iphone-old-firmware", "mock=h2&nootaw", { userAgent: IPHONE_UA }, async page => {
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.setInputFiles("[data-id=bfw-file]", BIN);
   await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
   await page.click("[data-id=bfw-start]");
@@ -562,8 +565,7 @@ await scenario("update-iphone-old-firmware", "mock=h2&nootaw", { userAgent: IPHO
 
 await scenario("update-cut-write-steps-down", "mock=h2&cut=200", {}, async page => {
   await connect(page);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.setInputFiles("[data-id=bfw-file]", BIN);
   await page.waitForFunction(() => !document.querySelector("[data-id=bfw-start]").disabled);
   await page.click("[data-id=bfw-start]");
@@ -579,8 +581,7 @@ await scenario("update-cut-write-steps-down", "mock=h2&cut=200", {}, async page 
 await scenario("t2can-refuses-other-boards-and-warns-on-can-change", "mock=h2&board=lilygo-t2can&noengine", {}, async page => {
   await connect(page);
   assert.match(await text(page, ".vehicle-name"), /LilyGO T-2CAN/);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   assert.match(await text(page, "[data-page=firmware]"), /LilyGO T-2CAN \(lilygo-t2can, esp32s3, CAN TWAI\)/);
   // An H2 image: wrong chip. A Waveshare image: same chip, other board. Neither is sent.
   await page.setInputFiles("[data-id=bfw-file]", BIN);
@@ -603,8 +604,7 @@ await scenario("t2can-refuses-other-boards-and-warns-on-can-change", "mock=h2&bo
   await tab(page, "me");
   assert.match(await text(page, "[data-page=device]"), /CAN controller\s*MCP2515/);
   // Now the board runs can1: the can0 image gets the warning the other way round.
-  await tab(page, "tools");
-  await page.click("[data-id=tool-boardfw]");
+  await openTool(page, "boardfw");
   await page.setInputFiles("[data-id=bfw-file]", T2);
   await page.waitForFunction(() => /TWAI. The board now uses MCP2515/.test(document.querySelector("[data-id=bfw-image]").textContent));
 });
@@ -640,12 +640,11 @@ for (const [bad, re] of [["settings", /Settings data: Settings JSON: bad enabled
     await page.click("[data-id=connect]");
     await page.waitForSelector(".dlg", { timeout: 20000 });
     assert.match(await text(page, ".dlg"), re);
-    assert.match(await text(page, ".dlg"), /Tools > Log and capture/);
+    assert.match(await text(page, ".dlg"), /Device > Log and capture/);
     await dlgOk(page);
     assert.equal(await page.isVisible("[data-id=connect]"), true);
     assert.equal(await page.evaluate(async () => (await import("/app/app.js")).S.link.t.connected), false, "the link is closed");
-    await tab(page, "tools");
-    await page.click("[data-id=tool-log]");
+    await openTool(page, "log");
     if (bad === "settings") await page.waitForFunction(() => /board sent \d+ bytes: \{"enabled":1/.test(document.querySelector("#page").textContent));
   });
 }
@@ -750,8 +749,7 @@ await fake("real-connect-path-board", { kind: "h2", name: "SCRL-FAKE" }, async p
   assert.match(await text(page, ".dlg"), /not tested with the BLE board on a car yet/);
   await dlgOk(page);
   await toastIs(page, /Saved/);
-  await tab(page, "tools");
-  await page.click("[data-id=tool-log]");
+  await openTool(page, "log");
   await page.waitForFunction(() => /pat=4/.test(document.querySelector("#page").textContent));
   await page.waitForTimeout(300);
   assert.equal(((await text(page, "#page")).match(/SET {2}on=1 mode=0 pat=4/g) || []).length, 1, "no double notification after a reconnect");
@@ -788,11 +786,10 @@ await fake("real-connect-path-tsl6", { kind: "tsl6", name: "TSL6-1234" }, async 
   assert.equal(await page.isVisible("[data-id=set-mianSwitch]"), true);
   assert.equal(await page.isVisible("[data-id=set-opmode]"), false);
   assert.ok((await ids(page, "[data-page=settings] [data-id^=set-]", "data-id")).length > 20);
-  await tab(page, "tools");
-  const tools = await ids(page, "[data-id^=tool-]", "data-id");
+  const tools = await allTools(page);
   assert.ok(!tools.includes("tool-board") && tools.includes("tool-shortcuts") && tools.includes("tool-firmware"));
   await tab(page, "me");
-  assert.equal(await page.isDisabled("[data-id=pref-hwType]"), false);
+  assert.equal(await page.$eval("[data-id=pref-hwType]", e => e.tagName), "BUTTON", "the TSL6 type picker");
   assert.match(await text(page, "[data-id=pref-hwType]"), /TSL6 \(type 6\)/);
 });
 
