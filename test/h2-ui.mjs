@@ -744,11 +744,9 @@ await fake("real-connect-path-board", { kind: "h2", name: "SCRL-FAKE" }, async p
   await tab(page, "settings");
   await page.click("[data-id=set-jj]");
   await page.click('.opt[data-v="2"]');
-  // no board command ran on hardware yet: the app says so once per session (the mock runs skip this warning)
-  await page.waitForSelector(".dlg");
-  assert.match(await text(page, ".dlg"), /not tested with the BLE board on a car yet/);
-  await dlgOk(page);
+  // A3 is car-tested with the H2 board: the write goes out with no "untested" dialog
   await toastIs(page, /Saved/);
+  assert.equal(await page.$(".dlg"), null, "no untested warning for a tested command");
   await openTool(page, "log");
   await page.waitForFunction(() => /pat=4/.test(document.querySelector("#page").textContent));
   await page.waitForTimeout(300);

@@ -60,8 +60,9 @@ export function localGroups(groups) {
 }
 
 // ---------------------------------------------------------------- command gate
-// Commands that the owner tested on the car. Others get a one-time warning per session.
-const TESTED = new Set([0xa0, 0xa3, 0xa8]);
+// Commands that the owner tested on the car, with the TSL6 and with the H2 board (firmware 0.6.1, 2026-11-22).
+// Others get a one-time warning per session.
+const TESTED = new Set([0xa0, 0xa1, 0xa2, 0xa3, 0xa6, 0xa7, 0xa8, 0xbb]);
 const warned = new Set();
 const NAMES = {
   0xa1: ["AP assist on/off (A1)", "AP辅助开关 (A1)"], 0xa2: ["Simulated wheel (A2)", "模拟滚轮 (A2)"], 0xa4: ["Restore defaults (A4)", "恢复默认 (A4)"],
@@ -95,8 +96,7 @@ export async function gate(type, opts = {}) {
     return false;
   }
   if (opts.confirm && !(await confirmBox(opts.confirm, null, null, { focusCancel: !!opts.danger }))) return false;
-  // TESTED lists the commands that the owner tested on the car with a TSL6. With the H2 board nothing is tested yet.
-  const tested = TESTED.has(type) && !isH2();
+  const tested = TESTED.has(type);
   if (!tested && !READ_ONLY.has(type) && !opts.read && !S.prefs.skipUntested && !warned.has(type) && !S.mock) {
     // The H2 board gets its own commands, not the vendor bytes: say so.
     const ok = await confirmBox(isH2() ? {
