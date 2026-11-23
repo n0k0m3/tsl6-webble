@@ -678,3 +678,5 @@ body { word-spacing: .07em; }
 .mono-sub { font-family: var(--mono); font-size: 12.5px; }
 /* Small bold labels closed the dot of the "i" at 1x: weight 500. */
 .btn.small, .cl-op, .tt span, .tab.on { font-weight: 500; }
+/* final fixes (unslop 2) */
+.li .seg button.on { background: var(--accent-soft); color: var(--accent-text); }

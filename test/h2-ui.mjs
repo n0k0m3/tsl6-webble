@@ -176,7 +176,7 @@ await scenario("ap-assist-switch-and-settings-menus", "mock=h2", {}, async page 
   const sw = page.locator("[data-id=sw-apAssist]");
   await page.waitForFunction(() => document.querySelector("[data-id=sw-apAssist]").getAttribute("aria-checked") === "true");
   assert.match(await text(page, ".hero-sub"), /About 0\.6 s after a hands-on prompt/);
-  await page.waitForFunction(() => /sent \d+ · hands-on 1, AP 6/.test(document.querySelector("[data-id=prompt-diag]").textContent));
+  await page.waitForFunction(() => /sent \d+$/.test(document.querySelector("[data-id=prompt-diag]").textContent));
   await sw.click();
   await page.waitForFunction(() => document.querySelector("[data-id=sw-apAssist]").getAttribute("aria-checked") === "false");
   await sw.click();

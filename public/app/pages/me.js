@@ -1,6 +1,6 @@
 // Device tab: the hardware and its upkeep. Connection, the module or board, firmware, data files, maintenance,
 // advanced tools and preferences. The tool rows come from tools.js and keep their data-id "tool-<id>".
-import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
+import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, helpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go, isH2 } from "../app.js";
 import { toolRows, toolGroup, offNote } from "./tools.js";
 import { CHUNK_STEPS, resetReasonName, boardName, boardOf, CAN_NAMES } from "../../lib/scrl.js";
@@ -106,13 +106,17 @@ definePage("me", () => {
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))),
       h("span", { class: "btn small", "aria-hidden": "true" }, L("Restart", "重启")));
     // The reset of all settings has a card of its own, apart from Restart.
-    const resetRows = toolRows(["reset"]);
+    // The two rows that delete data share one card: the module settings, and what this browser saved.
+    const clearRow = h("button", { class: "li danger", type: "button", "data-id": "clear-cache", onclick: clearCache },
+      h("span", { class: "chip red" }, icon("trash-2", 22)),
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
+        h("div", { class: "li-sub" }, L("Passwords and options in this browser", "此浏览器中的密码与选项"))),
+      h("span", { class: "btn small danger-text", "aria-hidden": "true" }, L("Clear", "清除")));
+    const resetRows = [...toolRows(["reset"]), clearRow];
     el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
       // The running version on the update row: the user wants it before an update.
       ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), resetRows.length ? h("div", { class: "card card-apart" }, resetRows) : null));
     el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
-    const lang = h("div", { class: "seg" },
-      ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
     // The vendor shows this row only for the device types of the autoGauge row; its help text stays reachable.
     const ag = ROW_BY_ID.autoGauge;
     const autoGaugeShown = !ag.types || ag.types.includes(S.hwType);
@@ -127,11 +131,10 @@ definePage("me", () => {
         }, L("Warning", "警告"), L("Allow", "允许"), { focusCancel: true }))) return;
         savePref("allowDrive", v); driveSw.set(v);
       }, "t-amber");
-    const [skipRow, skipSw] = switchRow("skipUntested", "triangle-alert", "No warning for untested commands", "不再提示未测试指令", null, null, S.prefs.skipUntested,
-      async v => { savePref("skipUntested", v); skipSw.set(v); });
+    // Shown as a positive switch: on = warn. The stored preference stays "skipUntested" (on = no warning).
+    const [skipRow, skipSw] = switchRow("skipUntested", "triangle-alert", "Warn before untested commands", "未测试指令前提示", null, null, !S.prefs.skipUntested,
+      async v => { savePref("skipUntested", !v); skipSw.set(v); });
     el.append(grp(h("div", { class: "sec-label" }, L("Preferences", "偏好设置")), h("div", { class: "card" },
-      h("div", { class: "li first" }, h("span", { class: "chip" }, icon("languages", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Language", "语言")))), lang),
       // An H2 board sets the type by itself: plain text, not a picker. The picker is for the TSL6 only.
       isH2() ? h("div", { class: "li", "data-id": "pref-hwType" }, h("span", { class: "chip" }, icon("cpu", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
@@ -143,11 +146,7 @@ definePage("me", () => {
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
             h("div", { class: "li-sub" }, L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
           h("div", { class: "li-trail" }, h("span", { class: "val" }, (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), chev())),
-      autoGaugeShown ? gaugeRow : null, driveRow, skipRow,
-      h("button", { class: "li", type: "button", "data-id": "clear-cache", onclick: clearCache },
-        h("span", { class: "chip" }, icon("trash-2", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
-          h("div", { class: "li-sub" }, L("Saved passwords and options in this browser", "此浏览器中的密码与选项"))), chev()))));
+      autoGaugeShown ? gaugeRow : null, driveRow, skipRow)));
 
     // Advanced after Preferences: service mode needs "Allow driving-system controls", which is in Preferences.
     el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
