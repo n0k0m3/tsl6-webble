@@ -519,6 +519,11 @@ await scenario("newer-release-shows-ota-update-and-loads-it", "mock=h2", {}, asy
   await connect(page);
   assert.equal(await deviceFw(page, "9.9.9"), 1, "OTA update shows");
   assert.match(await page.getAttribute("[data-id=board-fw-current]", "class"), /older/);
+  assert.equal(await text(page, "[data-id=boardfw-trail]"), "0.1.0 → 9.9.9", "the Maintenance row names the newer release");
+  await page.click("[data-id=tool-boardfw]");
+  await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
+  assert.equal(await page.inputValue("[data-id=bfw-source]"), "release", "the Maintenance row loads the release");
+  await tab(page, "me");
   await page.click("[data-id=board-fw-update]");
   await page.waitForFunction(() => /scrl-ble-board 9\.9\.9/.test(document.querySelector("[data-id=bfw-image]").textContent));
   assert.equal(await page.inputValue("[data-id=bfw-source]"), "release");
@@ -563,6 +568,8 @@ await scenario("same-release-as-the-board-shows-no-update", "mock=h2", {}, async
   await fakeRelease(page, { version: "0.1.0" });
   await connect(page);
   assert.equal(await deviceFw(page, "0.1.0"), 0);
+  assert.equal(await page.locator("[data-id=boardfw-trail]").count(), 0, "no newer release on the Maintenance row");
+  assert.match(await text(page, "[data-id=tool-boardfw]"), /0\.1\.0/);
   await openTool(page, "boardfw");
   assert.deepEqual(await ids(page, "[data-id=bfw-source] option", "value"), ["file"], "no release in the list");
   assert.match(await text(page, "[data-id=bfw-source-note]"), /newest release \(0\.1\.0\)/);

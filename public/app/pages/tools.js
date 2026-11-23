@@ -5,6 +5,7 @@ import { S, ask, send, go, isH2 } from "../app.js";
 import { SET_ACTIONS, buildA4, serviceModeCommand } from "../../lib/tsl6-status.js";
 import { decodeSettings } from "../../lib/tsl6-settings.js";
 import { h2Tools, h2HasEngine } from "../../lib/h2-menus.js";
+import { boardUpdate } from "../board-release.js";
 
 async function restoreDefaults() {
   if (!S.status) return toast(L("Connect to the module first.", "请先连接蓝牙"));
@@ -33,7 +34,9 @@ async function serviceMode() {
 // [icon, chip color, en, zh, sub en, sub zh, action]
 const TOOLS = {
   board: ["circuit-board", "", "Board", "模块", "Mode, live state, counters, pairing", "模式、实时状态、计数器、配对", () => go("board")],
-  boardfw: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")],
+  boardfw: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块",
+    // With a newer release, open the page with the release loaded, as the OTA update button does.
+    () => go("boardfw", boardUpdate() ? { release: true } : undefined)],
   capture: ["activity", "", "Capture", "采集", "Record Vehicle CAN to a file", "将车辆CAN记录到文件", () => go("capture")],
   shortcuts: ["workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
   blebtn: ["radio", "", "BLE buttons", "蓝牙按钮", "Remote buttons and their actions", "遥控按钮及其动作", () => go("blebtn")],
