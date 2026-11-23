@@ -211,6 +211,11 @@ await test("the image of the connected board from the flash site", () => {
   assert.equal(pick({ board: "esp32-mcp2515", chip: "esp32", can: "mcp2515" }), undefined);
   assert.equal(SC.pickBuild(null, SC.boardOf({})), null);
   assert.match(SC.FW_SITE, /^https:\/\//);
+  assert.equal(SC.fwSiteFor("tsl6-app.surge.sh"), SC.FW_SITE_LIVE, "the live app reads the live flash site");
+  assert.equal(SC.fwSiteFor("tsl6-app-preview.surge.sh"), SC.FW_SITE_PREVIEW);
+  assert.equal(SC.fwSiteFor("127.0.0.1"), SC.FW_SITE_PREVIEW, "a test server reads the preview site");
+  assert.equal(SC.fwSiteFor(undefined), SC.FW_SITE_PREVIEW);
+  assert.equal(SC.FW_SITE_LIVE, "https://scrl-flash.surge.sh");
 });
 
 await test("the TSL6 engine (firmware 0.5.0): the factory bytes, the rows and the status bytes", () => {
