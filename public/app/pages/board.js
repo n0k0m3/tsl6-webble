@@ -169,7 +169,7 @@ definePage("board", () => {
     h("p", { class: "sec-foot" }, L("Listen-Only: the board never sends. Active: the board sends scroll ticks when AP assist is on.", "只听模式：模块从不发送。主动模式：AP辅助开启时模块发送滚轮操作。"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Live state", "实时状态")), h("div", { class: "card" },
-      kv("phase", "Phase", "阶段"), kv("block", "Block", "阻止原因", false), kv("ap", "AP state", "AP状态"), kv("hands", "Hands-on state", "手扶状态"),
+      kv("phase", "Phase", "阶段", false), kv("block", "Block", "阻止原因", false), kv("ap", "AP state", "AP状态", false), kv("hands", "Hands-on state", "手扶状态"),
       kv("sent", "Ticks sent", "已拨动次数"), kv("aborted", "Pairs aborted", "中止的组数"), kv("native", "Native frame age", "原车帧延迟"), kv("das", "DAS age", "DAS数据延迟"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Exact times", "精确时间")), h("div", { class: "card" },
