@@ -13,17 +13,17 @@ The app has the functions of the vendor Mini App, in its own layout. The labels 
 
 | Tab or page | Function |
 |---|---|
-| **Car** | Vehicle type, live switches (AP assist, AP resume, battery preheat, charge port, horn and light strobes, sport mode, seat massage), seat move and memory, doors, frunk, trunk, lock, simulated scroll wheel |
+| **Car** | Vehicle type, CAN links, live switches (AP assist, AP resume, battery preheat, charge port, horn and light strobes, sport mode, seat massage), seat move and memory, doors, frunk, trunk, lock, simulated scroll wheel |
+| Car > **Gauges** | Full-screen dashboard from the `B0` stream, with the vendor gauge menu |
+| Car > **Battery** | Pack, cell and DC-DC values (`D0`) |
 | **Settings** | Every settings row of the vendor app, with search. Each change writes one `A3` frame and checks the module's reply |
-| Tools > **Shortcuts** | The trigger → action table (`AB`), with the vendor function names |
-| Tools > **BLE buttons** | Pair BLE buttons and set click and double-click actions (`BA`) |
-| Tools > **Ambient light** | Zone rules and whole-car effects (`B9`) |
-| Tools > **Gauges** | Full-screen dashboard from the `B0` stream, with the vendor gauge menu |
-| Tools > **Battery** | Pack, cell and DC-DC values (`D0`) |
-| Tools > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
-| Tools | Log and capture, change password, firmware flasher, restore defaults, BLE host pairing, CAN debug, Tesla service mode |
-| **Device** | Connect through the browser's device chooser, BLE password, bytes per write. Module ID, MAC, VIN, versions, restart, flash firmware, preferences |
-| Tools > **Firmware**, Device > **Flash firmware** (`#firmware`, `#flash`) | Restarts the module into boot mode and flashes a runtime in one step, on the app's own connection. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). When the app connects to a module in boot mode, it opens this page by itself. Tested on the car (2026-11-14) |
+| Settings > **Shortcuts** | The trigger → action table (`AB`), with the vendor function names |
+| Settings > **BLE buttons** | Pair BLE buttons and set click and double-click actions (`BA`) |
+| Settings > **Ambient light** | Zone rules and whole-car effects (`B9`) |
+| **Device** | Connect through the browser's device chooser, BLE password, bytes per write. Update firmware, change password, restart, reset all settings, clear saved data, preferences, module ID, MAC, VIN, versions |
+| Device > **Backup and restore** | Saves the settings, shortcuts and BLE buttons to a local JSON file, and writes them back. The vendor cloud backup is replaced by this file |
+| Device | Log and capture, BLE host pairing, CAN debug, Tesla service mode |
+| Device > **Update firmware** (`#firmware`, `#flash`) | Restarts the module into boot mode and flashes a runtime in one step, on the app's own connection. Also flashes a module that is already stuck in boot mode (`TSL6-BOOT`). When the app connects to a module in boot mode, it opens this page by itself. Tested on the car (2026-11-14) |
 
 Safety rules in the app:
 - It never sends the vendor server commands `AD`, `AE` and `AF`.
@@ -68,13 +68,12 @@ Pick `SCRL-xxxx` in the Bluetooth list. The app then shows the board as one more
 | Tab | What shows for the board |
 |---|---|
 | Car | The AP assist switch (scroll ticks on or off), the live prompt state, and the board warnings. Firmware 0.6.0: every TSL6 row |
-| Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the op mode. Firmware 0.5.0: also the TSL6 car and lab rows. 0.6.0: also the master switch and BLE signal strength |
-| Tools | Board, Board firmware, Capture, Log, Restore defaults. Firmware 0.6.0: also the TSL6 tools (see below) |
-| Device | Device type ("BLE board: " and the board name; every board has the same rows), board type, chip, CAN controller, board ID, firmware version, restart |
+| Settings | Scroll interval (on the hands-on prompt, or on a timer), tick gap, tick order, and the mode. Firmware 0.5.0: also the TSL6 car and lab rows. 0.6.0: also the master switch and BLE signal strength |
+| Device | Update firmware, restart, reset all settings, log, capture, device type ("BLE board: " and the board name; every board has the same rows), board type, chip, CAN controller, board ID, firmware version, and the Board page. Firmware 0.6.0: also the TSL6 tools (see below) |
 
-What only the board has is on the **Board** page (Tools > Board):
+What only the board has is on the **Board** page (Device > Board, or the "Mode" telltale on the Car tab):
 
-- **Op mode.** Listen-Only: the board never sends. Active: it sends. A change to Active asks for a confirm.
+- **Mode.** Listen-Only: the board never sends. Active: it sends. A change to Active asks for a confirm.
 - **Warnings**, for example: not Vehicle CAN, bus-off lock, a new firmware image that is not confirmed.
 - **Live state and counters.**
 - **Exact times** in milliseconds. A value that no Settings menu holds shows there as "Custom value".
@@ -84,15 +83,15 @@ Differences from the TSL6:
 
 - **No BLE password.** The board uses Bluetooth pairing. At the first connection the phone asks for a 6-digit passkey: it is on the label that you put on the board. The app never asks for it.
 - **The board accepts a new phone only in its pairing window:** 5 minutes after power-on, or 2 minutes after a press of its button.
-- **Firmware update** is on its own page (Tools > Board firmware). "Get the image from the flash site" loads the newest image for the connected board from the flash site (its `builds.json`: board ID, CAN controller, SHA-256). The live app reads https://scrl-flash.surge.sh. The preview app and a local test server read https://scrl-flash-preview.surge.sh, so a new image can be tested before it goes live. Or use `build/out/scrl-<build>.bin` of the firmware build. The page sends an image only when its chip and its board ID match the connected board, because the firmware refuses any other image. An image with another CAN controller for the same board (a T-2CAN can0 or can1 build) is allowed, with a warning to move the Vehicle CAN wires. After an update, confirm the new image within 10 minutes, or the board goes back to the old one.
+- **Firmware update** is on its own page (Device > Update firmware). "Get the image from the flash site" loads the newest image for the connected board from the flash site (its `builds.json`: board ID, CAN controller, SHA-256). The live app reads https://scrl-flash.surge.sh. The preview app and a local test server read https://scrl-flash-preview.surge.sh, so a new image can be tested before it goes live. Or use `build/out/scrl-<build>.bin` of the firmware build. The page sends an image only when its chip and its board ID match the connected board, because the firmware refuses any other image. An image with another CAN controller for the same board (a T-2CAN can0 or can1 build) is allowed, with a warning to move the Vehicle CAN wires. After an update, confirm the new image within 10 minutes, or the board goes back to the old one.
 - **The listen-only build** (`esp32-generic-twai-sniffer`) never sends. The Board page says so and locks Active.
-- **Restore defaults** turns the scroll ticks off and puts the board in Listen-Only. The bonds and the passkey stay.
+- **Reset all settings** turns the scroll ticks off and puts the board in Listen-Only. The bonds and the passkey stay.
 
-**TSL6 functions (firmware 0.6.0).** The board runs the TSL6 code, and its characteristic TSL6 carries the TSL6 app protocol. The app then talks to the board as to a TSL6: the same pages, the rows of device type 6, the same commands. The board keeps its own Scroll Ack (AP assist, the scroll rows, the op mode) and its Board pages. What works:
-- Car tab: every TSL6 row and action, the detected car, the Gauges button.
+**TSL6 functions (firmware 0.6.0).** The board runs the TSL6 code, and its characteristic TSL6 carries the TSL6 app protocol. The app then talks to the board as to a TSL6: the same pages, the rows of device type 6, the same commands. The board keeps its own Scroll Ack (AP assist, the scroll rows, the mode) and its Board pages. What works:
+- Car tab: every TSL6 row and action, the detected car, the Gauges and Battery buttons.
 - Settings: the TSL6 car and lab rows, the master switch (the TSL6 functions), BLE signal strength (the board radio power, from the next start).
-- Tools: shortcuts, BLE buttons, BLE host pairing (up to 3 BLE remotes), ambient light (the whole-car rules; the zone link needs the TSL6 2.4 GHz radio), gauges, battery, backup, CAN debug, Tesla service mode, restore defaults (board and TSL6).
-- Not on the board: beep volume and LED (no buzzer, no LED), TSL6 password (the board pairs), TSL6 firmware (the board has Board firmware).
+- Settings: shortcuts, BLE buttons, ambient light (the whole-car rules; the zone link needs the TSL6 2.4 GHz radio). Device: BLE host pairing (up to 3 BLE remotes), backup, CAN debug, Tesla service mode, reset all settings (board and TSL6).
+- Not on the board: beep volume and LED (no buzzer, no LED), TSL6 password (the board pairs), TSL6 firmware (the board has its own firmware update).
 
 Firmware 0.5.0 had only the TSL6 car settings, through the Settings key `tsl6` (28 bytes as hex). An app older than 0.5.0 support cannot read the Settings of a 0.5.0 or newer board: update the app first. The mock board has the TSL6 link; `&noengine` acts as 0.5.0, `&notsl6` as older firmware.
 
@@ -115,7 +114,7 @@ The page checks every image:
 
 ## Flash a working module
 
-1. Open **Tools > Firmware** (or **Device > Flash firmware**). Tap **Connect** and pick `TSL6`. The page reads the status.
+1. Open **Device > Update firmware**. Tap **Connect** and pick `TSL6`. The page reads the status.
 2. Tap **Load secured build**. It must show **Image OK**.
 3. Tick the confirm box. Tap **Enter boot mode and flash**.
 

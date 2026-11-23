@@ -2,7 +2,8 @@
 // The command logic is the same as before the redesign; only the grouping and the look changed.
 import { h, L, toggle, icon, holdButton, pressable, toast, alertBox, showHelp, btn, helpButton, groupHelpButton, clear } from "../ui.js";
 import { S, definePage, onBus, send, ask, gate, rereadSoon, go, log, connect, askPassword, switchTab, isH2 } from "../app.js";
-import { boardName } from "../../lib/scrl.js";
+import { boardName, FLAG, boardListenOnly } from "../../lib/scrl.js";
+import { toolsShown } from "./tools.js";
 import { H2_TYPE, H2_TSL6_TYPE, h2Has, h2HasEngine, h2ShowsRow } from "../../lib/h2-menus.js";
 import { h2PromptDiag } from "../../lib/scrl-tsl6.js";
 import { boardBanner } from "./board.js";
@@ -11,7 +12,7 @@ import {
   ROW_BY_ID, A7_HARD_GATED, A7_RELEASE, A2_RELEASE, decodeLiveState, switchCommand, memoryCommand, tapCommand,
   canStateText, formatC1Reply, decodeA7Reply,
 } from "../../lib/tsl6-status.js";
-import { decodeSettings, isPromptTime, promptDelayMs } from "../../lib/tsl6-settings.js";
+import { decodeSettings, isPromptTime, promptDelayMs, appliesTo, BY_ID } from "../../lib/tsl6-settings.js";
 import { B0, startPayload, stopPayload, KEEPALIVE_MS, decodeGauge, promptDiag, PROMPT_PHASE } from "../../lib/tsl6-gauge.js";
 
 // Scroll interval of the prompt build (see the Firmware page), or null for a stock value or no settings.
@@ -46,7 +47,7 @@ const DOOR_LABEL = {
 const ARROW = { "shangxiazuoyou-3": "chevron-left", "shangxiazuoyou-": "chevron-right", "shangxiazuoyou-2": "chevron-up", "shangxiazuoyou-1": "chevron-down", ok: "check" };
 const MEM_ICON = { louying: "tent", lingzhongli: "crown" };
 const MEM_LABEL = { louying: ["Camp", "露营"], lingzhongli: ["Queen", "女王"] };
-// Telltale colour, as on the instrument cluster: green = active, blue = high beam, amber = a driving system is changed.
+// Telltale tone. A lit telltale is blue, as its switch (app.css); amber = a driving system is changed.
 const TONE = { pulseHighBeam: "t-blue", sportMode: "t-amber", offRearMotor: "t-amber", offFrontMotor: "t-amber", offESP: "t-amber" };
 
 definePage("status", () => {
@@ -73,11 +74,12 @@ definePage("status", () => {
     if (!refs.apSub) return;
     clear(refs.apSub);
     const s = (promptDelayMs(promptNow) / 1000).toString();
-    refs.apSub.append(L(`On hands-on prompt, about ${s} s after it`, `手扶提示时，约${s}秒后拨动`));
+    refs.apSub.append(L(`About ${s} s after a hands-on prompt`, `手扶提示时，约${s}秒后拨动`));
     if (!diag) return;
     const line = diag.noData
       ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
       : [L(...PROMPT_PHASE[diag.phase]), " · ", L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`),
+        // A TSL6 has no Board page: its raw states stay here. (The H2 line drops them; its Board page shows them.)
         h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`))];
     refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, line));
   }
@@ -93,16 +95,24 @@ definePage("status", () => {
       const s = B.settings, secs = ms => (ms / 1000).toString();
       // "Random interval" Off (rand 0): the board uses the exact Timer interval.
       const every = h2Has("rand") && s.rand === 0 ? secs(s.interval_ms) : `${secs(s.interval_ms * 0.8)}-${secs(s.interval_ms * 1.2)}`;
-      const raw = h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`));
       const sent = L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`);
       clear(refs.apSub).append(s.mode === 0
-        ? L(`On hands-on prompt, about ${secs(s.delay_ms)} s after it`, `手扶提示时，约${secs(s.delay_ms)}秒后拨动`)
+        ? L(`About ${secs(s.delay_ms)} s after a hands-on prompt`, `手扶提示时，约${secs(s.delay_ms)}秒后拨动`)
         : L(`Every ${every} s while AP is active`, `AP激活时，每${every}秒`));
       refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, diag.noData
         ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
-        : s.mode === 0 ? [L(...PROMPT_PHASE[diag.phase]), " · ", sent, raw] : [sent, raw]));
+        : s.mode === 0 ? [L(...PROMPT_PHASE[diag.phase]), " · ", sent] : [sent])); // the raw states are on the Board page
     }
     if (refs.banner) boardBanner(refs.banner);
+    if (refs.op && B.status) {
+      // Green only while the board really sends; amber for Listen-Only and for Active that a lock holds back.
+      const active = B.status.opMode === 1 && !!(B.flags & FLAG.ACTIVE);
+      const text = boardListenOnly(B.info) ? L("Mode: listen-only build", "模式：只听版本")
+        : B.status.opMode !== 1 ? L("Mode: Listen-Only", "模式：只听") : active ? L("Mode: Active", "模式：主动") : L("Mode: held in Listen-Only", "模式：保持只听");
+      refs.op.classList.toggle("on", active);
+      refs.op.querySelector("span").textContent = text;
+      refs.op.setAttribute("aria-label", L(`${text}. Open the board page`, `${text}。打开模块页面`));
+    }
   }
 
   // ---- one hold button (seat A7 or wheel A2): press frame, then exactly one release frame
@@ -201,19 +211,26 @@ definePage("status", () => {
     el.append(
       h("div", { class: "card" }, h("div", { class: "empty-state" },
         h("span", { class: "chip blue" }, icon("bluetooth", 24)),
-        h("h2", { class: "sec-title" }, h("span", null, L("Connect to your TSL6", "连接您的 TSL6")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
+        h("h2", { class: "sec-title" }, h("span", null, L("Connect a device", "连接设备")), helpButton("help_ble", { en: "Bluetooth", zh: "蓝牙" })),
         h("p", null, supported
-          ? L("Pick TSL6 in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6。")
+          ? L("Pick TSL6 or SCRL-xxxx in the Bluetooth list that the browser shows.", "在浏览器显示的蓝牙列表中选择 TSL6 或 SCRL-xxxx。")
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
             "此浏览器不支持网页蓝牙。请在安卓或电脑上使用 Chrome / Edge，iPhone 请使用 Bluefy。")),
         supported ? btn({ en: "Connect", zh: "连接" }, () => connect({ all }), { kind: "primary" }) : null,
         supported ? h("label", { class: "check" }, allBox, L("Show all devices", "显示所有设备")) : null)),
+      // One note per device, so the user reads only the steps of their own device.
       sec("Before you connect", "连接前"),
-      h("div", { class: "card pad" }, h("ol", { class: "steps" },
-        h("li", null, L("Keep the car awake (climate or Camp mode on).", "保持车辆唤醒（打开空调或露营模式）。")),
-        h("li", null, L("Close the vendor Mini App, or turn off Bluetooth on that phone. The module takes one phone at a time.", "关闭原厂小程序，或关闭那部手机的蓝牙。模块一次只连接一部手机。")),
-        h("li", null, L("The default BLE password is 1234.", "默认蓝牙密码为 1234。")),
-        h("li", null, L("BLE board (NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware): pick SCRL-xxxx. At the first connection the phone asks for the passkey from the label on the board.", "BLE模块（NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板）：选择 SCRL-xxxx。首次连接时，手机会要求输入模块标签上的配对码。")))));
+      h("div", { class: "card" },
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("car", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Car", "车辆"))),
+            h("div", { class: "li-sub" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("TSL6 module", "TSL6 模块"))),
+            h("div", { class: "li-sub" }, L("Pick TSL6. Close the vendor Mini App, or turn off Bluetooth on that phone. The default password is 1234.", "选择 TSL6。关闭原厂小程序，或关闭那部手机的蓝牙。默认密码为 1234。")))),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("circuit-board", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("BLE board", "BLE模块"))),
+            h("div", { class: "li-sub" }, L("NanoH2, T-2CAN, ATOM and the other hypery boards with the BLE firmware: pick ", "NanoH2、T-2CAN、ATOM 及其他刷了BLE固件的 hypery 板：选择 "), h("span", { class: "nowrap" }, "SCRL-xxxx"),
+              L(". At the first connection, type the passkey from the label on the board.", "。首次连接时，输入模块标签上的配对码。"))))));
     el.querySelector(".btn.primary")?.setAttribute("data-id", "connect");
   }
 
@@ -249,17 +266,24 @@ definePage("status", () => {
     // Cluster: the vehicle, the three CAN buses and a telltale for each function that is on.
     const vt = ROW_BY_ID.vehicleType;
     refs.vehicleName = h("div", { class: "vehicle-name" }, "—");
-    refs.pills = h("div", { class: "cl-bus" });
+    // H2 board: can the board send on the bus now? The telltale opens the Board page, where the mode changes.
+    // It sits next to the lanes, not in them: update() rebuilds the lanes on each status frame, and a rebuild
+    // would take the focus and a tap from the button.
+    refs.op = isH2() ? h("button", { class: "cl-op", type: "button", "data-id": "cl-opmode", "aria-label": L("Mode. Open the board page", "模式。打开模块页面"), onclick: () => go("board") }, h("i"), h("span"), icon("chevron-right", 14)) : null;
+    refs.lanes = h("span", { class: "cl-lanes" });
+    refs.pills = h("div", { class: "cl-bus" }, refs.lanes, refs.op);
     refs.tt = h("div", { class: "cl-tt", role: "group", "aria-label": L("Functions that are on", "已开启的功能") });
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
         h("div", { class: "cl-name" }, shown(vt) ? [refs.vehicleName, helpButton(vt.help, { en: vt.en, zh: vt.zh })]
-          : h("span", { class: "vehicle-name" }, isH2() ? L(boardName(S.link.board && S.link.board.info), boardName(S.link.board && S.link.board.info, true)) : "TSL6")),
-        // A board without the engine link has no gauges: its button opens the Board page (state, counters, board
-        // actions). With the engine link the Car tab has the Gauges button of the TSL6; the Board page is in Tools.
+          : h("span", { class: "vehicle-name" }, isH2() ? L(boardName(S.link.board && S.link.board.info), boardName(S.link.board && S.link.board.info, true)) : "TSL6"))),
+      refs.pills, refs.tt,
+      // The car readouts. A board without the engine link has none: its button opens the Board page (state,
+      // counters, board actions). The op-mode telltale also opens the Board page.
+      h("div", { class: "cl-btns" },
         isH2() && !h2HasEngine() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
-          : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘")))),
-      refs.pills, refs.tt);
+          : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘"))),
+        toolsShown(["battery"]).length ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-battery", onclick: () => go("battery") }, icon("battery-medium", 18), h("span", null, L("Battery", "电池"))) : null));
     if (!isH2() || h2HasEngine()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
     // Board warnings come first on the landing tab: an unconfirmed image has a 10-minute limit.
     refs.banner = isH2() ? h("div", { class: "span", "data-id": "board-banner" }) : null;
@@ -272,10 +296,10 @@ definePage("status", () => {
     apSw.dataset.id = "sw-apAssist";
     refs.apSub = h("div", { class: "hero-sub" }, "—");
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
-    switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
+    // A lit telltale means "on": its name has no state word.
+    switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L("AP assist", "AP辅助") };
     promptNow = promptOf(S.status);
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
-    if (promptNow != null) switches.apAssist.name = L("AP assist (on prompt)", "AP辅助（手扶提示时）");
     el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),
       h("div", { class: "card lead" },
         h("div", { class: "hero", "data-row": "apAssist" }, refs.apChip,
@@ -369,14 +393,14 @@ definePage("status", () => {
     if (refs.vehicleName) {
       refs.vehicleName.textContent = L(live.vehicle.en, live.vehicle.zh);
       refs.vehicleName.classList.toggle("warn", !live.vehicle.detected); // vendor: orange when not detected
-      clear(refs.pills);
+      clear(refs.lanes);
       // A bus with data is a solid lit lane; a bus without data is a dashed dark lane.
       // As in the vendor app: CAN state only for types 6, 7, 8, 19; the harness warning only where the vehicle row shows.
       if ([6, 7, 8, 19].includes(tslType())) live.can.forEach((on, i) => {
         const name = on ? L(`CAN${i + 1} connected`, `CAN${i + 1} 已连接`) : L(`CAN${i + 1} not connected`, `CAN${i + 1} 未连接`);
-        refs.pills.append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, `CAN${i + 1}`, h("i")));
+        refs.lanes.append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, `CAN${i + 1}`, h("i")));
       });
-      if (live.harnessUnplugged && shown(ROW_BY_ID.vehicleType)) refs.pills.append(h("span", { class: "pill bad" }, L("Harness not plugged in", "线束未插好")));
+      if (live.harnessUnplugged && shown(ROW_BY_ID.vehicleType)) refs.lanes.append(h("span", { class: "pill bad" }, L("Harness not plugged in", "线束未插好")));
       clear(refs.tt);
       const lit = live.blank ? [] : Object.entries(switches).filter(([id]) => live.toggles[id] === true);
       if (!lit.length) refs.tt.append(h("span", { class: "cl-none" }, L("No function is on", "没有开启的功能")));
@@ -388,10 +412,10 @@ definePage("status", () => {
     syncStream();
     if (isH2()) {
       // One CAN lane for the one bus of the board.
-      if (refs.pills) {
+      if (refs.lanes) {
         const on = live.can[0];
         const name = on ? L("CAN connected", "CAN 已连接") : L("No CAN frames", "无CAN数据");
-        clear(refs.pills).append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, "CAN", h("i")));
+        clear(refs.lanes).append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, "CAN", h("i")));
       }
       drawBoard();
       return;
@@ -402,7 +426,8 @@ definePage("status", () => {
       const draw = () => {
         clear(refs.apSub);
         if (live.assistActive) refs.apSub.append(L("On, next tick in ", "开启，"), h("b", null, L(`${countdown.toFixed(1)} s`, `${countdown.toFixed(1)} 秒后拨动`)));
-        else refs.apSub.append("\u00a0");
+        // Off: say what turns it on. With "AP auto assist" on Follow AP, it comes on with Autopilot.
+        else refs.apSub.append(appliesTo(BY_ID.automdr, tslType()) && decodeSettings(p).automdr === 1 ? L("Off, turns on with Autopilot", "关闭，AP开启时自动开启") : L("Off", "关闭"));
       };
       draw();
       if (live.assistActive) timer = setInterval(() => { countdown = Math.max(0, countdown - 0.1); draw(); if (!countdown) clearInterval(timer); }, 100);

@@ -1,4 +1,4 @@
-// Board page: what only the BLE board has. Warnings, op mode, live state, exact times, counters, pairing.
+// Board page: what only the BLE board has. Warnings, mode, live state, exact times, counters, pairing.
 // The Car and Settings tabs show the board with the TSL6 rows that it shares. The rest is here.
 // boardBanner() draws the warnings. The Car tab shows them too, because one of them has a 10-minute limit.
 import { h, L, toast, confirmBox, promptBox, clear, toggle, icon } from "../ui.js";
@@ -43,8 +43,8 @@ function warnings() {
   }
   if (has(F.WRONG_BUS)) list.push(["wrongbus", "bad", L("This bus carries 0x370, so it is not Vehicle CAN. The board does not send on it.", "此总线上有0x370，不是车辆CAN。模块不会在此发送。")]);
   if (B.info && SC.boardListenOnly(B.info)) {
-    list.push(["listenonly", "", L("This is the listen-only build. It never sends, whatever the op mode says. To send, flash the esp32-generic-twai build.",
-      "这是只听版本固件，无论运行模式如何都不会发送。如需发送，请刷写 esp32-generic-twai 版本。")]);
+    list.push(["listenonly", "", L("This is the listen-only build. It never sends, whatever the mode says. To send, flash the esp32-generic-twai build.",
+      "这是只听版本固件，无论模式如何都不会发送。如需发送，请刷写 esp32-generic-twai 版本。")]);
   }
   if (!has(F.PINS_CHECKED)) {
     list.push(["pins", "", L(`This firmware build does not name the CAN pins, so it cannot go to Active.${st.rxPin >= 0 ? ` It listens on GPIO${st.rxPin} now.` : ""} Set the pin choice in the build after the continuity check.`,
@@ -56,7 +56,7 @@ function warnings() {
   if (has(F.AUTOPARK)) list.push(["autopark", "", L("Autopark runs. The board does not send.", "自动泊车进行中，模块不发送。")]);
   if (has(F.TESLA_OTA)) list.push(["teslaota", "", L("A Tesla software update runs. The board does not send.", "特斯拉软件更新进行中，模块不发送。")]);
   if (st.opMode === 1 && !has(F.ACTIVE) && !list.some(a => ["pending", "lock", "pins", "listenonly"].includes(a[0]))) {
-    list.push(["held", "", L("The op mode setting is Active, but the board is in Listen-Only now.", "运行模式设为主动，但模块当前处于只听模式。")]);
+    list.push(["held", "", L("The mode setting is Active, but the board is in Listen-Only now.", "模式设为主动，但模块当前处于只听模式。")]);
   }
   return list;
 }
@@ -85,20 +85,30 @@ definePage("board", () => {
   const grp = (...kids) => h("section", { class: "grp" }, kids);
   const refs = {};
 
-  const kv = (key, en, zh, mono = true) => {
+  // Values in the text face with tabular figures. Mono only for hex IDs (Board ID is on the Device tab).
+  // The block: its meaning as the value, its firmware name in mono under the label.
+  const block = (key, en, zh) => {
+    refs[key] = h("span", { class: "kv" }, "—");
+    refs[key + "Code"] = h("div", { class: "li-sub mono-sub" }, "");
+    return h("div", { class: "li", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), refs[key + "Code"]), refs[key]);
+  };
+  const kv = (key, en, zh, mono = false) => {
     refs[key] = h("span", { class: "kv" + (mono ? " mono" : "") }, "—");
     return h("div", { class: "li", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh)))), refs[key]);
   };
+  // A row that opens a page has a chevron. A row that acts (behind a confirm or a prompt) has a trailing button.
+  const ACT = { counters: ["Reset", "清零"], passkey: ["Change", "修改"], forget: ["Forget", "删除"], factory: ["Reset", "重置"] };
   const action = (id, ico, en, zh, sen, szh, fn, danger = false) =>
     h("button", { class: "li" + (danger ? " danger" : ""), type: "button", "data-id": `board-${id}`, onclick: fn },
       h("span", { class: "chip" + (danger ? " red" : "") }, icon(ico, 22)),
-      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), sen ? h("div", { class: "li-sub" }, L(sen, szh)) : null), chev());
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), sen ? h("div", { class: "li-sub" }, L(sen, szh)) : null),
+      ACT[id] ? h("span", { class: "btn small" + (danger ? " danger-text" : ""), "aria-hidden": "true" }, L(...ACT[id])) : chev());
 
   async function setOpMode(active) {
     if (active && !(await confirmBox({
       en: "Go to Active? The board will send frames on Vehicle CAN.",
       zh: "切换到主动模式吗？模块将向车辆CAN发送数据。",
-    }, L("Op mode", "运行模式"), L("Go to Active", "切换到主动"), { focusCancel: true }))) { draw(); return; }
+    }, L("Mode", "模式"), L("Go to Active", "切换到主动"), { focusCancel: true }))) { draw(); return; }
     await run(() => S.link.writeSettings({ op_mode: active ? 1 : 0 }), L("Saved", "已保存"));
     draw();
   }
@@ -163,13 +173,13 @@ definePage("board", () => {
     refs.opSw = toggle({ checked: null, label: L("Active", "主动模式"), onchange: v => setOpMode(v) });
     refs.opSw.dataset.id = "board-op";
     refs.opSub = h("div", { class: "li-sub" });
-    el.append(grp(h("div", { class: "sec-label" }, L("Op mode", "运行模式")), h("div", { class: "card" },
-      h("div", { class: "li first" }, h("span", { class: "chip" }, icon("radio", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Active (send on Vehicle CAN)", "主动模式（向车辆CAN发送）"))), refs.opSub), refs.opSw)),
+    el.append(grp(h("div", { class: "sec-label" }, L("Mode", "模式")), h("div", { class: "card" },
+      h("div", { class: "li first" }, h("span", { class: "chip" }, icon("send", 22)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Send on Vehicle CAN", "向车辆CAN发送"))), refs.opSub), refs.opSw)),
     h("p", { class: "sec-foot" }, L("Listen-Only: the board never sends. Active: the board sends scroll ticks when AP assist is on.", "只听模式：模块从不发送。主动模式：AP辅助开启时模块发送滚轮操作。"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Live state", "实时状态")), h("div", { class: "card" },
-      kv("phase", "Phase", "阶段"), kv("block", "Block", "阻止原因", false), kv("ap", "AP state", "AP状态"), kv("hands", "Hands-on state", "手扶状态"),
+      kv("phase", "Phase", "阶段", false), block("block", "Block", "阻止原因"), kv("ap", "AP state", "AP状态", false), kv("hands", "Hands-on state", "手扶状态"),
       kv("sent", "Ticks sent", "已拨动次数"), kv("aborted", "Pairs aborted", "中止的组数"), kv("native", "Native frame age", "原车帧延迟"), kv("das", "DAS age", "DAS数据延迟"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Exact times", "精确时间")), h("div", { class: "card" },
@@ -190,9 +200,9 @@ definePage("board", () => {
 
     el.append(grp(h("div", { class: "sec-label" }, L("Pairing and firmware", "配对与固件")), h("div", { class: "card" },
       action("passkey", "key-round", "Change the passkey", "修改配对码", "The 6-digit number for a new pairing", "新配对时使用的6位数字", changePasskey),
-      action("fw", "hard-drive-download", "Board firmware", "模块固件", "Update over Bluetooth", "通过蓝牙更新", () => go("boardfw")),
+      action("fw", "hard-drive-download", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")),
       action("forget", "trash-2", "Forget bonds", "删除配对", "Removes every paired phone", "移除所有已配对手机", forgetBonds, true),
-      action("factory", "rotate-ccw", "Factory reset", "恢复出厂设置", "Settings, counters and bonds. The passkey stays", "设置、计数器和配对。配对码保留", factoryReset, true))));
+      action("factory", "eraser", "Factory reset", "恢复出厂设置", "Settings, counters and bonds. The passkey stays", "设置、计数器和配对。配对码保留", factoryReset, true))));
     draw();
   }
 
@@ -208,14 +218,15 @@ definePage("board", () => {
     refs.opSw.disabled = never && st.opMode !== 1;
     refs.opSub.textContent = never ? L("Listen-only build: never sends", "只听版本：从不发送")
       : st.opMode !== 1 ? L("Listen-Only", "只听模式")
-      : has(F.ACTIVE) ? L("Active now", "当前为主动模式") : L("Set to Active, held in Listen-Only (see the warnings)", "已设为主动，但被保持在只听模式（见上方提示）");
+      : has(F.ACTIVE) ? L("Active", "主动模式") : L("Set to Active, held in Listen-Only (see the warnings)", "已设为主动，但被保持在只听模式（见上方提示）");
     const phase = lv ? SC.PHASES[lv.phase] || `code ${lv.phase}` : st.phase;
     const block = lv ? SC.BLOCKS[lv.block] || `code ${lv.block}` : st.block;
     const ap = lv ? lv.apState : st.apState, hands = lv ? lv.handsOn : st.handsOn;
     const age = v => (v >= 65535 ? "65535+ ms" : `${v} ms`);
     const set = (k, v) => { if (refs[k]) refs[k].textContent = String(v); };
     set("phase", phase);
-    set("block", `${block}: ${SC.BLOCK_TEXT[block] || ""}`);
+    // The meaning of the block is the value; its firmware name is the mono line under the label.
+    if (refs.block) { refs.block.textContent = SC.BLOCK_TEXT[block] || "—"; refs.blockCode.textContent = String(block); }
     set("ap", has(F.HW4_SEEN) ? `${ap} (${SC.AP_STATES[ap] || "?"})` : L("no 0x39B frame yet", "尚无0x39B"));
     set("hands", hands === 3 ? L("3 (prompt on the screen)", "3（屏幕显示提示）") : hands);
     set("sent", lv ? lv.sent : st.sent);

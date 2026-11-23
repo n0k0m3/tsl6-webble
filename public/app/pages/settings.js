@@ -2,6 +2,7 @@
 // help text above the options. Each change writes one A3 at once (same logic as before the redesign).
 import { h, L, toast, confirmBox, showHelp, icon, chooseOption, toggle, plainLabel, groupHelpButton, extendHelp } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, log, connect, askPassword, isH2, go } from "../app.js";
+import { toolGroup } from "./tools.js";
 import { h2Options, h2Has, h2Fields, h2HasTsl6, h2HasEngine } from "../../lib/h2-menus.js";
 import { BY_ID, decodeSettings, encodeSettings, optionsFor, appliesTo, writeBlocker, settingsEchoMatches, TIME_PROMPT_ZH } from "../../lib/tsl6-settings.js";
 
@@ -28,7 +29,7 @@ const EXTRA = { promptBuild: true };
 // Help for the prompt options, after the vendor text of "Scroll interval". Same span format as data/help.json.
 const PROMPT_HELP = {
   en: [
-    [[["", "When set to "], ["g", "On hands-on prompt"], ["", " (needs the prompt build: Tools → Firmware):"]],
+    [[["", "When set to "], ["g", "On hands-on prompt"], ["", " (needs the prompt build: Device → Update firmware):"]],
       [["", "When AP assist is "], ["o", "on"], ["", ", the module scrolls the wheel -1 and +1 only when the car shows the hands-on prompt."]],
       [["", "It waits about the time in the option (random, +/-50 %). Then it sends one pair, and nothing more until the prompt goes away."]],
       [["", "Prompt build v2: if the nag goes on to the chime, it sends one more pair at each new level."]],
@@ -37,7 +38,7 @@ const PROMPT_HELP = {
     [[["", "Note: with the normal firmware, these options scroll every 2-3 s (about 0.6 s) or every 35-65 s (the others). The vendor Mini App does not know them: if you save settings there, it sets every 2-3 s."]]],
   ],
   zh: [
-    [[["", "设置为"], ["g", "手扶提示时"], ["", "（需要提示版固件：工具 → 固件）："]],
+    [[["", "设置为"], ["g", "手扶提示时"], ["", "（需要提示版固件：设备 → 更新固件）："]],
       [["", "当"], ["o", "开启"], ["", "AP辅助后，只有车机显示手扶方向盘提示时，模块才操作滚轮减1加1。"]],
       [["", "它等待选项中的时间（随机±50%），然后操作一次减加，提示消失前不再操作。"]],
       [["", "提示版 v2：如果提示升级为提示音，每升一级再操作一次减加。"]],
@@ -229,13 +230,16 @@ definePage("settings", () => {
     const B = isH2() ? S.link.board : null;
     const opCard = B && B.status ? h("div", { class: "card lead master" },
       h("button", { class: "li first", type: "button", "data-id": "set-opmode", onclick: () => go("board") },
-        h("span", { class: "chip" + (B.status.opMode === 1 ? " on" : "") }, icon("radio", 24)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Op mode", "运行模式"))),
+        h("span", { class: "chip" + (B.status.opMode === 1 ? " on" : "") }, icon("send", 24)),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Mode", "模式"))),
           h("div", { class: "li-sub" }, B.status.opMode === 1 ? L("The board sends scroll ticks on Vehicle CAN", "模块向车辆CAN发送滚轮操作") : L("The board never sends", "模块从不发送"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, B.status.opMode === 1 ? L("Active", "主动") : L("Listen-Only", "只听")), h("span", { class: "chev" }, icon("chevron-right", 18))))) : null;
     masterSlot.replaceChildren(...(opCard ? (engine ? [opCard, master] : [opCard]) : [master]));
     findBox.hidden = moduleOff;
     if (moduleOff) {
+      // A board keeps its tools while the TSL6 engine is off (h2Tools has no module-off gate), as the Tools tab did.
+      const autosOff = isH2() ? toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"], { icons: false }) : null;
+      if (autosOff) el.append(autosOff);
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
     }
@@ -247,16 +251,21 @@ definePage("settings", () => {
     const groupsBefore = el.childElementCount;
     // A board with the "rand" row uses the exact timer interval when that row is Off.
     const exactNote = h2Has("rand") ? { en: " (exact when Random interval is Off)", zh: "（滚轮随机时间关闭时为精确值）" } : { en: "", zh: "" };
-    const H2_FOOT = { en: `The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %${exactNote.en}. Exact values: Tools > Board.`, zh: `模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%${exactNote.zh}。精确值：工具 > 模块。` };
+    const H2_FOOT = { en: `The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %${exactNote.en}. Exact values: Device > Board.`, zh: `模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%${exactNote.zh}。精确值：设备 > 模块。` };
     // The board foot is about the board's own rows. The TSL6 engine groups have no foot.
     const footOf = g => (!isH2() ? g.foot : g.rows.some(([id]) => h2Fields().includes(id)) ? H2_FOOT : null);
+    // The module rules that have their own page come first: 60 rows below would hide them. Search shows only rows.
+    const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"], { icons: false });
+    // The same help button as the other groups: the vendor help of each page.
+    if (autos) autos.querySelector(".sec-title").append(groupHelpButton({ en: "Car automations", zh: "车辆联动" },
+      [[L("Shortcuts", "快捷指令"), "help_BTN"], [L("BLE buttons", "蓝牙按钮"), "help_BLEBTN"], [L("Ambient light", "原厂氛围灯"), "help_RGB"]]));
+    if (autos) el.append(autos);
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, footOf(g)));
     if (query) {
       if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;
     }
-
     if (isH2() && !h2HasTsl6()) { // no Lab rows for a board without the TSL6 engine
       el.append(h("p", { class: "foot span" }, L("Each change saves to the board at once.", "每项修改会立即保存到模块。")));
       return;

@@ -1,6 +1,8 @@
-// Device tab: connection (was the Bluetooth tab), module info, restart, preferences (was the Me tab).
+// Device tab: the hardware and its upkeep. Connection, the module or board, firmware, data files, maintenance,
+// advanced tools and preferences. The tool rows come from tools.js and keep their data-id "tool-<id>".
 import { h, L, toast, confirmBox, clear, toggle, icon, chooseOption, getLang, setLang, helpButton } from "../ui.js";
 import { S, definePage, onBus, ask, savePref, setHwType, connect, disconnect, askPassword, go, isH2 } from "../app.js";
+import { toolRows, toolGroup, offNote } from "./tools.js";
 import { CHUNK_STEPS, resetReasonName, boardName, boardOf, CAN_NAMES } from "../../lib/scrl.js";
 const linkInfo = () => (S.link && S.link.board ? S.link.board.info : null);
 import { WebLink, platformChunk, SAFE_CHUNK } from "../ble.js";
@@ -19,6 +21,9 @@ definePage("me", () => {
   const infoRow = (en, zh, value, first, mono = false) => h("div", { class: "li" + (first ? " first" : "") },
     h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh)))),
     h("span", { class: "kv" + (mono ? " mono" : "") }, value || "—"));
+  // A long value (a list) goes under its label, so the label does not wrap.
+  const stackRow = (en, zh, value) => h("div", { class: "li stack" },
+    h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub kv-sub" }, value || "—")));
   const switchRow = (id, ico, en, zh, sen, szh, checked, onchange, tone = "") => {
     const sw = toggle({ checked, label: L(en, zh), onchange });
     sw.dataset.id = `pref-${id}`;
@@ -67,7 +72,7 @@ definePage("me", () => {
     return h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip green" }, icon("bluetooth-connected", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, link.name)),
-          h("div", { class: "li-sub" }, link.boot ? L("Boot mode: flash a runtime in Tools > Firmware", "升级模式：请在「工具 > 固件」刷写运行固件")
+          h("div", { class: "li-sub" }, link.boot ? L("Boot mode: flash a runtime with Update firmware below", "升级模式：请用下方「更新固件」刷写运行固件")
             : link.authed ? L("Connected", "已连接") : L("Connected, password needed", "已连接，需要密码"))),
         h("button", { class: "btn small", type: "button", "data-id": "disconnect", onclick: () => disconnect() }, L("Disconnect", "断开"))),
       link.authed || link.boot ? null : h("div", { class: "li" }, h("span", { class: "chip amber" }, icon("key-round", 22)),
@@ -95,51 +100,23 @@ definePage("me", () => {
     const m = S.status ? meInfo(S.status) : null;
     el.append(grp(h("div", { class: "sec-label" }, L("Connection", "连接")), connectionCard()));
 
-    const info = isH2() && S.link.board ? S.link.board.info : null;
-    if (info) {
-      // BLE board: its own Info, not the TSL6 status bytes.
-      const bo = boardOf(info);
-      el.append(grp(h("div", { class: "sec-label" }, L(boardName(info), boardName(info, true))), h("div", { class: "card" },
-        infoRow("Board type", "模块类型", bo.id),
-        infoRow("Chip", "芯片", bo.chip),
-        infoRow("CAN controller", "CAN 控制器", CAN_NAMES[bo.can] || bo.can),
-        infoRow("Board ID", "模块ID", info.id, true, true),
-        infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
-        infoRow("Built", "构建时间", info.built),
-        infoRow("ESP-IDF", "ESP-IDF", info.idf),
-        infoRow("Last reset reasons", "最近复位原因", Array.isArray(info.rst_log) ? info.rst_log.map(resetReasonName).join(", ") : null),
-        infoRow("App build", "应用版本", APP_BUILD),
-        h("button", { class: "li", type: "button", "data-id": "open-board", onclick: () => go("board") },
-          h("span", { class: "chip" }, icon("cpu", 22)),
-          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Board", "模块"))),
-            h("div", { class: "li-sub" }, L("State, op mode, counters, pairing", "状态、运行模式、计数器、配对"))), chev()))));
-    } else el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
-      infoRow("Device ID", "设备ID", m && m.moduleId, true, true),
-      infoRow("MAC", "设备MAC", m && m.mac, false, true),
-      m && m.vin ? infoRow("Vehicle VIN", "车辆VIN", m.vin, false, true) : null,
-      infoRow("Firmware", "固件版本", m && m.runVersion),
-      infoRow("Bootloader", "BOOT版本", m && m.bootVersion),
-      infoRow("App build", "应用版本", APP_BUILD)),
-    h("p", { class: "sec-foot" }, L("The module reports the firmware version. The vendor app may show another number.",
-      "版本号由模块报告。原厂小程序可能显示其他版本号。"))));
-
-    el.append(grp(h("div", { class: "sec-label" }, L("Actions", "操作")), h("div", { class: "card" },
-      h("button", { class: "li first", type: "button", "data-id": "restart", onclick: restart },
-        h("span", { class: "chip" }, icon("refresh-cw", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))), chev()),
-      // Same page as Tools > Firmware: OTA update of the runtime, or recovery of a module in boot mode.
-      h("button", { class: "li", type: "button", "data-id": "firmware", onclick: () => go(isH2() ? "boardfw" : "firmware") },
-        h("span", { class: "chip" }, icon("hard-drive-download", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Flash firmware", "刷写固件"))),
-          h("div", { class: "li-sub" }, isH2() ? L("Update the board over Bluetooth", "通过蓝牙更新模块")
-            : L("Update the runtime, or recover a module in boot mode", "更新运行固件，或恢复处于升级模式的模块"))), chev()),
-      h("button", { class: "li", type: "button", "data-id": "clear-cache", onclick: clearCache },
-        h("span", { class: "chip" }, icon("trash-2", 22)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
-          h("div", { class: "li-sub" }, L("Saved passwords and options in this browser", "此浏览器中的密码与选项"))), chev()))));
-
-    const lang = h("div", { class: "seg" },
-      ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
+    // Upkeep of the module: one Firmware row (the runtime of a TSL6, the image of a board), password, restart, defaults.
+    const restartRow = h("button", { class: "li", type: "button", "data-id": "restart", onclick: restart },
+      h("span", { class: "chip" }, icon("refresh-cw", 22)),
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))),
+      h("span", { class: "btn small", "aria-hidden": "true" }, L("Restart", "重启")));
+    // The reset of all settings has a card of its own, apart from Restart.
+    // The two rows that delete data share one card: the module settings, and what this browser saved.
+    const clearRow = h("button", { class: "li danger", type: "button", "data-id": "clear-cache", onclick: clearCache },
+      h("span", { class: "chip red" }, icon("trash-2", 22)),
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
+        h("div", { class: "li-sub" }, L("Passwords and options in this browser", "此浏览器中的密码与选项"))),
+      h("span", { class: "btn small danger-text", "aria-hidden": "true" }, L("Clear", "清除")));
+    const resetRows = [...toolRows(["reset"]), clearRow];
+    el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
+      // The running version on the update row: the user wants it before an update.
+      ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), h("div", { class: "card card-apart" }, resetRows)));
+    el.append(...[toolGroup("Data", "数据", ["backup", "log", "capture"])].filter(Boolean));
     // The vendor shows this row only for the device types of the autoGauge row; its help text stays reachable.
     const ag = ROW_BY_ID.autoGauge;
     const autoGaugeShown = !ag.types || ag.types.includes(S.hwType);
@@ -154,21 +131,57 @@ definePage("me", () => {
         }, L("Warning", "警告"), L("Allow", "允许"), { focusCancel: true }))) return;
         savePref("allowDrive", v); driveSw.set(v);
       }, "t-amber");
-    const [skipRow, skipSw] = switchRow("skipUntested", "triangle-alert", "No warning for untested commands", "不再提示未测试指令", null, null, S.prefs.skipUntested,
-      async v => { savePref("skipUntested", v); skipSw.set(v); });
+    // Shown as a positive switch: on = warn. The stored preference stays "skipUntested" (on = no warning).
+    const [skipRow, skipSw] = switchRow("skipUntested", "triangle-alert", "Warn before untested commands", "未测试指令前提示", null, null, !S.prefs.skipUntested,
+      async v => { savePref("skipUntested", !v); skipSw.set(v); });
+    const lang = h("div", { class: "seg" },
+      ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
     el.append(grp(h("div", { class: "sec-label" }, L("Preferences", "偏好设置")), h("div", { class: "card" },
-      h("div", { class: "li first" }, h("span", { class: "chip" }, icon("languages", 22)),
+      h("div", { class: "li" }, h("span", { class: "chip" }, icon("languages", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Language", "语言")))), lang),
-      // An H2 board sets the type by itself. The picker is for the TSL6 only.
-      h("button", { class: "li", type: "button", "data-id": "pref-hwType", disabled: isH2(), onclick: async () => {
-        if (isH2()) return;
-        const v = await chooseOption({ title: L("Device type", "设备类型"), options: TYPES, value: S.hwType });
-        if (v != null) { setHwType(Number(v)); render(); toast(L("Saved", "已保存"), "ok"); }
-      } }, h("span", { class: "chip" }, icon("cpu", 22)),
+      // An H2 board sets the type by itself: plain text, not a picker. The picker is for the TSL6 only.
+      isH2() ? h("div", { class: "li", "data-id": "pref-hwType" }, h("span", { class: "chip" }, icon("cpu", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
-          h("div", { class: "li-sub" }, isH2() ? L("Set by the connected board. Every BLE board has the same rows.", "由已连接的模块决定。所有BLE模块的选项相同。") : L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
-        h("div", { class: "li-trail" }, h("span", { class: "val" }, isH2() ? L(`BLE board: ${boardName(linkInfo())}`, `BLE模块：${boardName(linkInfo(), true)}`) : (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), isH2() ? null : chev())),
+          h("div", { class: "li-sub" }, L(`BLE board: ${boardName(linkInfo())}. Set by the board.`, `BLE模块：${boardName(linkInfo(), true)}。由模块决定。`))))
+        : h("button", { class: "li", type: "button", "data-id": "pref-hwType", onclick: async () => {
+          const v = await chooseOption({ title: L("Device type", "设备类型"), options: TYPES, value: S.hwType });
+          if (v != null) { setHwType(Number(v)); render(); toast(L("Saved", "已保存"), "ok"); }
+        } }, h("span", { class: "chip" }, icon("cpu", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Device type", "设备类型"))),
+            h("div", { class: "li-sub" }, L("The vendor app gets it from its server.", "原厂小程序从服务器获取。"))),
+          h("div", { class: "li-trail" }, h("span", { class: "val" }, (TYPES.find(t => t[0] === S.hwType) || [0, String(S.hwType)])[1]), chev())),
       autoGaugeShown ? gaugeRow : null, driveRow, skipRow)));
+
+    // Advanced after Preferences: service mode needs "Allow driving-system controls", which is in Preferences.
+    el.append(...[toolGroup("Advanced", "高级", ["blehost", "debug", "service"])].filter(Boolean));
+    const off = offNote(["backup", "service"]);
+    if (off) el.append(off);
+
+    // The module or board details come after the actions: the actions are the jobs of this tab, the details a lookup.
+    const info = isH2() && S.link.board ? S.link.board.info : null;
+    if (info) {
+      // BLE board: its own Info, not the TSL6 status bytes.
+      const bo = boardOf(info);
+      el.append(grp(h("div", { class: "sec-label" }, L(boardName(info), boardName(info, true))), h("div", { class: "card" },
+        ...toolRows(["board"]),
+        infoRow("Board type", "模块类型", bo.id),
+        infoRow("Chip", "芯片", bo.chip),
+        infoRow("CAN controller", "CAN 控制器", CAN_NAMES[bo.can] || bo.can),
+        infoRow("Board ID", "模块ID", info.id, false, true),
+        infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
+        infoRow("Built", "构建时间", info.built),
+        infoRow("ESP-IDF", "ESP-IDF", info.idf),
+        stackRow("Last reset reasons", "最近复位原因", Array.isArray(info.rst_log) ? info.rst_log.map(resetReasonName).join(", ") : null),
+        infoRow("App build", "应用版本", APP_BUILD))));
+    } else el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
+      infoRow("Device ID", "设备ID", m && m.moduleId, true, true),
+      infoRow("MAC", "设备MAC", m && m.mac, false, true),
+      m && m.vin ? infoRow("Vehicle VIN", "车辆VIN", m.vin, false, true) : null,
+      infoRow("Firmware", "固件版本", m && m.runVersion),
+      infoRow("Bootloader", "BOOT版本", m && m.bootVersion),
+      infoRow("App build", "应用版本", APP_BUILD)),
+    h("p", { class: "sec-foot" }, L("The module reports the firmware version. The vendor app may show another number.",
+      "版本号由模块报告。原厂小程序可能显示其他版本号。"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("About", "关于")), h("div", { class: "card pad about" },
       h("p", null, L(
