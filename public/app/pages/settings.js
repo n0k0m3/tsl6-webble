@@ -251,16 +251,15 @@ definePage("settings", () => {
     const H2_FOOT = { en: `The board draws each time at random: delay and gap +/- 50 %, timer interval +/- 20 %${exactNote.en}. Exact values: Device > Board.`, zh: `模块的每个时间都是随机的：延时和间隔±50%，定时间隔±20%${exactNote.zh}。精确值：设备 > 模块。` };
     // The board foot is about the board's own rows. The TSL6 engine groups have no foot.
     const footOf = g => (!isH2() ? g.foot : g.rows.some(([id]) => h2Fields().includes(id)) ? H2_FOOT : null);
+    // The module rules that have their own page come first: 60 rows below would hide them. Search shows only rows.
+    const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"]);
+    if (autos) el.append(autos);
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, footOf(g)));
     if (query) {
       if (S.prefs.lab) el.append(...group({ en: "Lab", zh: "实验室" }, LAB.map(id => [id]), vals)); // search finds Lab rows too
       if (el.childElementCount === groupsBefore) el.append(h("p", { class: "set-none span" }, L("No setting matches.", "没有匹配的设置。")));
       return;
     }
-    // The module rules that have their own page. They were in the Tools tab.
-    const autos = toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"]);
-    if (autos) el.append(autos);
-
     if (isH2() && !h2HasTsl6()) { // no Lab rows for a board without the TSL6 engine
       el.append(h("p", { class: "foot span" }, L("Each change saves to the board at once.", "每项修改会立即保存到模块。")));
       return;
