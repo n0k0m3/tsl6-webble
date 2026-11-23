@@ -32,6 +32,22 @@ export function captureStartCommand(mode, ids = []) {
   });
   return b;
 }
+// The ID list that a person types: hex IDs, split by commas or spaces, "0x" optional ("399, 0x39B").
+// Returns the IDs in the typed order, each one once. Throws with a text for the person on a bad list.
+export function parseCaptureIds(text) {
+  const words = String(text || "").split(/[\s,;]+/).filter(Boolean);
+  if (!words.length) throw new Error("type 1 or more IDs");
+  const ids = [];
+  for (const w of words) {
+    const hex = w.replace(/^0x/i, "");
+    if (!/^[0-9a-f]{1,3}$/i.test(hex)) throw new Error(`"${w}" is not a hex ID`);
+    const id = parseInt(hex, 16);
+    if (id > 0x7FF) throw new Error(`${w}: a standard ID is 0 to 7FF`);
+    if (!ids.includes(id)) ids.push(id);
+  }
+  if (ids.length > CAP.LIST_MAX) throw new Error(`at most ${CAP.LIST_MAX} IDs`);
+  return ids;
+}
 export const captureStopCommand = () => Uint8Array.of(STOP);
 export function captureMarkCommand(step) {
   if (!Number.isInteger(step) || step < 0 || step > 255) throw new Error(`step ${step}`);

@@ -557,6 +557,14 @@ await test("capture commands", () => {
   assert.throws(() => CP.captureStartCommand(CP.CAP.MODE_LIST, []));
   assert.throws(() => CP.captureStartCommand(CP.CAP.MODE_LIST, [0x800]));
   assert.throws(() => CP.captureStartCommand(3));
+  assert.deepEqual(CP.parseCaptureIds("399, 0x39B 3c2;399"), [0x399, 0x39B, 0x3C2], "typed order, each ID once");
+  assert.deepEqual(CP.parseCaptureIds(" 7FF "), [0x7FF]);
+  assert.throws(() => CP.parseCaptureIds(""), /1 or more/);
+  assert.throws(() => CP.parseCaptureIds("800"), /0 to 7FF/);
+  assert.throws(() => CP.parseCaptureIds("39G"), /not a hex ID/);
+  assert.throws(() => CP.parseCaptureIds("1234"), /not a hex ID/);
+  assert.throws(() => CP.parseCaptureIds(Array.from({ length: 65 }, (_, i) => i.toString(16)).join(",")), /at most 64/);
+  assert.deepEqual([...CP.captureStartCommand(CP.CAP.MODE_LIST, CP.parseCaptureIds("399,39B"))], [7, 2, 0x99, 0x03, 0x9B, 0x03]);
   assert.deepEqual([...CP.captureStopCommand()], [8]);
   assert.deepEqual([...CP.captureMarkCommand(21)], [9, 21]);
   assert.throws(() => CP.captureMarkCommand(256));
