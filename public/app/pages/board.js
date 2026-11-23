@@ -86,10 +86,11 @@ definePage("board", () => {
   const refs = {};
 
   // Values in the text face with tabular figures. Mono only for hex IDs (Board ID is on the Device tab).
-  // A long value under its label: the firmware name in mono, its meaning after it.
-  const stack = (key, en, zh) => {
-    refs[key] = h("div", { class: "li-sub kv-sub" }, "—");
-    return h("div", { class: "li stack", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), refs[key]));
+  // The block: its meaning as the value, its firmware name in mono under the label.
+  const block = (key, en, zh) => {
+    refs[key] = h("span", { class: "kv" }, "—");
+    refs[key + "Code"] = h("div", { class: "li-sub mono-sub" }, "");
+    return h("div", { class: "li", "data-row": key }, h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), refs[key + "Code"]), refs[key]);
   };
   const kv = (key, en, zh, mono = false) => {
     refs[key] = h("span", { class: "kv" + (mono ? " mono" : "") }, "—");
@@ -178,7 +179,7 @@ definePage("board", () => {
     h("p", { class: "sec-foot" }, L("Listen-Only: the board never sends. Active: the board sends scroll ticks when AP assist is on.", "只听模式：模块从不发送。主动模式：AP辅助开启时模块发送滚轮操作。"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Live state", "实时状态")), h("div", { class: "card" },
-      kv("phase", "Phase", "阶段", false), stack("block", "Block", "阻止原因"), kv("ap", "AP state", "AP状态", false), kv("hands", "Hands-on state", "手扶状态"),
+      kv("phase", "Phase", "阶段", false), block("block", "Block", "阻止原因"), kv("ap", "AP state", "AP状态", false), kv("hands", "Hands-on state", "手扶状态"),
       kv("sent", "Ticks sent", "已拨动次数"), kv("aborted", "Pairs aborted", "中止的组数"), kv("native", "Native frame age", "原车帧延迟"), kv("das", "DAS age", "DAS数据延迟"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("Exact times", "精确时间")), h("div", { class: "card" },
@@ -225,7 +226,7 @@ definePage("board", () => {
     const set = (k, v) => { if (refs[k]) refs[k].textContent = String(v); };
     set("phase", phase);
     // The firmware name of the block in mono (an ID), its meaning in the text face. The text stays "name: meaning".
-    if (refs.block) refs.block.replaceChildren(h("span", { class: "mono" }, String(block)), `: ${SC.BLOCK_TEXT[block] || ""}`);
+    if (refs.block) { refs.block.textContent = SC.BLOCK_TEXT[block] || String(block); refs.blockCode.textContent = String(block); }
     set("ap", has(F.HW4_SEEN) ? `${ap} (${SC.AP_STATES[ap] || "?"})` : L("no 0x39B frame yet", "尚无0x39B"));
     set("hands", hands === 3 ? L("3 (prompt on the screen)", "3（屏幕显示提示）") : hands);
     set("sent", lv ? lv.sent : st.sent);

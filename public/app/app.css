@@ -671,3 +671,10 @@ body { word-spacing: .05em; }
 /* round 5 (unslop 2) */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cluster { border-color: #3d4a5e; } }
 :root[data-theme="dark"] .cluster { border-color: #3d4a5e; }
+/* round 6 (unslop 2) */
+body { word-spacing: .07em; }
+/* Board page: the values are what the user reads. */
+[data-page=board] .kv { color: var(--fg); }
+.mono-sub { font-family: var(--mono); font-size: 12.5px; }
+/* Small bold labels closed the dot of the "i" at 1x: weight 500. */
+.btn.small, .cl-op, .tt span, .tab.on { font-weight: 500; }

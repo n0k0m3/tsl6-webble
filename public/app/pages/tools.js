@@ -43,11 +43,11 @@ const TOOLS = {
   backup: ["database-backup", "", "Backup and restore", "备份恢复", "Settings, shortcuts and buttons", "设置、快捷指令和按钮", () => go("backup")],
   log: ["file-text", "", "Log and capture", "日志与抓包", "Frames sent and received", "收发数据帧", () => go("log")],
   password: ["key-round", "", "Change password", "修改密码", "The BLE password of the module", "模块的蓝牙密码", () => go("password")],
-  firmware: ["hard-drive-download", "", "Update firmware", "更新固件", "Update, or recover from boot mode", "更新，或从升级模式恢复", () => go("firmware")],
+  firmware: ["hard-drive-download", "", "Update firmware", "更新固件", "Update or recover", "更新或恢复", () => go("firmware")],
   reset: ["eraser", "red", "Reset all settings", "重置所有设置", "Back to the factory settings", "恢复为出厂设置", restoreDefaults],
   blehost: ["bluetooth-searching", "", "BLE host pairing", "蓝牙配对", "Devices that the module connects to", "模块连接的蓝牙设备", () => go("blehost")],
   debug: ["terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
-  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving\u2011system controls", "需要P档和驾驶系统控制", serviceMode],
+  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P, driving-system controls", "需要P档和驾驶系统控制", serviceMode],
 };
 // Rows that run an action behind a confirm: the label of their trailing button.
 const ACTION = { reset: ["Reset", "重置"], service: ["Start", "启动"] };

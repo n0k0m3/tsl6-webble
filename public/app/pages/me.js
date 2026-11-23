@@ -111,36 +111,6 @@ definePage("me", () => {
       // The running version on the update row: the user wants it before an update.
       ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), resetRows.length ? h("div", { class: "card card-apart" }, resetRows) : null));
     el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
-    el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
-    const off = offNote(["backup", "service"]);
-    if (off) el.append(off);
-
-    // The module or board details come after the actions: the actions are the jobs of this tab, the details a lookup.
-    const info = isH2() && S.link.board ? S.link.board.info : null;
-    if (info) {
-      // BLE board: its own Info, not the TSL6 status bytes.
-      const bo = boardOf(info);
-      el.append(grp(h("div", { class: "sec-label" }, L(boardName(info), boardName(info, true))), h("div", { class: "card" },
-        ...toolRows(["board"]),
-        infoRow("Board type", "模块类型", bo.id),
-        infoRow("Chip", "芯片", bo.chip),
-        infoRow("CAN controller", "CAN 控制器", CAN_NAMES[bo.can] || bo.can),
-        infoRow("Board ID", "模块ID", info.id, false, true),
-        infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
-        infoRow("Built", "构建时间", info.built),
-        infoRow("ESP-IDF", "ESP-IDF", info.idf),
-        stackRow("Last reset reasons", "最近复位原因", Array.isArray(info.rst_log) ? info.rst_log.map(resetReasonName).join(", ") : null),
-        infoRow("App build", "应用版本", APP_BUILD))));
-    } else el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
-      infoRow("Device ID", "设备ID", m && m.moduleId, true, true),
-      infoRow("MAC", "设备MAC", m && m.mac, false, true),
-      m && m.vin ? infoRow("Vehicle VIN", "车辆VIN", m.vin, false, true) : null,
-      infoRow("Firmware", "固件版本", m && m.runVersion),
-      infoRow("Bootloader", "BOOT版本", m && m.bootVersion),
-      infoRow("App build", "应用版本", APP_BUILD)),
-    h("p", { class: "sec-foot" }, L("The module reports the firmware version. The vendor app may show another number.",
-      "版本号由模块报告。原厂小程序可能显示其他版本号。"))));
-
     const lang = h("div", { class: "seg" },
       ["en", "zh"].map(l => h("button", { type: "button", class: getLang() === l ? "on" : "", onclick: () => setLang(l) }, l === "en" ? "EN" : "中文")));
     // The vendor shows this row only for the device types of the autoGauge row; its help text stays reachable.
@@ -178,6 +148,37 @@ definePage("me", () => {
         h("span", { class: "chip" }, icon("trash-2", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Clear saved data", "清除缓存"))),
           h("div", { class: "li-sub" }, L("Saved passwords and options in this browser", "此浏览器中的密码与选项"))), chev()))));
+
+    // Advanced after Preferences: service mode needs "Allow driving-system controls", which is in Preferences.
+    el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
+    const off = offNote(["backup", "service"]);
+    if (off) el.append(off);
+
+    // The module or board details come after the actions: the actions are the jobs of this tab, the details a lookup.
+    const info = isH2() && S.link.board ? S.link.board.info : null;
+    if (info) {
+      // BLE board: its own Info, not the TSL6 status bytes.
+      const bo = boardOf(info);
+      el.append(grp(h("div", { class: "sec-label" }, L(boardName(info), boardName(info, true))), h("div", { class: "card" },
+        ...toolRows(["board"]),
+        infoRow("Board type", "模块类型", bo.id),
+        infoRow("Chip", "芯片", bo.chip),
+        infoRow("CAN controller", "CAN 控制器", CAN_NAMES[bo.can] || bo.can),
+        infoRow("Board ID", "模块ID", info.id, false, true),
+        infoRow("Firmware", "固件版本", info.fw ? `${info.fw} (${info.build || "?"})` : null),
+        infoRow("Built", "构建时间", info.built),
+        infoRow("ESP-IDF", "ESP-IDF", info.idf),
+        stackRow("Last reset reasons", "最近复位原因", Array.isArray(info.rst_log) ? info.rst_log.map(resetReasonName).join(", ") : null),
+        infoRow("App build", "应用版本", APP_BUILD))));
+    } else el.append(grp(h("div", { class: "sec-label" }, L("Module", "模块")), h("div", { class: "card" },
+      infoRow("Device ID", "设备ID", m && m.moduleId, true, true),
+      infoRow("MAC", "设备MAC", m && m.mac, false, true),
+      m && m.vin ? infoRow("Vehicle VIN", "车辆VIN", m.vin, false, true) : null,
+      infoRow("Firmware", "固件版本", m && m.runVersion),
+      infoRow("Bootloader", "BOOT版本", m && m.bootVersion),
+      infoRow("App build", "应用版本", APP_BUILD)),
+    h("p", { class: "sec-foot" }, L("The module reports the firmware version. The vendor app may show another number.",
+      "版本号由模块报告。原厂小程序可能显示其他版本号。"))));
 
     el.append(grp(h("div", { class: "sec-label" }, L("About", "关于")), h("div", { class: "card pad about" },
       h("p", null, L(
