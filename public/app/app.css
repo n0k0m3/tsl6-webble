@@ -647,3 +647,14 @@ body { word-spacing: .05em; }
 .cl-op svg { color: var(--cl-muted); margin-left: -2px; }
 /* Desktop: the lit telltales stay on one row. */
 @media (min-width: 1180px) { .cluster { gap: 12px 24px; } .cluster .cl-tt { padding-left: 20px; gap: 6px 12px; } }
+/* round 3 (unslop 2) */
+/* Cluster readouts: outlined buttons again (as text they read as unlit telltales). 36 px box, 44 px hit area. */
+.cl-btns { gap: 8px; margin: 12px 0 0; }
+.cluster .cl-btns .cl-gauge { position: relative; flex: 1; justify-content: center; height: 36px; padding: 0 12px; border: 1px solid var(--cl-line); background: transparent; }
+.cluster .cl-btns .cl-gauge::after { content: ""; position: absolute; inset: -4px 0; }
+.cluster .cl-btns .cl-gauge svg { color: var(--cl-fg); }
+@media (min-width: 1180px) { .cl-btns { margin: 0 0 0 auto; } .cluster .cl-btns .cl-gauge { flex: none; } }
+/* The trailing button of an action row: the row is the target, the button shows that a tap acts. */
+.li > .btn.small { flex: none; pointer-events: none; }
+.btn.small.danger-text { color: var(--bad); }
+.kv .mono { font-family: var(--mono); font-size: 13.5px; }

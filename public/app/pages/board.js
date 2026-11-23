@@ -216,7 +216,8 @@ definePage("board", () => {
     const age = v => (v >= 65535 ? "65535+ ms" : `${v} ms`);
     const set = (k, v) => { if (refs[k]) refs[k].textContent = String(v); };
     set("phase", phase);
-    set("block", `${block}: ${SC.BLOCK_TEXT[block] || ""}`);
+    // The firmware name of the block in mono (an ID), its meaning in the text face. The text stays "name: meaning".
+    if (refs.block) refs.block.replaceChildren(h("span", { class: "mono" }, String(block)), `: ${SC.BLOCK_TEXT[block] || ""}`);
     set("ap", has(F.HW4_SEEN) ? `${ap} (${SC.AP_STATES[ap] || "?"})` : L("no 0x39B frame yet", "尚无0x39B"));
     set("hands", hands === 3 ? L("3 (prompt on the screen)", "3（屏幕显示提示）") : hands);
     set("sent", lv ? lv.sent : st.sent);

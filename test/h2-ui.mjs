@@ -175,7 +175,7 @@ await scenario("ap-assist-switch-and-settings-menus", "mock=h2", {}, async page 
   await connect(page);
   const sw = page.locator("[data-id=sw-apAssist]");
   await page.waitForFunction(() => document.querySelector("[data-id=sw-apAssist]").getAttribute("aria-checked") === "true");
-  assert.match(await text(page, ".hero-sub"), /On hands-on prompt, about 0\.6 s after it/);
+  assert.match(await text(page, ".hero-sub"), /About 0\.6 s after a hands-on prompt/);
   await page.waitForFunction(() => /sent \d+ · hands-on 1, AP 6/.test(document.querySelector("[data-id=prompt-diag]").textContent));
   await sw.click();
   await page.waitForFunction(() => document.querySelector("[data-id=sw-apAssist]").getAttribute("aria-checked") === "false");
@@ -384,7 +384,7 @@ await scenario("exact-time-shows-as-custom-and-stays", "mock=h2", {}, async page
   await board(page);
   assert.equal(await text(page, "[data-id=board-delay_ms] .val"), "700 ms");
   await tab(page, "status");
-  assert.match(await text(page, ".hero-sub"), /about 0\.7 s after it/);
+  assert.match(await text(page, ".hero-sub"), /About 0\.7 s after a hands-on prompt/);
 });
 
 await scenario("op-mode-needs-a-confirm-and-settings-show-in-listen-only", "mock=h2&lo", {}, async page => {

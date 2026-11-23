@@ -103,7 +103,8 @@ definePage("me", () => {
     // Upkeep of the module: one Firmware row (the runtime of a TSL6, the image of a board), password, restart, defaults.
     const restartRow = h("button", { class: "li", type: "button", "data-id": "restart", onclick: restart },
       h("span", { class: "chip" }, icon("refresh-cw", 22)),
-      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))));
+      h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Restart module", "重启模块")))),
+      h("span", { class: "btn small", "aria-hidden": "true" }, L("Restart", "重启")));
     el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
       ...toolRows(["firmware", "boardfw", "password"]), restartRow, ...toolRows(["reset"]))));
     el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");

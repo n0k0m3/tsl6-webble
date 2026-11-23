@@ -253,6 +253,9 @@ definePage("settings", () => {
     const footOf = g => (!isH2() ? g.foot : g.rows.some(([id]) => h2Fields().includes(id)) ? H2_FOOT : null);
     // The module rules that have their own page come first: 60 rows below would hide them. Search shows only rows.
     const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"]);
+    // The same help button as the other groups: the vendor help of each page.
+    if (autos) autos.querySelector(".sec-label").append(groupHelpButton({ en: "Car automations", zh: "车辆联动" },
+      [[L("Shortcuts", "快捷指令"), "help_BTN"], [L("BLE buttons", "蓝牙按钮"), "help_BLEBTN"], [L("Ambient light", "原厂氛围灯"), "help_RGB"]]));
     if (autos) el.append(autos);
     for (const g of GROUPS) el.append(...group(g, g.rows, vals, footOf(g)));
     if (query) {

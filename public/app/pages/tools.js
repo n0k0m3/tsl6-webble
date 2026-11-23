@@ -49,6 +49,8 @@ const TOOLS = {
   debug: ["terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
   service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving-system controls allowed", "需要P档，并允许驾驶系统控制", serviceMode],
 };
+// Rows that run an action behind a confirm: the label of their trailing button.
+const ACTION = { reset: ["Restore", "恢复"], service: ["Start", "启动"] };
 // The tools that the old Me tab showed. They stay while the module is off; the other tools hide, as in the vendor app.
 const WHEN_OFF = ["password", "reset", "firmware", "log", "battery", "blehost", "debug", "gauge"];
 export const moduleOff = () => !!S.status && !S.blank && decodeSettings(S.status).mianSwitch === 1;
@@ -64,7 +66,8 @@ export function toolRows(ids) {
     return h("button", { class: "li" + (color === "red" ? " danger" : color === "amber" ? " caution" : ""), type: "button", "data-id": `tool-${id}`, onclick: fn },
       h("span", { class: "chip " + color }, icon(ico, 22)),
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub" }, L(sen, szh))),
-      fn === restoreDefaults || fn === serviceMode ? null : h("span", { class: "chev" }, icon("chevron-right", 18)));
+      ACTION[id] ? h("span", { class: "btn small" + (color === "red" ? " danger-text" : ""), "aria-hidden": "true" }, L(...ACTION[id]))
+        : h("span", { class: "chev" }, icon("chevron-right", 18)));
   });
 }
 // One titled group of tool rows (and extra rows), or null when the device has none of them.

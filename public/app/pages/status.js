@@ -74,7 +74,7 @@ definePage("status", () => {
     if (!refs.apSub) return;
     clear(refs.apSub);
     const s = (promptDelayMs(promptNow) / 1000).toString();
-    refs.apSub.append(L(`On hands-on prompt, about ${s} s after it`, `手扶提示时，约${s}秒后拨动`));
+    refs.apSub.append(L(`About ${s} s after a hands-on prompt`, `手扶提示时，约${s}秒后拨动`));
     if (!diag) return;
     const line = diag.noData
       ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
@@ -97,7 +97,7 @@ definePage("status", () => {
       const raw = h("span", { class: "prompt-raw" }, L(` · hands-on ${diag.handsOn}, AP ${diag.apState}`, ` · 手扶 ${diag.handsOn}，AP ${diag.apState}`));
       const sent = L(`sent ${diag.sent}`, `已拨动 ${diag.sent} 次`);
       clear(refs.apSub).append(s.mode === 0
-        ? L(`On hands-on prompt, about ${secs(s.delay_ms)} s after it`, `手扶提示时，约${secs(s.delay_ms)}秒后拨动`)
+        ? L(`About ${secs(s.delay_ms)} s after a hands-on prompt`, `手扶提示时，约${secs(s.delay_ms)}秒后拨动`)
         : L(`Every ${every} s while AP is active`, `AP激活时，每${every}秒`));
       refs.apSub.append(h("div", { class: "prompt-diag", "data-id": "prompt-diag" }, diag.noData
         ? [L("No hands-on data from the car yet", "尚未收到车辆手扶数据")]
@@ -221,7 +221,7 @@ definePage("status", () => {
       // One note per device, so the user reads only the steps of their own device.
       sec("Before you connect", "连接前"),
       h("div", { class: "card" },
-        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("info", 22)),
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("bluetooth", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Every device", "所有设备"))),
             h("div", { class: "li-sub" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
         h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
