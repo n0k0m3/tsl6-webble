@@ -282,6 +282,33 @@ await scenario("capture-start-mark-stop-save", "mock=h2", {}, async page => {
   assert.doesNotMatch(await text(page, "[data-page=board]"), /Listen-Only build/);
 });
 
+await scenario("capture-id-list", "mock=h2", {}, async page => {
+  await connect(page);
+  await capturePage(page);
+  assert.equal(await page.isVisible("[data-id=cap-list]"), false, "no list field in plan mode");
+  await page.selectOption("[data-id=cap-mode]", "2");
+  assert.equal(await page.isVisible("[data-id=cap-list]"), true, "the list field shows in list mode");
+  await page.fill("[data-id=cap-list]", "118, 0x800");
+  await page.click("[data-id=cap-start]");
+  await toastIs(page, /ID list: 0x800: a standard ID is 0 to 7FF/);
+  assert.match(await capKv(page, "state"), /Not started/, "a bad list starts nothing");
+  await page.fill("[data-id=cap-list]", "118 0x401");
+  await page.click("[data-id=cap-start]");
+  await toastIs(page, /Listen-Only/);
+  assert.equal(await page.isDisabled("[data-id=cap-list]"), true, "no list change while it runs");
+  await page.waitForFunction(() => /\d+ \(\d+\/s\)/.test(document.querySelector("[data-page=capture] [data-row=frames] .kv").textContent), null, { timeout: 8000 });
+  await page.waitForTimeout(1200);
+  await page.click("[data-id=cap-stop]");
+  await page.waitForFunction(() => /Stopped after/.test(document.querySelector("[data-page=capture] [data-row=state] .kv").textContent), null, { timeout: 8000 });
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("[data-id=cap-save]")]);
+  const file = fs.readFileSync(await dl.path(), "utf8");
+  assert.match(file, /mode 2/);
+  assert.match(file, /can0 118#/);
+  assert.match(file, /can0 401#/, "a listed table-only ID streams");
+  assert.doesNotMatch(file, /can0 129#/, "an ID that is not in the list does not stream");
+  assert.match(file, /# id 129 /, "the ID table still has every ID");
+});
+
 await scenario("capture-drops-duplicate-packets", "mock=h2&capdup", {}, async page => {
   await connect(page);
   await capturePage(page);

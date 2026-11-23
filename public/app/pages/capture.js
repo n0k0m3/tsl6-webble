@@ -3,7 +3,7 @@
 // The step list marks the time of each action in the file, so nobody has to write the times down.
 import { h, L, toast, confirmBox, clear, icon, download } from "../ui.js";
 import { S, definePage, onBus, isH2 } from "../app.js";
-import { CAP, idText } from "../../lib/scrl-capture.js";
+import { CAP, idText, parseCaptureIds } from "../../lib/scrl-capture.js";
 
 const board = () => (isH2() && S.link.connected ? S.link : null);
 
@@ -39,6 +39,7 @@ export const stepText = n => (STEPS[n - 1] ? STEPS[n - 1][0] : "");
 // The last recorder lives here too: a reconnect makes a new link, and the frames must stay for the save.
 let lastRec = null;
 let mode = CAP.MODE_PLAN;
+let listText = ""; // the typed ID list of the "ID list" mode, kept while the app runs
 
 const n0 = v => Number(v || 0).toLocaleString("en-US");
 const dur = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -67,9 +68,14 @@ definePage("capture", () => {
       en: "Start a new capture? The frames of the last capture go away. Save them first if you need them.",
       zh: "开始新的采集吗？上次采集的数据将被清除。如需保留请先保存。",
     }, L("Capture", "采集"), L("Start", "开始"), { focusCancel: true }))) return;
+    let ids = [];
+    if (mode === CAP.MODE_LIST) {
+      try { ids = parseCaptureIds(listText); }
+      catch (e) { toast(L("ID list: ", "ID列表：") + e.message, "bad", 3500); return; }
+    }
     if (refs.startBtn) refs.startBtn.disabled = true; // a second tap must not start a second capture
     try {
-      await link.captureStart(mode);
+      await link.captureStart(mode, ids);
       lastRec = link.capture;
       toast(L("Capture runs. The board is in Listen-Only.", "采集进行中，模块处于只听模式。"), "ok");
     } catch (e) { toast(L("The board did not start: ", "模块未开始：") + e.message, "bad", 3500); }
@@ -117,14 +123,22 @@ definePage("capture", () => {
         h("li", null, L("Do the parked steps first. Do a driving step only when it is safe.", "先完成停车步骤。只在安全时进行行驶步骤。")))))));
 
     const live = !!(link && link.captureLive);
-    refs.modeSel = h("select", { class: "text", "data-id": "cap-mode", "aria-label": L("Frames to stream", "传输的帧"), disabled: live, onchange: e => { mode = Number(e.target.value); } },
+    refs.modeSel = h("select", { class: "text", "data-id": "cap-mode", "aria-label": L("Frames to stream", "传输的帧"), disabled: live,
+      onchange: e => { mode = Number(e.target.value); refs.listRow.style.display = mode === CAP.MODE_LIST ? "grid" : "none"; } },
       h("option", { value: String(CAP.MODE_PLAN), selected: mode === CAP.MODE_PLAN }, L("Plan IDs (recommended)", "计划ID（推荐）")),
-      h("option", { value: String(CAP.MODE_ALL), selected: mode === CAP.MODE_ALL }, L("All IDs (can lose frames on Bluetooth)", "全部ID（蓝牙可能丢帧）")));
+      h("option", { value: String(CAP.MODE_ALL), selected: mode === CAP.MODE_ALL }, L("All IDs (can lose frames on Bluetooth)", "全部ID（蓝牙可能丢帧）")),
+      h("option", { value: String(CAP.MODE_LIST), selected: mode === CAP.MODE_LIST }, L("ID list (type the IDs)", "ID列表（输入ID）")));
+    refs.listInput = h("input", { class: "text mono", type: "text", "data-id": "cap-list", value: listText, placeholder: "399, 39B",
+      "aria-label": L("IDs to stream", "要传输的ID"), autocomplete: "off", autocapitalize: "characters", autocorrect: "off", spellcheck: "false",
+      disabled: live, oninput: e => { listText = e.target.value; } });
+    refs.listRow = h("div", { style: { display: mode === CAP.MODE_LIST ? "grid" : "none", gap: "6px" }, "data-id": "cap-list-row" }, refs.listInput,
+      h("div", { class: "li-sub" }, L(`Hex IDs, split by commas or spaces. 1 to ${CAP.LIST_MAX} IDs. The file still ends with the table of every ID on the bus.`,
+        `十六进制ID，用逗号或空格分隔，1到${CAP.LIST_MAX}个。文件末尾仍附总线上所有ID的表。`)));
     refs.startBtn = h("button", { class: "btn primary", type: "button", "data-id": "cap-start", disabled: !link || !link.canCapture || live, onclick: start }, L("Start", "开始"));
     refs.stopBtn = h("button", { class: "btn", type: "button", "data-id": "cap-stop", disabled: !live, onclick: stop }, L("Stop", "停止"));
     refs.saveBtn = h("button", { class: "btn", type: "button", "data-id": "cap-save", onclick: save }, L("Save file", "保存文件"));
     el.append(grp(h("div", { class: "sec-label" }, L("Capture", "采集")), h("div", { class: "card" },
-      h("div", { class: "form" }, refs.modeSel,
+      h("div", { class: "form" }, refs.modeSel, refs.listRow,
         h("div", { class: "btns" }, refs.startBtn, refs.stopBtn, refs.saveBtn)),
       kv("state", "State", "状态"), kv("frames", "Frames received", "收到的帧"), kv("ids", "IDs on the bus", "总线上的ID"),
       kv("lost", "Lost (ring / queue / packets)", "丢失（缓冲/队列/数据包）")),
@@ -156,6 +170,7 @@ definePage("capture", () => {
     if (refs.startBtn) refs.startBtn.disabled = !link || !link.canCapture || live;
     if (refs.stopBtn) refs.stopBtn.disabled = !live;
     if (refs.modeSel) refs.modeSel.disabled = live;
+    if (refs.listInput) refs.listInput.disabled = live;
     const set = (k, v) => { if (refs[k]) refs[k].textContent = String(v); };
     if (!rec) { set("state", L("Not started", "未开始")); return; }
     const secs = rec.seconds;

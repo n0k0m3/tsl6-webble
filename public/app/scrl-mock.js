@@ -226,7 +226,10 @@ export class MockH2Transport {
     if (b.length < 2 || !this.has("capture") || this.can !== "twai") throw new Error("GATT Error: value not allowed");
     if (!this.subs.capture || (this.cap && this.cap.active)) throw new Error("GATT Error: value not allowed");
     if (b[1] > 2 || (b[1] !== 2 && b.length !== 2)) throw new Error("GATT Error: value not allowed");
-    this.cap = { active: true, running: true, mode: b[1], seq: 0, frames: [], marks: [], ids: new Map(), rxAll: 0, n: 0,
+    if (b[1] === 2 && (b.length < 4 || b.length % 2 || (b.length - 2) / 2 > 64)) throw new Error("GATT Error: value not allowed");
+    const list = new Set();
+    for (let i = 2; i < b.length; i += 2) list.add(b[i] | (b[i + 1] << 8));
+    this.cap = { active: true, running: true, mode: b[1], list, seq: 0, frames: [], marks: [], ids: new Map(), rxAll: 0, n: 0,
       t0: this.capNow(), stateAt: 0, idsAt: this.capNow() };
     this.say(`CAP  started, mode ${b[1]}: Listen-Only until it stops`);
     this.cap.timer = setInterval(() => this.capTick(), 20);
@@ -241,20 +244,26 @@ export class MockH2Transport {
     if (sendState) { this.capFlush(); this.capIds(); this.capSend(4, this.capState()); this.say(`CAP  stopped: ${c.rxAll} frames, 0 lost in the ring`); }
     c.active = false;
   }
-  // 20 ms of a made-up bus: 0x118 and 0x129 at 100/s, 0x257 at 50/s, 0x3C2 at 10/s, and 0x400-0x40F only in the table.
+  // 20 ms of a made-up bus: 0x118 and 0x129 at 100/s, 0x257 at 50/s, 0x3C2 at 10/s, and 0x400-0x40F in the table (streamed only in list mode, when listed).
   capTick() {
     const c = this.cap;
     if (!c || !c.running || !this.up) return;
     const t = this.capNow();
     const plan = [[0x118, 1], [0x129, 1], [0x257, 2], [0x3C2, 5]];
     c.n++;
+    // Plan mode streams the plan IDs, list mode only the listed IDs (as scrl_cap_streams() in the firmware).
+    const streams = id => (c.mode === 2 ? c.list.has(id) : id < 0x400);
     for (const [id, every] of plan) {
       if (c.n % every) continue;
       const data = [c.n & 0xFF, (c.n >> 8) & 0xFF, id & 0xFF, 0x10, 0x20, 0x30, 0x40, c.n & 0x0F];
-      c.frames.push([t, id, data]);
+      if (streams(id)) c.frames.push([t, id, data]);
       this.capSeen(id, t, data);
     }
-    for (let k = 0; k < 4; k++) this.capSeen(0x400 + ((c.n * 4 + k) % 16), t, [k, 0, 0, 0, 0, 0, 0, 0]);
+    for (let k = 0; k < 4; k++) {
+      const id = 0x400 + ((c.n * 4 + k) % 16), data = [k, 0, 0, 0, 0, 0, 0, 0];
+      if (streams(id)) c.frames.push([t, id, data]);
+      this.capSeen(id, t, data);
+    }
     this.capFlush();
     if (t - c.stateAt >= 1000) { c.stateAt = t; this.capSend(4, this.capState()); }
     if (t - c.idsAt >= 5000 || c.n === 1) { c.idsAt = t; this.capIds(); }
