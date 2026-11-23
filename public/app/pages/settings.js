@@ -231,7 +231,7 @@ definePage("settings", () => {
     const opCard = B && B.status ? h("div", { class: "card lead master" },
       h("button", { class: "li first", type: "button", "data-id": "set-opmode", onclick: () => go("board") },
         h("span", { class: "chip" + (B.status.opMode === 1 ? " on" : "") }, icon("send", 24)),
-        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Op mode", "运行模式"))),
+        h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Mode", "模式"))),
           h("div", { class: "li-sub" }, B.status.opMode === 1 ? L("The board sends scroll ticks on Vehicle CAN", "模块向车辆CAN发送滚轮操作") : L("The board never sends", "模块从不发送"))),
         h("div", { class: "li-trail" }, h("span", { class: "val" }, B.status.opMode === 1 ? L("Active", "主动") : L("Listen-Only", "只听")), h("span", { class: "chev" }, icon("chevron-right", 18))))) : null;
     masterSlot.replaceChildren(...(opCard ? (engine ? [opCard, master] : [opCard]) : [master]));
@@ -252,7 +252,7 @@ definePage("settings", () => {
     // The board foot is about the board's own rows. The TSL6 engine groups have no foot.
     const footOf = g => (!isH2() ? g.foot : g.rows.some(([id]) => h2Fields().includes(id)) ? H2_FOOT : null);
     // The module rules that have their own page come first: 60 rows below would hide them. Search shows only rows.
-    const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"]);
+    const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"], [], { icons: false });
     // The same help button as the other groups: the vendor help of each page.
     if (autos) autos.querySelector(".sec-title").append(groupHelpButton({ en: "Car automations", zh: "车辆联动" },
       [[L("Shortcuts", "快捷指令"), "help_BTN"], [L("BLE buttons", "蓝牙按钮"), "help_BLEBTN"], [L("Ambient light", "原厂氛围灯"), "help_RGB"]]));

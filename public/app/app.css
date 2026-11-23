@@ -668,3 +668,6 @@ body { word-spacing: .05em; }
 /* Dark theme: the cluster is darker than the page, as a display set into the dash. */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cl-bg: #090c10; --cl-line: #2c3644; } }
 :root[data-theme="dark"] { --cl-bg: #090c10; --cl-line: #2c3644; }
+/* round 5 (unslop 2) */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cluster { border-color: #3d4a5e; } }
+:root[data-theme="dark"] .cluster { border-color: #3d4a5e; }

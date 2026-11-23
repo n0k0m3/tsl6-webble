@@ -108,7 +108,8 @@ definePage("me", () => {
     // The reset of all settings has a card of its own, apart from Restart.
     const resetRows = toolRows(["reset"]);
     el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
-      ...toolRows(["firmware", "boardfw", "password"]), restartRow), resetRows.length ? h("div", { class: "card card-apart" }, resetRows) : null));
+      // The running version on the update row: the user wants it before an update.
+      ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), resetRows.length ? h("div", { class: "card card-apart" }, resetRows) : null));
     el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
     el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
     const off = offNote(["backup", "service"]);

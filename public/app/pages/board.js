@@ -107,7 +107,7 @@ definePage("board", () => {
     if (active && !(await confirmBox({
       en: "Go to Active? The board will send frames on Vehicle CAN.",
       zh: "切换到主动模式吗？模块将向车辆CAN发送数据。",
-    }, L("Op mode", "运行模式"), L("Go to Active", "切换到主动"), { focusCancel: true }))) { draw(); return; }
+    }, L("Mode", "模式"), L("Go to Active", "切换到主动"), { focusCancel: true }))) { draw(); return; }
     await run(() => S.link.writeSettings({ op_mode: active ? 1 : 0 }), L("Saved", "已保存"));
     draw();
   }
@@ -172,7 +172,7 @@ definePage("board", () => {
     refs.opSw = toggle({ checked: null, label: L("Active", "主动模式"), onchange: v => setOpMode(v) });
     refs.opSw.dataset.id = "board-op";
     refs.opSub = h("div", { class: "li-sub" });
-    el.append(grp(h("div", { class: "sec-label" }, L("Op mode", "运行模式")), h("div", { class: "card" },
+    el.append(grp(h("div", { class: "sec-label" }, L("Mode", "模式")), h("div", { class: "card" },
       h("div", { class: "li first" }, h("span", { class: "chip" }, icon("send", 22)),
         h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Send on Vehicle CAN", "向车辆CAN发送"))), refs.opSub), refs.opSw)),
     h("p", { class: "sec-foot" }, L("Listen-Only: the board never sends. Active: the board sends scroll ticks when AP assist is on.", "只听模式：模块从不发送。主动模式：AP辅助开启时模块发送滚轮操作。"))));

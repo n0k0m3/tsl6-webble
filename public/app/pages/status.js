@@ -111,7 +111,7 @@ definePage("status", () => {
         : B.status.opMode !== 1 ? L("Mode: Listen-Only", "模式：只听") : active ? L("Mode: Active", "模式：主动") : L("Mode: held in Listen-Only", "模式：保持只听");
       refs.op.classList.toggle("on", active);
       refs.op.querySelector("span").textContent = text;
-      refs.op.setAttribute("aria-label", L(`Op mode: ${text}. Open the board page`, `运行模式：${text}。打开模块页面`));
+      refs.op.setAttribute("aria-label", L(`${text}. Open the board page`, `${text}。打开模块页面`));
     }
   }
 
@@ -217,11 +217,13 @@ definePage("status", () => {
           : L("This browser has no Web Bluetooth. Use Chrome or Edge on Android or a computer, or Bluefy on iPhone.",
             "此浏览器不支持网页蓝牙。请在安卓或电脑上使用 Chrome / Edge，iPhone 请使用 Bluefy。")),
         supported ? btn({ en: "Connect", zh: "连接" }, () => connect({ all }), { kind: "primary" }) : null,
-        supported ? h("label", { class: "check" }, allBox, L("Show all devices", "显示所有设备")) : null,
-        h("p", { class: "es-note" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
+        supported ? h("label", { class: "check" }, allBox, L("Show all devices", "显示所有设备")) : null)),
       // One note per device, so the user reads only the steps of their own device.
       sec("Before you connect", "连接前"),
       h("div", { class: "card" },
+        h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("car", 22)),
+          h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("Car", "车辆"))),
+            h("div", { class: "li-sub" }, L("Keep the car awake (climate or Camp mode on). The device takes one phone at a time.", "保持车辆唤醒（打开空调或露营模式）。设备一次只连接一部手机。")))),
         h("div", { class: "li note-dev" }, h("span", { class: "chip" }, icon("cpu", 22)),
           h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L("TSL6 module", "TSL6 模块"))),
             h("div", { class: "li-sub" }, L("Pick TSL6. Close the vendor Mini App, or turn off Bluetooth on that phone. The default password is 1234.", "选择 TSL6。关闭原厂小程序，或关闭那部手机的蓝牙。默认密码为 1234。")))),
@@ -291,7 +293,8 @@ definePage("status", () => {
     apSw.dataset.id = "sw-apAssist";
     refs.apSub = h("div", { class: "hero-sub" }, "—");
     refs.apChip = h("span", { class: "chip" }, icon("hand", 28));
-    switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L(ap.en, ap.zh) };
+    // A lit telltale means "on": its name has no state word.
+    switches.apAssist = { sw: apSw, chip: refs.apChip, ico: "hand", tone: "", name: L("AP assist", "AP辅助") };
     promptNow = promptOf(S.status);
     const apName = L("AP assist (no-nag)", "AP辅助（免打扰）");
     el.append(grp(sec("Driver assist", "辅助驾驶", groupHelp("Driver assist", "辅助驾驶", ASSIST, [[apName, ap.help], [L(ROW_BY_ID.countdown.en, ROW_BY_ID.countdown.zh), ROW_BY_ID.countdown.help]])),

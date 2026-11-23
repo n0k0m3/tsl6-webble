@@ -32,7 +32,7 @@ async function serviceMode() {
 // A row keeps its data-id "tool-<id>", its gate and its confirm on every tab.
 // [icon, chip color, en, zh, sub en, sub zh, action]
 const TOOLS = {
-  board: ["circuit-board", "", "Board", "模块", "Op mode, live state, counters, pairing", "运行模式、实时状态、计数器、配对", () => go("board")],
+  board: ["circuit-board", "", "Board", "模块", "Mode, live state, counters, pairing", "模式、实时状态、计数器、配对", () => go("board")],
   boardfw: ["hard-drive-download", "", "Update firmware", "更新固件", "Update the board over Bluetooth", "通过蓝牙更新模块", () => go("boardfw")],
   capture: ["activity", "", "Capture", "采集", "Record Vehicle CAN to a file", "将车辆CAN记录到文件", () => go("capture")],
   shortcuts: ["workflow", "", "Shortcuts", "快捷指令", "A car event runs a car action", "车辆事件触发车辆动作", () => go("shortcuts")],
@@ -47,7 +47,7 @@ const TOOLS = {
   reset: ["eraser", "red", "Reset all settings", "重置所有设置", "Back to the factory settings", "恢复为出厂设置", restoreDefaults],
   blehost: ["bluetooth-searching", "", "BLE host pairing", "蓝牙配对", "Devices that the module connects to", "模块连接的蓝牙设备", () => go("blehost")],
   debug: ["terminal", "", "CAN debug", "数据调试模式", "Watch and send CAN frames", "查看与发送CAN数据", () => go("debug")],
-  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving-system controls", "需要P档和驾驶系统控制", serviceMode],
+  service: ["wrench", "amber", "Tesla service mode", "特斯拉维护模式", "Needs P and driving\u2011system controls", "需要P档和驾驶系统控制", serviceMode],
 };
 // Rows that run an action behind a confirm: the label of their trailing button.
 const ACTION = { reset: ["Reset", "重置"], service: ["Start", "启动"] };
@@ -60,19 +60,21 @@ export function toolsShown(ids) {
   return ids.filter(id => (isH2() ? h2Tools().includes(id) : id !== "board" && id !== "boardfw" && id !== "capture" && (!off || WHEN_OFF.includes(id))));
 }
 // The rows of the tools in ids that the device has, in the order of ids.
-export function toolRows(ids) {
+// icons: false for a group among rows that have no icons. trail: a value to show before the chevron, by tool id.
+export function toolRows(ids, { icons = true, trail = {} } = {}) {
   return toolsShown(ids).map(id => {
     const [ico, color, en, zh, sen, szh, fn] = TOOLS[id];
     return h("button", { class: "li" + (color === "red" ? " danger" : color === "amber" ? " caution" : ""), type: "button", "data-id": `tool-${id}`, onclick: fn },
-      h("span", { class: "chip " + color }, icon(ico, 22)),
+      icons ? h("span", { class: "chip " + color }, icon(ico, 22)) : null,
       h("div", { class: "li-text" }, h("div", { class: "li-title" }, h("span", null, L(en, zh))), h("div", { class: "li-sub" }, L(sen, szh))),
       ACTION[id] ? h("span", { class: "btn small" + (color === "red" ? " danger-text" : ""), "aria-hidden": "true" }, L(...ACTION[id]))
+        : trail[id] ? h("div", { class: "li-trail" }, h("span", { class: "val" }, trail[id]), h("span", { class: "chev" }, icon("chevron-right", 18)))
         : h("span", { class: "chev" }, icon("chevron-right", 18)));
   });
 }
 // One titled group of tool rows (and extra rows), or null when the device has none of them.
-export function toolGroup(en, zh, ids, extra = []) {
-  const rows = [...toolRows(ids), ...extra.filter(Boolean)];
+export function toolGroup(en, zh, ids, extra = [], opts = {}) {
+  const rows = [...toolRows(ids, opts), ...extra.filter(Boolean)];
   if (!rows.length) return null;
   return h("section", { class: "grp" }, h("div", { class: "sec-label" }, h("span", { class: "sec-title" }, h("span", null, L(en, zh)))), h("div", { class: "card" }, rows));
 }
