@@ -12,7 +12,7 @@ import {
   ROW_BY_ID, A7_HARD_GATED, A7_RELEASE, A2_RELEASE, decodeLiveState, switchCommand, memoryCommand, tapCommand,
   canStateText, formatC1Reply, decodeA7Reply,
 } from "../../lib/tsl6-status.js";
-import { decodeSettings, isPromptTime, promptDelayMs } from "../../lib/tsl6-settings.js";
+import { decodeSettings, isPromptTime, promptDelayMs, appliesTo, BY_ID } from "../../lib/tsl6-settings.js";
 import { B0, startPayload, stopPayload, KEEPALIVE_MS, decodeGauge, promptDiag, PROMPT_PHASE } from "../../lib/tsl6-gauge.js";
 
 // Scroll interval of the prompt build (see the Firmware page), or null for a stock value or no settings.
@@ -266,7 +266,12 @@ definePage("status", () => {
     // Cluster: the vehicle, the three CAN buses and a telltale for each function that is on.
     const vt = ROW_BY_ID.vehicleType;
     refs.vehicleName = h("div", { class: "vehicle-name" }, "—");
-    refs.pills = h("div", { class: "cl-bus" });
+    // H2 board: can the board send on the bus now? The telltale opens the Board page, where the mode changes.
+    // It sits next to the lanes, not in them: update() rebuilds the lanes on each status frame, and a rebuild
+    // would take the focus and a tap from the button.
+    refs.op = isH2() ? h("button", { class: "cl-op", type: "button", "data-id": "cl-opmode", "aria-label": L("Mode. Open the board page", "模式。打开模块页面"), onclick: () => go("board") }, h("i"), h("span"), icon("chevron-right", 14)) : null;
+    refs.lanes = h("span", { class: "cl-lanes" });
+    refs.pills = h("div", { class: "cl-bus" }, refs.lanes, refs.op);
     refs.tt = h("div", { class: "cl-tt", role: "group", "aria-label": L("Functions that are on", "已开启的功能") });
     const vcard = h("div", { class: "card cluster span", "data-row": "vehicleType" },
       h("div", { class: "cl-head vehicle" },
@@ -279,8 +284,6 @@ definePage("status", () => {
         isH2() && !h2HasEngine() ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-board", onclick: () => go("board") }, icon("cpu", 18), h("span", null, L("Board", "模块")))
           : h("button", { class: "cl-gauge", type: "button", "data-id": "open-gauges", onclick: () => go("gauge") }, icon("gauge", 18), h("span", null, L("Gauges", "仪表盘"))),
         toolsShown(["battery"]).length ? h("button", { class: "cl-gauge", type: "button", "data-id": "open-battery", onclick: () => go("battery") }, icon("battery-medium", 18), h("span", null, L("Battery", "电池"))) : null));
-    // H2 board: can the board send on the bus now? The telltale opens the Board page, where the op mode changes.
-    refs.op = isH2() ? h("button", { class: "cl-op", type: "button", "data-id": "cl-opmode", onclick: () => go("board") }, h("i"), h("span"), icon("chevron-right", 14)) : null;
     if (!isH2() || h2HasEngine()) pressable(vcard, { onlong: vehicleLongPress }); // long press: CAN1-3 state, as in the vendor app
     // Board warnings come first on the landing tab: an unconfirmed image has a 10-minute limit.
     refs.banner = isH2() ? h("div", { class: "span", "data-id": "board-banner" }) : null;
@@ -390,14 +393,14 @@ definePage("status", () => {
     if (refs.vehicleName) {
       refs.vehicleName.textContent = L(live.vehicle.en, live.vehicle.zh);
       refs.vehicleName.classList.toggle("warn", !live.vehicle.detected); // vendor: orange when not detected
-      clear(refs.pills);
+      clear(refs.lanes);
       // A bus with data is a solid lit lane; a bus without data is a dashed dark lane.
       // As in the vendor app: CAN state only for types 6, 7, 8, 19; the harness warning only where the vehicle row shows.
       if ([6, 7, 8, 19].includes(tslType())) live.can.forEach((on, i) => {
         const name = on ? L(`CAN${i + 1} connected`, `CAN${i + 1} 已连接`) : L(`CAN${i + 1} not connected`, `CAN${i + 1} 未连接`);
-        refs.pills.append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, `CAN${i + 1}`, h("i")));
+        refs.lanes.append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, `CAN${i + 1}`, h("i")));
       });
-      if (live.harnessUnplugged && shown(ROW_BY_ID.vehicleType)) refs.pills.append(h("span", { class: "pill bad" }, L("Harness not plugged in", "线束未插好")));
+      if (live.harnessUnplugged && shown(ROW_BY_ID.vehicleType)) refs.lanes.append(h("span", { class: "pill bad" }, L("Harness not plugged in", "线束未插好")));
       clear(refs.tt);
       const lit = live.blank ? [] : Object.entries(switches).filter(([id]) => live.toggles[id] === true);
       if (!lit.length) refs.tt.append(h("span", { class: "cl-none" }, L("No function is on", "没有开启的功能")));
@@ -409,11 +412,10 @@ definePage("status", () => {
     syncStream();
     if (isH2()) {
       // One CAN lane for the one bus of the board.
-      if (refs.pills) {
+      if (refs.lanes) {
         const on = live.can[0];
         const name = on ? L("CAN connected", "CAN 已连接") : L("No CAN frames", "无CAN数据");
-        clear(refs.pills).append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, "CAN", h("i")));
-        if (refs.op) refs.pills.append(refs.op);
+        clear(refs.lanes).append(h("span", { class: "lane" + (on ? " on" : ""), role: "img", "aria-label": name, title: name }, "CAN", h("i")));
       }
       drawBoard();
       return;
@@ -425,7 +427,7 @@ definePage("status", () => {
         clear(refs.apSub);
         if (live.assistActive) refs.apSub.append(L("On, next tick in ", "开启，"), h("b", null, L(`${countdown.toFixed(1)} s`, `${countdown.toFixed(1)} 秒后拨动`)));
         // Off: say what turns it on. With "AP auto assist" on Follow AP, it comes on with Autopilot.
-        else refs.apSub.append(decodeSettings(p).automdr === 1 && !isH2() ? L("Off, turns on with Autopilot", "关闭，AP开启时自动开启") : L("Off", "关闭"));
+        else refs.apSub.append(appliesTo(BY_ID.automdr, tslType()) && decodeSettings(p).automdr === 1 ? L("Off, turns on with Autopilot", "关闭，AP开启时自动开启") : L("Off", "关闭"));
       };
       draw();
       if (live.assistActive) timer = setInterval(() => { countdown = Math.max(0, countdown - 0.1); draw(); if (!countdown) clearInterval(timer); }, 100);

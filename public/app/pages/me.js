@@ -115,8 +115,8 @@ definePage("me", () => {
     const resetRows = [...toolRows(["reset"]), clearRow];
     el.append(grp(h("div", { class: "sec-label" }, L("Maintenance", "维护")), h("div", { class: "card" },
       // The running version on the update row: the user wants it before an update.
-      ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), resetRows.length ? h("div", { class: "card card-apart" }, resetRows) : null));
-    el.append(toolGroup("Data", "数据", ["backup", "log", "capture"]) || "");
+      ...toolRows(["firmware", "boardfw", "password"], { trail: { firmware: m && m.runVersion, boardfw: isH2() && S.link.board && S.link.board.info ? S.link.board.info.fw : null } }), restartRow), h("div", { class: "card card-apart" }, resetRows)));
+    el.append(...[toolGroup("Data", "数据", ["backup", "log", "capture"])].filter(Boolean));
     // The vendor shows this row only for the device types of the autoGauge row; its help text stays reachable.
     const ag = ROW_BY_ID.autoGauge;
     const autoGaugeShown = !ag.types || ag.types.includes(S.hwType);
@@ -153,7 +153,7 @@ definePage("me", () => {
       autoGaugeShown ? gaugeRow : null, driveRow, skipRow)));
 
     // Advanced after Preferences: service mode needs "Allow driving-system controls", which is in Preferences.
-    el.append(toolGroup("Advanced", "高级", ["blehost", "debug", "service"]) || "");
+    el.append(...[toolGroup("Advanced", "高级", ["blehost", "debug", "service"])].filter(Boolean));
     const off = offNote(["backup", "service"]);
     if (off) el.append(off);
 

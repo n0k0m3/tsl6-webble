@@ -1,7 +1,7 @@
 // Entry point. Loads every page module; a page that fails to load does not stop the app.
 import { start, log } from "./app.js";
 
-const PAGES = ["status", "settings", "tools", "me", "password", "log", "firmware",
+const PAGES = ["status", "settings", "me", "password", "log", "firmware",
   "shortcuts", "blebtn", "backup", "battery", "rgb", "gauge", "gaugemenu", "debug", "blehost", "board", "boardfw", "capture"];
 const MOCKS = ["tables", "rgb", "live", "gauge"];
 

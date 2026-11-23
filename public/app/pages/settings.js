@@ -29,7 +29,7 @@ const EXTRA = { promptBuild: true };
 // Help for the prompt options, after the vendor text of "Scroll interval". Same span format as data/help.json.
 const PROMPT_HELP = {
   en: [
-    [[["", "When set to "], ["g", "On hands-on prompt"], ["", " (needs the prompt build: Tools → Firmware):"]],
+    [[["", "When set to "], ["g", "On hands-on prompt"], ["", " (needs the prompt build: Device → Update firmware):"]],
       [["", "When AP assist is "], ["o", "on"], ["", ", the module scrolls the wheel -1 and +1 only when the car shows the hands-on prompt."]],
       [["", "It waits about the time in the option (random, +/-50 %). Then it sends one pair, and nothing more until the prompt goes away."]],
       [["", "Prompt build v2: if the nag goes on to the chime, it sends one more pair at each new level."]],
@@ -38,7 +38,7 @@ const PROMPT_HELP = {
     [[["", "Note: with the normal firmware, these options scroll every 2-3 s (about 0.6 s) or every 35-65 s (the others). The vendor Mini App does not know them: if you save settings there, it sets every 2-3 s."]]],
   ],
   zh: [
-    [[["", "设置为"], ["g", "手扶提示时"], ["", "（需要提示版固件：工具 → 固件）："]],
+    [[["", "设置为"], ["g", "手扶提示时"], ["", "（需要提示版固件：设备 → 更新固件）："]],
       [["", "当"], ["o", "开启"], ["", "AP辅助后，只有车机显示手扶方向盘提示时，模块才操作滚轮减1加1。"]],
       [["", "它等待选项中的时间（随机±50%），然后操作一次减加，提示消失前不再操作。"]],
       [["", "提示版 v2：如果提示升级为提示音，每升一级再操作一次减加。"]],
@@ -237,6 +237,9 @@ definePage("settings", () => {
     masterSlot.replaceChildren(...(opCard ? (engine ? [opCard, master] : [opCard]) : [master]));
     findBox.hidden = moduleOff;
     if (moduleOff) {
+      // A board keeps its tools while the TSL6 engine is off (h2Tools has no module-off gate), as the Tools tab did.
+      const autosOff = isH2() ? toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"], { icons: false }) : null;
+      if (autosOff) el.append(autosOff);
       el.append(h("p", { class: "sec-foot span" }, L("The module is off. Turn it on to see the other settings.", "模块已停用。启用后可查看其他设置。")));
       return;
     }
@@ -252,7 +255,7 @@ definePage("settings", () => {
     // The board foot is about the board's own rows. The TSL6 engine groups have no foot.
     const footOf = g => (!isH2() ? g.foot : g.rows.some(([id]) => h2Fields().includes(id)) ? H2_FOOT : null);
     // The module rules that have their own page come first: 60 rows below would hide them. Search shows only rows.
-    const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"], [], { icons: false });
+    const autos = query ? null : toolGroup("Car automations", "车辆联动", ["shortcuts", "blebtn", "rgb"], { icons: false });
     // The same help button as the other groups: the vendor help of each page.
     if (autos) autos.querySelector(".sec-title").append(groupHelpButton({ en: "Car automations", zh: "车辆联动" },
       [[L("Shortcuts", "快捷指令"), "help_BTN"], [L("BLE buttons", "蓝牙按钮"), "help_BLEBTN"], [L("Ambient light", "原厂氛围灯"), "help_RGB"]]));

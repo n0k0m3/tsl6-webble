@@ -793,6 +793,27 @@ await fake("real-connect-path-tsl6", { kind: "tsl6", name: "TSL6-1234" }, async 
   assert.match(await text(page, "[data-id=pref-hwType]"), /TSL6 \(type 6\)/);
 });
 
+// A real button inside a list row must take a pointer click: Read and Disconnect on Device, Connect on Firmware.
+// (A rule for the decorative trailing buttons once took the pointer events from these too.)
+await scenario("row-buttons-take-a-pointer-click", "mock", {}, async page => {
+  await page.click("[data-id=connect]");
+  await page.waitForSelector(".dlg-input", { timeout: 8000 });
+  await page.fill(".dlg-input", "1234");
+  await dlgOk(page);
+  await page.waitForSelector("[data-row=batteryHeat]", { timeout: 8000 });
+  await tab(page, "me");
+  await page.click("[data-page=device] .li button.btn.small:not([data-id])"); // Read
+  await toastIs(page, /Status read/);
+  await page.click("[data-page=device] [data-id=disconnect]");
+  await page.waitForSelector("[data-page=device] [data-id=connect]", { timeout: 8000 });
+  await page.click("[data-page=device] [data-id=connect]");
+  await page.waitForSelector("[data-page=device] [data-id=disconnect]", { timeout: 8000 });
+});
+await scenario("firmware-connect-takes-a-pointer-click", "mock#firmware", {}, async page => {
+  await page.waitForSelector("[data-id=fw-connect]");
+  await page.click("[data-id=fw-connect]", { timeout: 5000 });
+});
+
 // The mock TSL6 of the app (?mock): the same checks as before the board came, in short.
 await scenario("mock-tsl6-unchanged", "mock", {}, async page => {
   await page.click("[data-id=connect]");
